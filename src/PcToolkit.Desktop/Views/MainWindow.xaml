@@ -68,9 +68,6 @@
         <DataTemplate DataType="{x:Type vm:GamesViewModel}">
             <views:GamesView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:OverclockViewModel}">
-            <views:OverclockView />
-        </DataTemplate>
 
         <!-- Пункт развёрнутого меню: значок, название, синяя черта у текущего раздела. -->
         <DataTemplate x:Key="NavItemTemplate">

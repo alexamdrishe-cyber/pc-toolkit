@@ -33,4 +33,9 @@
     <InternalsVisibleTo Include="PcToolkit.Core.Tests" />
   </ItemGroup>
 
+  <!-- Удалённые файлы: копии могут остаться в папке на компьютере разработчика, в сборку не попадают. В git их нет. -->
+  <ItemGroup>
+    <Compile Remove="Overclock\GpuStability.cs" />
+  </ItemGroup>
+
 </Project>

@@ -147,6 +147,28 @@
                 </Grid>
             </Border>
 
+            <!-- ===== Остались настройки из прежнего «Разгона» ===== -->
+            <Border Margin="0,12,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
+                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Visibility="{Binding ShowGpuTuningNotice, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource InfoBrush}"
+                                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
+                    <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                        <TextBlock Text="В видеокарте остались настройки из прежнего «Разгона»" FontWeight="SemiBold" />
+                        <TextBlock Text="Разгона в программе больше нет. Частоты, напряжение или вентиляторы видеокарты, изменённые раньше, всё ещё действуют. Можно вернуть то, что было до программы: сначала покажем, что именно изменится."
+                                   Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Вернуть заводские" Command="{Binding RevertGpuTuningCommand}"
+                            Style="{StaticResource PrimaryButton}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
             <!-- ===== Итог проверки ===== -->
             <Border Margin="0,16,0,0" Padding="18,14" CornerRadius="12" BorderThickness="1">
                 <Border.Style>

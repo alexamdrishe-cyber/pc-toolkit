@@ -10,6 +10,15 @@
     <ApplicationIcon>Assets\PcToolkit.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!--
+    Удалённые файлы. На компьютере разработчика их копии могут остаться в папке (файлы туда только дописываются),
+    поэтому они явно исключены из сборки. В git их нет.
+  -->
+  <ItemGroup>
+    <Compile Remove="ViewModels\OverclockViewModel.cs;Views\OverclockView.xaml.cs" />
+    <Page Remove="Views\OverclockView.xaml" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\PcToolkit.Core\PcToolkit.Core.csproj" />
     <!-- Только порядок сборки: служба собирается в папку service рядом с приложением. -->

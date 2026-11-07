@@ -85,7 +85,6 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         TweakCatalog catalog = TweakCatalog.LoadEmbedded(factory);
         Optimization = new OptimizationViewModel(_engine, catalog, factory, this, _envStatus.HasFullSensors, RestartAsAdminCommand);
         Journal = new JournalViewModel(_engine, this);
-        Overclock = new OverclockViewModel(_engine, _gate, this, () => Journal.Refresh());
         Cleanup = new CleanupViewModel(CleanupCatalog.LoadEmbedded(), CleanupHistory.Load(), _gate, this,
                                        _envStatus.IsElevated, RestartAsAdminCommand);
         DiskAnalyzer = new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand);
@@ -105,6 +104,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                                  Games, benchmarkHistory, Navigate, Optimization, Cleanup, Benchmarks, Apps)
         {
             MonitoringPage = Monitoring,
+            RevertGpuTuningCommand = new RelayCommand(RevertGpuTuning),
         };
 
         var home = new NavItemViewModel("Главная", Icons.Home, Home, "сводка, проверка системы, последние замеры");
@@ -120,7 +120,6 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             {
                 new NavItemViewModel("Игры", Icons.Games, Games, "профили игр, оверлей FPS, замеры FPS до и после"),
                 new NavItemViewModel("Тесты", Icons.Tests, Benchmarks, "стресс-тест, стабильность, бенчмарк, процессор, видеокарта, память, диск"),
-                new NavItemViewModel("Разгон", Icons.Overclock, Overclock, "видеокарта, андервольт, частота, вентиляторы, лимит мощности"),
             }),
             new NavGroupViewModel("Обслуживание", new[]
             {
@@ -174,8 +173,6 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public BenchmarksViewModel Benchmarks { get; }
 
     public GamesViewModel Games { get; }
-
-    public OverclockViewModel Overclock { get; }
 
     public void ShowOverlay(object overlay) => Preview = overlay;
 
@@ -360,8 +357,6 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     analyzer.EnsureLoaded();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
-                else if (value.Page is OverclockViewModel overclock)
-                    overclock.EnsureLoaded();
             }
         }
     }
@@ -414,6 +409,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         RecoverInterruptedChanges();
         RecoverInterruptedGpuCheck();
         Journal.Refresh();
+        UpdateGpuTuningNotice();
         _ = Optimization.RefreshAsync();
 
 #if DEBUG
@@ -442,12 +438,44 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
 
         Journal.Refresh();
         _ = Optimization.RefreshAsync();
+        UpdateGpuTuningNotice();
     }
+
+    /// <summary>
+    /// Разгона в программе больше нет. Если настройки видеокарты, применённые прежней версией, всё ещё действуют,
+    /// главная предлагает вернуть заводские (через обычный предпросмотр «было → станет»).
+    /// </summary>
+    private void UpdateGpuTuningNotice()
+    {
+        bool active;
+        try
+        {
+            active = GpuTuningRecovery.HasActiveTuning(_engine);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось проверить настройки видеокарты в журнале.", ex);
+            active = false;
+        }
+
+        if (!active)
+        {
+            Home.SetGpuTuningNotice(false);
+            return;
+        }
+
+        // Видеокарту могли заменить: тогда вернуть нечего, и напоминание только мешало бы.
+        _ = Task.Run(() => AdlxGpuTuning.Shared(out _) is not null).ContinueWith(
+            t => _dispatcher.InvokeAsync(() => Home.SetGpuTuningNotice(t.Status == TaskStatus.RanToCompletion && t.Result)),
+            TaskScheduler.Default);
+    }
+
+    private void RevertGpuTuning() => ShowPlan(GpuTuningRecovery.PlanRevertAll(_engine), offerRestorePoint: false);
 
     /// <summary>Если прошлая проверка разгона или автоподбор оборвались (зависание, перезагрузка), возвращаем настройки видеокарты.</summary>
     private void RecoverInterruptedGpuCheck()
     {
-        string? message = OverclockViewModel.RecoverInterrupted(_engine);
+        string? message = GpuTuningRecovery.RecoverInterrupted(_engine);
         if (message is null)
             return;
 
@@ -655,8 +683,6 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         Monitoring.SetInterval(TimeSpan.FromSeconds(_history.RecentSampleSeconds));
         Benchmarks.Update(snapshot);
         Games.Update(snapshot);
-        if (CurrentPage == Overclock)
-            Overclock.Update(snapshot);
 
         if (!_installingDriver)
         {

@@ -62,6 +62,7 @@ public sealed class HomeViewModel : ObservableObject
     private string _gameTitle = "";
     private string _gameDetail = "";
     private bool _autoCheckDone;
+    private bool _showGpuTuningNotice;
     private DateTime _lastSubtitle = DateTime.Now;
     private DateTime _lastSideInfo = DateTime.Now;
 
@@ -127,6 +128,18 @@ public sealed class HomeViewModel : ObservableObject
     public bool IsPageVisible { get; set; }
 
     public bool ShowAdminBanner => !_environment.HasFullSensors;
+
+    /// <summary>В видеокарте остались настройки из прежнего экрана «Разгон».</summary>
+    public bool ShowGpuTuningNotice
+    {
+        get => _showGpuTuningNotice;
+        private set => SetProperty(ref _showGpuTuningNotice, value);
+    }
+
+    /// <summary>Открывает предпросмотр возврата заводских настроек видеокарты.</summary>
+    public ICommand? RevertGpuTuningCommand { get; init; }
+
+    public void SetGpuTuningNotice(bool show) => ShowGpuTuningNotice = show;
 
     public bool ShowPawnIoBanner => !_environment.PawnIoInstalled || _environment.PawnIoOutdated;
 

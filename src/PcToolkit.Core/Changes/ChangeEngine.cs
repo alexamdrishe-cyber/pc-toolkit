@@ -268,6 +268,26 @@ public sealed class ChangeEngine
         }
     }
 
+    /// <summary>
+    /// План отмены всех действующих изменений одного типа параметров (например, всех настроек видеокарты),
+    /// из каких бы наборов они ни были.
+    /// </summary>
+    public ChangePlan PlanRevertType(string targetType, string title)
+    {
+        lock (_gate)
+        {
+            var plan = new ChangePlan(ChangeSetKind.Revert, title);
+            foreach (ChangeEntry entry in CollectActiveEntries().Values
+                         .Where(e => string.Equals(e.Target.Type, targetType, StringComparison.OrdinalIgnoreCase)))
+                AddRevertItem(plan, entry);
+
+            if (plan.Items.Count == 0 && plan.Released.Count == 0 && plan.Problems.Count == 0)
+                plan.Skipped.Add("Возвращать нечего: таких изменений, сделанных приложением, нет.");
+
+            return plan;
+        }
+    }
+
     public ChangeResult Execute(ChangePlan plan)
     {
         lock (_gate)

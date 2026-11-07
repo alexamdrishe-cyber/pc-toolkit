@@ -74,6 +74,41 @@ public sealed class ChangeEngineTests : IDisposable
     }
 
     [Fact]
+    public void RevertType_RestoresOnlyThatKind_AcrossSets()
+    {
+        // Так программа убирает настройки видеокарты, оставшиеся от прежнего экрана «Разгон».
+        _system.Set("gpu1", "100");
+        _system.Set("reg", "1");
+        TweakDefinition gpuA = TypedTweak("g1", "gpu", "gpu1", "150");
+        TweakDefinition gpuB = TypedTweak("g2", "gpu", "gpu2", "7");
+        TweakDefinition other = Tweak("r1", ("reg", "2"));
+        ChangeEngine engine = CreateEngine();
+        Assert.True(engine.Execute(engine.PlanApply([gpuA])).Success);
+        Assert.True(engine.Execute(engine.PlanApply([gpuB])).Success);
+        Assert.True(engine.Execute(engine.PlanApply([other])).Success);
+
+        ChangePlan plan = engine.PlanRevertType("gpu", "Вернуть заводские");
+        Assert.Equal(2, plan.Items.Count);
+        ChangeResult result = engine.Execute(plan);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal("100", _system.Get("gpu1"));
+        Assert.Null(_system.Get("gpu2"));
+        Assert.Equal("2", _system.Get("reg"));
+        Assert.DoesNotContain(engine.ActiveEntries().Values, e => e.Target.Type == "gpu");
+        Assert.Empty(engine.PlanRevertType("gpu", "Вернуть заводские").Items);
+    }
+
+    private static TweakDefinition TypedTweak(string id, string type, string key, string value) => new()
+    {
+        Id = id,
+        Title = id,
+        Description = "тест",
+        Category = "test",
+        Changes = [new ChangeDefinition { Type = type, Path = key, Value = value }],
+    };
+
+    [Fact]
     public void Revert_DoesNotOverwriteChangeMadeOutsideTheApp()
     {
         _system.Set("a", "1");
