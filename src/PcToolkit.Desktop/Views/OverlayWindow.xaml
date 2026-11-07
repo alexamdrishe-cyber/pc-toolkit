@@ -1,0 +1,60 @@
+<Window x:Class="PcToolkit.Desktop.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls"
+        Title="PC Toolkit — оверлей"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        Focusable="False"
+        IsHitTestVisible="False"
+        FontFamily="{StaticResource UiFont}"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display">
+
+    <Border Background="#C80E1116" CornerRadius="8" Padding="12,8,12,10" BorderBrush="#33FFFFFF" BorderThickness="1" MinWidth="170">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding FpsText}" FontSize="30" FontWeight="Bold" VerticalAlignment="Bottom">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#E8EBF1" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding FpsLevel}" Value="Good">
+                                    <Setter Property="Foreground" Value="#34D399" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding FpsLevel}" Value="Fair">
+                                    <Setter Property="Foreground" Value="#F5B544" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding FpsLevel}" Value="Poor">
+                                    <Setter Property="Foreground" Value="#F2645F" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="FPS" FontSize="13" FontWeight="SemiBold" Foreground="#9AA3B5" Margin="6,0,0,6" VerticalAlignment="Bottom" />
+                <Border Background="#F2645F" CornerRadius="4" Padding="6,1" Margin="12,0,0,8" VerticalAlignment="Bottom"
+                        Visibility="{Binding IsRecording, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding RecordingText}" FontSize="11" FontWeight="SemiBold" Foreground="White" />
+                </Border>
+            </StackPanel>
+            <TextBlock Text="{Binding DetailText}" FontSize="12.5" Foreground="#C9CFDA" />
+
+            <controls:FrameTimeGraph Values="{Binding FrameTimes}" Height="30" Margin="0,6,0,0" Stroke="#34D399"
+                                     Visibility="{Binding ShowGraph, Converter={StaticResource BoolToVis}}" />
+
+            <StackPanel Margin="0,6,0,0" Visibility="{Binding ShowSensors, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding CpuText}" FontSize="12.5" Foreground="#E8EBF1" />
+                <TextBlock Text="{Binding GpuText}" FontSize="12.5" Foreground="#E8EBF1" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding ProcessText}" FontSize="10.5" Foreground="#6A7284" Margin="0,4,0,0" />
+        </StackPanel>
+    </Border>
+</Window>

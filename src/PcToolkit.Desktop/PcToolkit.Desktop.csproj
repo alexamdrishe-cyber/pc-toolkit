@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>PcToolkit.Desktop</RootNamespace>
+    <AssemblyName>PcToolkit</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Значок файла PcToolkit.exe в Проводнике (окно и трей рисуют значок кодом, см. AppIconFactory). -->
+    <ApplicationIcon>Assets\PcToolkit.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PcToolkit.Core\PcToolkit.Core.csproj" />
+    <!-- Только порядок сборки: служба собирается в папку service рядом с приложением. -->
+    <ProjectReference Include="..\PcToolkit.Service\PcToolkit.Service.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Состояние, установка и удаление службы Windows. -->
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Официальный установщик драйвера PawnIO, см. third_party/PawnIO/README.md -->
+    <EmbeddedResource Include="..\..\third_party\PawnIO\PawnIO_setup.exe"
+                      LogicalName="PcToolkit.PawnIO_setup.exe"
+                      Visible="false" />
+  </ItemGroup>
+
+</Project>

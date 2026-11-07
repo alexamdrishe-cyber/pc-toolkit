@@ -1,0 +1,225 @@
+{
+  "version": 1,
+  "categories": [
+    { "id": "gaming", "title": "Игры", "description": "Настройки Windows, которые влияют на игры: игровой режим, запись, мышь, приоритеты." },
+    { "id": "interface", "title": "Интерфейс и отклик", "description": "Меньше эффектов и задержек в интерфейсе Windows." },
+    { "id": "privacy", "title": "Конфиденциальность и реклама", "description": "Меньше рекламы, советов и данных, которые Windows отправляет в Microsoft." },
+    { "id": "background", "title": "Фоновые процессы", "description": "Службы и приложения, которые работают в фоне. Меняйте, только если понимаете последствия." },
+    { "id": "power", "title": "Электропитание и запуск", "description": "Схема электропитания и режим выключения." },
+    { "id": "network", "title": "Сеть", "description": "Параметры обработки сетевых пакетов." }
+  ],
+  "tweaks": [
+    {
+      "id": "game-mode",
+      "title": "Игровой режим Windows",
+      "description": "Во время игры Windows откладывает установку обновлений и уведомления и отдаёт игре больше ресурсов. Обычно режим уже включён; настройка гарантирует, что его никто не выключил.",
+      "category": "gaming",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "gaming", "streaming", "general" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\GameBar", "name": "AutoGameModeEnabled", "kind": "DWord", "value": "1" },
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\GameBar", "name": "AllowAutoGameMode", "kind": "DWord", "value": "1" }
+      ]
+    },
+    {
+      "id": "game-dvr-off",
+      "title": "Отключить фоновую запись Xbox Game Bar",
+      "description": "Game Bar может постоянно вести фоновую запись игры (Game DVR), а это стоит немного производительности. Если вы не записываете клипы через Win+Alt+G, запись лучше выключить. Сама Game Bar останется.",
+      "category": "gaming",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "gaming", "streaming" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\System\\GameConfigStore", "name": "GameDVR_Enabled", "kind": "DWord", "value": "0" },
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\GameDVR", "name": "AppCaptureEnabled", "kind": "DWord", "value": "0" }
+      ]
+    },
+    {
+      "id": "mouse-accel-off",
+      "title": "Отключить ускорение мыши",
+      "description": "Выключает «Повышенную точность установки указателя»: курсор сдвигается на одно и то же расстояние при любой скорости движения руки. Стандартная настройка для шутеров. Вступает в силу после повторного входа в Windows.",
+      "category": "gaming",
+      "risk": "low",
+      "restart": "logoff",
+      "recommendedFor": [ "gaming" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Control Panel\\Mouse", "name": "MouseSpeed", "kind": "String", "value": "0" },
+        { "type": "registry", "path": "HKCU\\Control Panel\\Mouse", "name": "MouseThreshold1", "kind": "String", "value": "0" },
+        { "type": "registry", "path": "HKCU\\Control Panel\\Mouse", "name": "MouseThreshold2", "kind": "String", "value": "0" }
+      ]
+    },
+    {
+      "id": "mmcss-games",
+      "title": "Высокий приоритет игр в планировщике мультимедиа",
+      "description": "Повышает приоритет задач категории «Игры» в службе планировщика мультимедийных классов (MMCSS) и уменьшает резерв процессора для фоновых задач с 20 до 10 %. Популярная настройка, но заметный эффект бывает не всегда.",
+      "category": "gaming",
+      "risk": "low",
+      "restart": "reboot",
+      "recommendedFor": [ "gaming" ],
+      "changes": [
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games", "name": "GPU Priority", "kind": "DWord", "value": "8" },
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games", "name": "Priority", "kind": "DWord", "value": "6" },
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games", "name": "Scheduling Category", "kind": "String", "value": "High" },
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile\\Tasks\\Games", "name": "SFIO Priority", "kind": "String", "value": "High" },
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "name": "SystemResponsiveness", "kind": "DWord", "value": "10" }
+      ]
+    },
+    {
+      "id": "hags",
+      "title": "Аппаратное планирование GPU",
+      "description": "Видеокарта сама управляет своей памятью, что может снизить задержки. Нужна поддержка видеокартой и драйвером (NVIDIA GTX 10xx и новее, AMD RX 5000 и новее). В одних играх помогает, в других нет, поэтому по умолчанию не предлагается. Нужна перезагрузка.",
+      "category": "gaming",
+      "risk": "medium",
+      "restart": "reboot",
+      "minBuild": 19041,
+      "changes": [
+        { "type": "registry", "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", "name": "HwSchMode", "kind": "DWord", "value": "2" }
+      ]
+    },
+    {
+      "id": "menu-delay",
+      "title": "Быстрое открытие меню",
+      "description": "Сокращает задержку перед появлением вложенных меню с 400 до 100 мс. Вступает в силу после повторного входа в Windows.",
+      "category": "interface",
+      "risk": "low",
+      "restart": "logoff",
+      "recommendedFor": [ "speed" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Control Panel\\Desktop", "name": "MenuShowDelay", "kind": "String", "value": "100" }
+      ]
+    },
+    {
+      "id": "min-animate-off",
+      "title": "Отключить анимацию сворачивания окон",
+      "description": "Окна сворачиваются и разворачиваются мгновенно, без анимации. Вступает в силу после повторного входа в Windows.",
+      "category": "interface",
+      "risk": "low",
+      "restart": "logoff",
+      "recommendedFor": [ "speed" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Control Panel\\Desktop\\WindowMetrics", "name": "MinAnimate", "kind": "String", "value": "0" }
+      ]
+    },
+    {
+      "id": "transparency-off",
+      "title": "Отключить прозрачность",
+      "description": "Панель задач, меню «Пуск» и центр уведомлений становятся непрозрачными. Немного разгружает видеокарту на слабых компьютерах.",
+      "category": "interface",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "speed" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "name": "EnableTransparency", "kind": "DWord", "value": "0" }
+      ]
+    },
+    {
+      "id": "advertising-id-off",
+      "title": "Отключить рекламный идентификатор",
+      "description": "Приложения перестают получать идентификатор, по которому показывают персонализированную рекламу.",
+      "category": "privacy",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "privacy" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\AdvertisingInfo", "name": "Enabled", "kind": "DWord", "value": "0" }
+      ]
+    },
+    {
+      "id": "tips-off",
+      "title": "Отключить советы и рекомендации Windows",
+      "description": "Windows перестаёт показывать советы, рекомендации в меню «Пуск» и экран «Давайте завершим настройку» после обновлений.",
+      "category": "privacy",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "privacy", "work", "general" ],
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-338389Enabled", "kind": "DWord", "value": "0" },
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SubscribedContent-310093Enabled", "kind": "DWord", "value": "0" },
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ContentDeliveryManager", "name": "SystemPaneSuggestionsEnabled", "kind": "DWord", "value": "0" }
+      ]
+    },
+    {
+      "id": "telemetry-required",
+      "title": "Только обязательные диагностические данные",
+      "description": "Windows отправляет в Microsoft только обязательный минимум диагностических данных. Это настройка групповой политики, поэтому в «Параметрах» появится надпись «Некоторые параметры управляются вашей организацией».",
+      "category": "privacy",
+      "risk": "medium",
+      "restart": "reboot",
+      "recommendedFor": [ "privacy" ],
+      "changes": [
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "name": "AllowTelemetry", "kind": "DWord", "value": "1" }
+      ]
+    },
+    {
+      "id": "diagtrack-off",
+      "title": "Отключить службу телеметрии (DiagTrack)",
+      "description": "Служба «Функциональные возможности для подключённых пользователей и телеметрия» перестаёт запускаться. На работу Windows и игр не влияет; пропадёт часть отчётов для Microsoft. Вступает в силу после перезагрузки.",
+      "category": "privacy",
+      "risk": "medium",
+      "restart": "reboot",
+      "changes": [
+        { "type": "service", "service": "DiagTrack", "start": "disabled" }
+      ]
+    },
+    {
+      "id": "background-apps-off",
+      "title": "Запретить приложениям из Microsoft Store работать в фоне",
+      "description": "Приложения из Microsoft Store не работают, пока закрыты. Может перестать приходить часть уведомлений (например, от «Почты» и «Календаря»). Только для Windows 10.",
+      "category": "background",
+      "risk": "medium",
+      "restart": "logoff",
+      "maxBuild": 21999,
+      "changes": [
+        { "type": "registry", "path": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\BackgroundAccessApplications", "name": "GlobalUserDisabled", "kind": "DWord", "value": "1" }
+      ]
+    },
+    {
+      "id": "sysmain-off",
+      "title": "Отключить SysMain (Superfetch)",
+      "description": "SysMain заранее загружает часто используемые программы в память. На SSD выигрыш от неё небольшой, поэтому её часто отключают ради меньшей фоновой активности диска. На жёстком диске (HDD) после отключения программы могут запускаться медленнее. Вступает в силу после перезагрузки.",
+      "category": "background",
+      "risk": "medium",
+      "restart": "reboot",
+      "changes": [
+        { "type": "service", "service": "SysMain", "start": "disabled" }
+      ]
+    },
+    {
+      "id": "high-performance-plan",
+      "title": "План электропитания «Высокая производительность»",
+      "description": "Процессор меньше снижает частоту в простое и быстрее разгоняется под нагрузкой. Энергопотребление в простое выше. На ноутбуках не рекомендуется. Для AMD Ryzen с установленным драйвером чипсета разница со «Сбалансированной» схемой обычно небольшая.",
+      "category": "power",
+      "risk": "low",
+      "restart": "none",
+      "recommendedFor": [ "gaming", "streaming" ],
+      "desktopOnly": true,
+      "changes": [
+        { "type": "powerScheme", "scheme": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" }
+      ]
+    },
+    {
+      "id": "fast-startup-off",
+      "title": "Отключить быстрый запуск",
+      "description": "«Завершение работы» становится полным выключением. Помогает, если после включения что-то работает со сбоями (драйверы, сеть, второй системой стоит Linux). Загрузка может стать на несколько секунд дольше.",
+      "category": "power",
+      "risk": "low",
+      "restart": "none",
+      "changes": [
+        { "type": "registry", "path": "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Power", "name": "HiberbootEnabled", "kind": "DWord", "value": "0" }
+      ]
+    },
+    {
+      "id": "network-throttling-off",
+      "title": "Отключить ограничение сетевых пакетов при воспроизведении звука",
+      "description": "По умолчанию Windows ограничивает обработку сетевых пакетов, пока играет звук или видео, чтобы не было заиканий на слабых компьютерах. На современных компьютерах это ограничение не нужно и иногда добавляет задержку в сетевых играх. Нужна перезагрузка.",
+      "category": "network",
+      "risk": "low",
+      "restart": "reboot",
+      "recommendedFor": [ "gaming", "streaming" ],
+      "changes": [
+        { "type": "registry", "path": "HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Multimedia\\SystemProfile", "name": "NetworkThrottlingIndex", "kind": "DWord", "value": "4294967295" }
+      ]
+    }
+  ]
+}

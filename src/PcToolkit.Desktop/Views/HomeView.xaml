@@ -1,0 +1,447 @@
+<UserControl x:Class="PcToolkit.Desktop.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls"
+             xmlns:services="clr-namespace:PcToolkit.Desktop.Services">
+
+    <UserControl.Resources>
+        <!-- Плитка устройства как кнопка: щелчок открывает мониторинг -->
+        <Style x:Key="TileButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <ContentPresenter />
+                            <Border x:Name="Hover" CornerRadius="12" Background="White" Opacity="0" IsHitTestVisible="False" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.025" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Быстрое действие: цветной значок, название, пояснение, стрелка -->
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="10" Padding="12,10" BorderThickness="1"
+                                BorderBrush="{StaticResource LineBrush}" Background="Transparent">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="StatusChip" TargetType="Border">
+            <Setter Property="Height" Value="26" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="CornerRadius" Value="13" />
+            <Setter Property="Margin" Value="6,0,0,0" />
+            <Setter Property="Background" Value="{StaticResource GoodChipBrush}" />
+        </Style>
+
+        <Style x:Key="LinkButton" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Foreground" Value="#8FB5FF" />
+            <Setter Property="FontSize" Value="12.5" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="#B9D0FF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel Margin="24,20,24,24">
+
+            <!-- ===== Заголовок ===== -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Главная" Style="{StaticResource PageTitle}" FontSize="22" />
+                    <TextBlock Text="{Binding Subtitle}" Style="{StaticResource SmallLabel}" FontSize="12" Margin="0,2,0,0" />
+                </StackPanel>
+                <Button Grid.Column="1" Style="{StaticResource PrimaryButton}" Height="36" Padding="16,0" VerticalAlignment="Center"
+                        Command="{Binding RunCheckCommand}" ToolTip="Проверка только читает датчики и ничего не меняет">
+                    <StackPanel Orientation="Horizontal">
+                        <controls:IconView Icon="{x:Static services:Icons.Check}" Width="15" Height="15" StrokeThickness="2.2" Foreground="White" />
+                        <TextBlock Text="Проверить систему" Margin="8,0,0,0" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- ===== Нет прав администратора ===== -->
+            <Border Margin="0,16,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
+                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Visibility="{Binding ShowAdminBanner, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource InfoBrush}"
+                                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
+                    <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                        <TextBlock Text="Приложение запущено без прав администратора" FontWeight="SemiBold" />
+                        <TextBlock Text="Без них недоступны температуры процессора, датчики материнской платы и SMART дисков. Служба PC Toolkit даёт их без запуска от имени администратора."
+                                   Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Установить службу" Command="{Binding InstallServiceCommand}" Style="{StaticResource PrimaryButton}" />
+                        <Button Content="Перезапустить от имени администратора" Command="{Binding RestartAsAdminCommand}"
+                                Style="{StaticResource GhostButton}" Margin="8,0,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== Нет драйвера PawnIO ===== -->
+            <Border Margin="0,12,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
+                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                    Visibility="{Binding ShowPawnIoBanner, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource WarningBrush}"
+                                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
+                    <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                        <TextBlock Text="{Binding PawnIoBannerTitle}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding PawnIoBannerText}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="2" Content="Установить драйвер" Command="{Binding InstallDriverCommand}"
+                            Style="{StaticResource PrimaryButton}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- ===== Итог проверки ===== -->
+            <Border Margin="0,16,0,0" Padding="18,14" CornerRadius="12" BorderThickness="1">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{StaticResource GoodSoftBrush}" />
+                        <Setter Property="BorderBrush" Value="{StaticResource GoodLineBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
+                                <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
+                                <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
+                                <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{StaticResource GoodChipBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
+                                            <Setter Property="Background" Value="#2A2414" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
+                                            <Setter Property="Background" Value="#2E1A1A" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <controls:IconView Width="20" Height="20" StrokeThickness="2.2">
+                                <controls:IconView.Style>
+                                    <Style TargetType="controls:IconView">
+                                        <Setter Property="Icon" Value="{x:Static services:Icons.Check}" />
+                                        <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
+                                                <Setter Property="Icon" Value="{x:Static services:Icons.Warning}" />
+                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
+                                                <Setter Property="Icon" Value="{x:Static services:Icons.Warning}" />
+                                                <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </controls:IconView.Style>
+                            </controls:IconView>
+                        </Border>
+                        <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding StatusTitle}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding StatusDetail}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12.5" Margin="0,2,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Style="{StaticResource StatusChip}">
+                                <TextBlock Text="{Binding AccessChip}" FontSize="12" Foreground="{StaticResource GoodTextBrush}" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Style="{StaticResource StatusChip}">
+                                <TextBlock Text="{Binding PawnIoChip}" FontSize="12" Foreground="{StaticResource GoodTextBrush}" VerticalAlignment="Center" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Problems}" Margin="54,6,0,0" Focusable="False"
+                                  Visibility="{Binding HasProblems, Converter={StaticResource BoolToVis}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="18" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
+                                             Fill="{StaticResource WarningBrush}" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Плитки устройств (щелчок — мониторинг) ===== -->
+            <UniformGrid Rows="1" Columns="4" Margin="-6,12,-6,0">
+                <Button Margin="6,0" Style="{StaticResource TileButton}" Command="{Binding OpenMonitoringCommand}" ToolTip="Открыть мониторинг">
+                    <ContentControl Focusable="False" Content="{Binding Tiles.Cpu}" ContentTemplate="{StaticResource DeviceTileTemplate}" />
+                </Button>
+                <Button Margin="6,0" Style="{StaticResource TileButton}" Command="{Binding OpenMonitoringCommand}" ToolTip="Открыть мониторинг">
+                    <ContentControl Focusable="False" Content="{Binding Tiles.Gpu}" ContentTemplate="{StaticResource DeviceTileTemplate}" />
+                </Button>
+                <Button Margin="6,0" Style="{StaticResource TileButton}" Command="{Binding OpenMonitoringCommand}" ToolTip="Открыть мониторинг">
+                    <ContentControl Focusable="False" Content="{Binding Tiles.Memory}" ContentTemplate="{StaticResource DeviceTileTemplate}" />
+                </Button>
+                <Button Margin="6,0" Style="{StaticResource TileButton}" Command="{Binding OpenMonitoringCommand}" ToolTip="Открыть мониторинг">
+                    <ContentControl Focusable="False" Content="{Binding Tiles.Storage}" ContentTemplate="{StaticResource DeviceTileTemplate}" />
+                </Button>
+            </UniformGrid>
+
+            <!-- ===== Игры · Быстрые действия и тесты ===== -->
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.15*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Игры -->
+                <Border Style="{StaticResource Card}" Padding="16,14">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}" Command="{Binding OpenGamesCommand}">
+                                <TextBlock Text="Все замеры →" />
+                            </Button>
+                            <TextBlock Text="Игры" Style="{StaticResource GroupTitle}" FontSize="14" />
+                        </DockPanel>
+
+                        <!-- Запущенная игра -->
+                        <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="10" Background="{StaticResource InputBrush}"
+                                BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="34" Height="34" CornerRadius="8" Background="#3A2618">
+                                    <controls:IconView Icon="{x:Static services:Icons.Games}" Width="18" Height="18" Foreground="#F6A574" />
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+                                    <StackPanel Visibility="{Binding HasRunningGame, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="7" Height="7" Fill="{StaticResource GoodBrush}" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding GameTitle}" FontWeight="SemiBold" FontSize="13" Margin="7,0,0,0" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding GameDetail}" Style="{StaticResource SmallLabel}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
+                                                   ToolTip="{Binding GameDetail}" />
+                                    </StackPanel>
+                                    <StackPanel Visibility="{Binding HasRunningGame, Converter={StaticResource InverseBoolToVis}}">
+                                        <TextBlock Text="Сейчас игра не запущена" FontWeight="SemiBold" FontSize="13" />
+                                        <TextBlock Text="Профиль включится сам, когда запустится игра с профилем" Style="{StaticResource SmallLabel}" FontSize="12" Margin="0,2,0,0"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <Button Grid.Column="2" Style="{StaticResource ButtonBase}" Height="32" Padding="12,0" VerticalAlignment="Center"
+                                        Command="{Binding RecordFpsCommand}" ToolTip="То же самое — Ctrl+Shift+F11 прямо в игре">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" Fill="{StaticResource CriticalBrush}" VerticalAlignment="Center" />
+                                        <TextBlock Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Center">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="Записать FPS · Ctrl+Shift+F11" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Games.IsRecording}" Value="True">
+                                                            <Setter Property="Text" Value="Остановить запись" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <!-- Последние замеры -->
+                        <TextBlock Text="Последние замеры FPS" Style="{StaticResource GroupTitle}" Margin="0,16,0,6" />
+                        <Grid Height="24" Visibility="{Binding HasRecordings, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="104" />
+                                <ColumnDefinition Width="64" />
+                                <ColumnDefinition Width="64" />
+                                <ColumnDefinition Width="104" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Игра" Style="{StaticResource SmallLabel}" FontSize="11.5" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="Когда" Style="{StaticResource SmallLabel}" FontSize="11.5" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="Средний" Style="{StaticResource SmallLabel}" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="3" Text="1% low" Style="{StaticResource SmallLabel}" FontSize="11.5" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Recordings}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Height="30" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="104" />
+                                                <ColumnDefinition Width="64" />
+                                                <ColumnDefinition Width="64" />
+                                                <ColumnDefinition Width="104" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Game}" FontSize="12.5" Foreground="{StaticResource TextRowBrush}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Game}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding When}" Style="{StaticResource SmallLabel}" FontSize="12" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Average}" FontSize="12.5" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Low}" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            <Border x:Name="Chip" Grid.Column="4" Height="20" Padding="8,0" CornerRadius="10" HorizontalAlignment="Right"
+                                                    Background="{StaticResource ControlBrush}">
+                                                <TextBlock x:Name="ChipText" Text="{Binding Profile}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding WithProfile}" Value="True">
+                                            <Setter TargetName="Chip" Property="Background" Value="{StaticResource GoodChipBrush}" />
+                                            <Setter TargetName="ChipText" Property="Foreground" Value="{StaticResource GoodTextBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="Замеров пока нет. Запустите игру и нажмите Ctrl+Shift+F11 — через минуту-другую нажмите ещё раз, замер сохранится здесь."
+                                   Style="{StaticResource SmallLabel}" FontSize="12" TextWrapping="Wrap"
+                                   Visibility="{Binding HasRecordings, Converter={StaticResource InverseBoolToVis}}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- Быстрые действия и тесты -->
+                <Border Grid.Column="2" Style="{StaticResource Card}" Padding="16,14">
+                    <StackPanel>
+                        <TextBlock Text="Быстрые действия" Style="{StaticResource GroupTitle}" FontSize="14" />
+                        <ItemsControl ItemsSource="{Binding Actions}" Margin="-4,8,-4,0" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource ActionButton}" Margin="4" Command="{Binding Command}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Width="32" Height="32" CornerRadius="8" Background="{Binding Colors.TagBackground}" VerticalAlignment="Top">
+                                                <controls:IconView Icon="{Binding Icon}" Width="17" Height="17" Foreground="{Binding Colors.TagForeground}" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="10,0,6,0">
+                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Text}" Style="{StaticResource SmallLabel}" FontSize="11.5" TextWrapping="Wrap" Margin="0,1,0,0" />
+                                            </StackPanel>
+                                            <controls:IconView Grid.Column="2" Icon="{x:Static services:Icons.Chevron}" Width="14" Height="14"
+                                                               Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Последние тесты" Style="{StaticResource GroupTitle}" Margin="0,16,0,6" />
+                        <ItemsControl ItemsSource="{Binding Tests}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Height="30" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="96" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding What}" FontSize="12.5" Foreground="{StaticResource TextRowBrush}" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Result}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding Result}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding When}" Style="{StaticResource SmallLabel}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="Тестов пока не было — их можно запустить в разделе «Тесты»."
+                                   Style="{StaticResource SmallLabel}" FontSize="12" TextWrapping="Wrap"
+                                   Visibility="{Binding HasTests, Converter={StaticResource InverseBoolToVis}}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

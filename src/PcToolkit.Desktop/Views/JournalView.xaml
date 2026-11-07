@@ -1,0 +1,125 @@
+<UserControl x:Class="PcToolkit.Desktop.Views.JournalView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="32,28,32,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <StackPanel Margin="0,0,220,0">
+                <TextBlock Text="Журнал и откат" Style="{StaticResource PageTitle}" />
+                <TextBlock Text="Все изменения системы, сделанные через приложение. Любой набор можно отменить: вернутся значения, которые были до него, а не заводские."
+                           Style="{StaticResource PageSubtitle}" />
+            </StackPanel>
+            <Button Content="Открыть файл журнала"
+                    Command="{Binding OpenJournalFileCommand}"
+                    Style="{StaticResource GhostButton}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top" />
+        </Grid>
+
+        <TextBlock Grid.Row="1"
+                   Margin="0,24,0,0"
+                   Text="Изменений пока не было. Они появятся здесь после применения настроек на экране «Оптимизация»."
+                   Style="{StaticResource Caption}"
+                   TextWrapping="Wrap"
+                   Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,20,0,0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Focusable="False">
+            <ItemsControl ItemsSource="{Binding Sets}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid>
+                                    <StackPanel Margin="0,0,140,0">
+                                        <TextBlock Text="{Binding DateText}" Style="{StaticResource MutedCaption}" />
+                                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                            <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <Border x:Name="StatusBadge" Style="{StaticResource Badge}" Margin="10,0,0,0">
+                                                <TextBlock x:Name="StatusText" Text="{Binding StatusText}" Style="{StaticResource BadgeText}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding RestartText}"
+                                                   Style="{StaticResource Caption}"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding HasRestartText, Converter={StaticResource BoolToVis}}" />
+                                        <TextBlock Text="{Binding Error}"
+                                                   Foreground="{StaticResource CriticalBrush}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0"
+                                                   Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                    <Button Content="Отменить"
+                                            Style="{StaticResource ButtonBase}"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Visibility="{Binding CanRevert, Converter={StaticResource BoolToVis}}"
+                                            Command="{Binding RevertCommand}" />
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding Entries}"
+                                              Focusable="False"
+                                              Margin="0,10,0,0"
+                                              Visibility="{Binding HasEntries, Converter={StaticResource BoolToVis}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,7">
+                                                <Grid x:Name="Row">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="170" />
+                                                        <ColumnDefinition Width="170" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Margin="0,0,12,0">
+                                                        <TextBlock Text="{Binding Tweak}" TextWrapping="Wrap" />
+                                                        <TextBlock Text="{Binding Parameter}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding Before}"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,0,12,0" />
+                                                    <TextBlock Grid.Column="2" Text="{Binding After}" TextWrapping="Wrap" />
+                                                </Grid>
+                                            </Border>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsReverted}" Value="True">
+                                                    <Setter TargetName="Row" Property="Opacity" Value="0.5" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="good">
+                                <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource GoodBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="warning">
+                                <Setter TargetName="StatusBadge" Property="Background" Value="{StaticResource WarningSoftBrush}" />
+                                <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="critical">
+                                <Setter TargetName="StatusBadge" Property="Background" Value="{StaticResource CriticalSoftBrush}" />
+                                <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding StatusKind}" Value="info">
+                                <Setter TargetName="StatusText" Property="Foreground" Value="{StaticResource InfoBrush}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

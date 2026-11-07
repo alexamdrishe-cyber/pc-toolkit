@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "categories": [
+    { "id": "system", "title": "Windows", "description": "Временные файлы, корзина и кэш миниатюр." },
+    { "id": "browsers", "title": "Браузеры", "description": "Кэш страниц и картинок. Пароли, вкладки, история и куки не трогаются." },
+    { "id": "graphics", "title": "Видеокарта и игры", "description": "Кэши шейдеров. Безопасно, но после очистки игры первое время собирают кэш заново." },
+    { "id": "reports", "title": "Отчёты об ошибках и дампы", "description": "Файлы, которые Windows и программы сохраняют после сбоев." }
+  ],
+  "rules": [
+    {
+      "id": "user-temp",
+      "title": "Временные файлы пользователя",
+      "description": "Папка TEMP вашей учётной записи. Файлы моложе суток не трогаются: ими могут пользоваться установщики и открытые программы.",
+      "category": "system",
+      "paths": [ "%TEMP%" ],
+      "minAgeHours": 24
+    },
+    {
+      "id": "windows-temp",
+      "title": "Временные файлы Windows",
+      "description": "Папка Windows\\Temp. Файлы моложе суток не трогаются.",
+      "category": "system",
+      "paths": [ "%WINDIR%\\Temp" ],
+      "minAgeHours": 24,
+      "requiresAdmin": true
+    },
+    {
+      "id": "recycle-bin",
+      "title": "Корзина",
+      "description": "Очищает корзину на всех дисках.",
+      "category": "system",
+      "kind": "RecycleBin",
+      "selectedByDefault": false,
+      "note": "Файлы из корзины удаляются навсегда. Проверьте, что там нет нужного."
+    },
+    {
+      "id": "thumbnail-cache",
+      "title": "Кэш миниатюр Проводника",
+      "description": "Уменьшенные копии картинок и видео для папок. Проводник создаст их заново, когда откроете папку.",
+      "category": "system",
+      "paths": [ "%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer" ],
+      "patterns": [ "thumbcache_*.db" ],
+      "recursive": false,
+      "removeEmptyFolders": false,
+      "selectedByDefault": false,
+      "note": "Часть файлов занята Проводником и будет пропущена — это нормально."
+    },
+    {
+      "id": "chrome-cache",
+      "title": "Google Chrome",
+      "description": "Кэш страниц, скриптов и видеокарты во всех профилях Chrome.",
+      "category": "browsers",
+      "paths": [
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\GPUCache"
+      ],
+      "processes": [ "chrome" ]
+    },
+    {
+      "id": "edge-cache",
+      "title": "Microsoft Edge",
+      "description": "Кэш страниц, скриптов и видеокарты во всех профилях Edge.",
+      "category": "browsers",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\GPUCache"
+      ],
+      "processes": [ "msedge" ]
+    },
+    {
+      "id": "yandex-cache",
+      "title": "Яндекс Браузер",
+      "description": "Кэш страниц, скриптов и видеокарты во всех профилях Яндекс Браузера.",
+      "category": "browsers",
+      "paths": [
+        "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\Cache",
+        "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\Code Cache",
+        "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\GPUCache"
+      ],
+      "processes": [ "browser" ]
+    },
+    {
+      "id": "firefox-cache",
+      "title": "Mozilla Firefox",
+      "description": "Кэш страниц во всех профилях Firefox.",
+      "category": "browsers",
+      "paths": [ "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2" ],
+      "processes": [ "firefox" ]
+    },
+    {
+      "id": "directx-shader-cache",
+      "title": "Кэш шейдеров DirectX",
+      "description": "Скомпилированные шейдеры, которые Windows хранит для игр и программ.",
+      "category": "graphics",
+      "paths": [ "%LOCALAPPDATA%\\D3DSCache" ],
+      "selectedByDefault": false,
+      "note": "Чистить стоит после обновления драйвера или если игра выдаёт графические ошибки. Первые запуски игр после очистки могут подтормаживать."
+    },
+    {
+      "id": "nvidia-shader-cache",
+      "title": "Кэш шейдеров NVIDIA",
+      "description": "Кэш шейдеров драйвера NVIDIA для DirectX и OpenGL.",
+      "category": "graphics",
+      "paths": [ "%LOCALAPPDATA%\\NVIDIA\\DXCache", "%LOCALAPPDATA%\\NVIDIA\\GLCache" ],
+      "selectedByDefault": false,
+      "note": "Первые запуски игр после очистки могут подтормаживать, пока кэш собирается заново."
+    },
+    {
+      "id": "amd-shader-cache",
+      "title": "Кэш шейдеров AMD",
+      "description": "Кэш шейдеров драйвера AMD для DirectX, Vulkan и OpenGL.",
+      "category": "graphics",
+      "paths": [
+        "%LOCALAPPDATA%\\AMD\\DxCache",
+        "%LOCALAPPDATA%\\AMD\\DxcCache",
+        "%LOCALAPPDATA%\\AMD\\VkCache",
+        "%LOCALAPPDATA%\\AMD\\GLCache"
+      ],
+      "selectedByDefault": false,
+      "note": "Первые запуски игр после очистки могут подтормаживать, пока кэш собирается заново."
+    },
+    {
+      "id": "crash-dumps",
+      "title": "Дампы сбоев программ",
+      "description": "Снимки памяти, которые сохраняются при вылете программ.",
+      "category": "reports",
+      "paths": [ "%LOCALAPPDATA%\\CrashDumps" ],
+      "patterns": [ "*.dmp" ]
+    },
+    {
+      "id": "wer-user",
+      "title": "Отчёты об ошибках (пользователь)",
+      "description": "Отчёты службы Windows Error Reporting вашей учётной записи.",
+      "category": "reports",
+      "paths": [
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportArchive",
+        "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue"
+      ]
+    },
+    {
+      "id": "wer-system",
+      "title": "Отчёты об ошибках (система)",
+      "description": "Отчёты Windows Error Reporting для всей системы.",
+      "category": "reports",
+      "paths": [
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportArchive",
+        "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportQueue"
+      ],
+      "requiresAdmin": true
+    },
+    {
+      "id": "minidumps",
+      "title": "Дампы синих экранов",
+      "description": "Малые дампы памяти после критических сбоев Windows.",
+      "category": "reports",
+      "paths": [ "%WINDIR%\\Minidump" ],
+      "patterns": [ "*.dmp" ],
+      "requiresAdmin": true,
+      "selectedByDefault": false,
+      "note": "Нужны для поиска причины синих экранов. Удаляйте, если сбоев больше нет."
+    }
+  ]
+}

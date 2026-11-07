@@ -1,0 +1,105 @@
+<UserControl x:Class="PcToolkit.Desktop.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel Margin="32,28,32,24" MaxWidth="980" HorizontalAlignment="Left">
+            <TextBlock Text="Настройки" Style="{StaticResource PageTitle}" />
+            <TextBlock Text="Служба PC Toolkit и параметры приложения." Style="{StaticResource PageSubtitle}" />
+
+            <!-- Служба -->
+            <Border Style="{StaticResource Card}" Margin="0,20,0,0">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Служба PC Toolkit" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Border Margin="10,0,0,0">
+                            <Border.Style>
+                                <Style TargetType="Border" BasedOn="{StaticResource Badge}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding StatusKind}" Value="warning">
+                                            <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{Binding StatusTitle}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BadgeText}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding StatusKind}" Value="good">
+                                                <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusKind}" Value="warning">
+                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding StatusKind}" Value="info">
+                                                <Setter Property="Foreground" Value="{StaticResource InfoBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" LineHeight="20" Margin="0,8,0,0" />
+
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Content="{Binding InstallButtonText}"
+                                Command="{Binding InstallCommand}"
+                                Style="{StaticResource PrimaryButton}" />
+                        <Button Content="Удалить службу"
+                                Command="{Binding UninstallCommand}"
+                                Style="{StaticResource GhostButton}"
+                                Margin="8,0,0,0"
+                                Visibility="{Binding ShowUninstall, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ResultText}"
+                               Style="{StaticResource Caption}"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"
+                               Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}" />
+
+                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,14,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="ЧТО ДЕЛАЕТ" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" LineHeight="19" Margin="0,6,0,0"
+                                           Text="• Читает все датчики, включая температуру процессора и материнскую плату.&#10;• Применяет и откатывает системные настройки из каталога (раздел HKLM реестра, службы Windows).&#10;• Работает в фоне с правами SYSTEM и перезапускается сама, если упадёт." />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="ЧЕГО НЕ ДЕЛАЕТ" Style="{StaticResource SectionLabel}" />
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" LineHeight="19" Margin="0,6,0,0"
+                                           Text="• Не меняет ничего сама по себе: только по запросу приложения после предпросмотра.&#10;• Не выполняет произвольные команды: только параметры из каталога настроек PC Toolkit.&#10;• Отвечает только приложению PcToolkit.exe. Файлы службы лежат в Program Files, их не подменить без прав администратора." />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Датчики -->
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Обновление датчиков" FontSize="15" FontWeight="SemiBold" />
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" LineHeight="19" Margin="0,6,0,0"
+                               Text="Как часто обновляются цифры и графики в мониторинге и на главной. Чаще — плавнее графики, реже — меньше нагрузка на процессор. Накопители опрашиваются раз в секунду при любом выборе, запись в CSV — тоже раз в секунду." />
+                    <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left" Margin="0,12,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Content="4 раза в секунду" Style="{StaticResource SegmentRadio}" GroupName="SensorRate" IsChecked="{Binding IsRate4}" />
+                            <RadioButton Content="2 раза в секунду" Style="{StaticResource SegmentRadio}" GroupName="SensorRate" IsChecked="{Binding IsRate2}" Margin="2,0" />
+                            <RadioButton Content="Раз в секунду" Style="{StaticResource SegmentRadio}" GroupName="SensorRate" IsChecked="{Binding IsRate1}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Text="Тема и автозапуск появятся здесь позже."
+                       Style="{StaticResource MutedCaption}"
+                       Margin="0,16,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

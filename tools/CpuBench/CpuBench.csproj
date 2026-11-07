@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Калибровка баллов процессора: несколько прогонов замера подряд и медианы по каждой нагрузке.
+    Не входит в решение и в установщик; запускается через bench-cpu.cmd в корне проекта.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PcToolkit.CpuBench</RootNamespace>
+    <AssemblyName>PcToolkit.CpuBench</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PcToolkit.Core\PcToolkit.Core.csproj" />
+  </ItemGroup>
+
+</Project>

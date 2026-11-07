@@ -1,0 +1,21 @@
+<Project>
+  <!-- Общие настройки для всех проектов решения. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Version>0.1.6</Version>
+    <Product>PC Toolkit</Product>
+    <Company>PC Toolkit</Company>
+    <Copyright>PC Toolkit contributors</Copyright>
+    <SatelliteResourceLanguages>ru;en</SatelliteResourceLanguages>
+    <!--
+      Не помечать PcToolkit.exe и службу как совместимые с CET (аппаратный теневой стек).
+      Иначе на процессорах с CET (AMD Zen 3 и новее, Intel 11-го поколения и новее) и Windows 10
+      без последних обновлений (нет функции QueueUserAPC2) среда .NET падает сразу при запуске:
+      «Your Windows doesn't fully support CET» (в журнале событий — .NET Runtime 1023, код 0x80131506).
+    -->
+    <CETCompat>false</CETCompat>
+  </PropertyGroup>
+</Project>

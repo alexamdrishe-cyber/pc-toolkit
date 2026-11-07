@@ -1,0 +1,71 @@
+<UserControl x:Class="PcToolkit.Desktop.Views.SystemView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Margin="32,28,32,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <StackPanel Margin="0,0,420,0">
+                <TextBlock Text="Система" Style="{StaticResource PageTitle}" />
+                <TextBlock Text="Сведения о компьютере: процессор, память, видеокарты, накопители и Windows."
+                           Style="{StaticResource PageSubtitle}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Button Content="Обновить" Command="{Binding RefreshCommand}" Style="{StaticResource GhostButton}" />
+                <Button Content="Копировать" Command="{Binding CopyCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0" />
+                <Button Content="Сохранить отчёт" Command="{Binding SaveCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="0,20,0,0">
+            <TextBlock Text="Собираю сведения о системе…"
+                       Style="{StaticResource Caption}"
+                       Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}" />
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Focusable="False"
+                          Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVis}}">
+                <ItemsControl ItemsSource="{Binding Sections}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,0,0,6" />
+                                    <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,5,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="240" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Label}"
+                                                               Style="{StaticResource Caption}"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,0,16,0" />
+                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Grid>
+
+        <TextBlock Grid.Row="2"
+                   Text="{Binding StatusText}"
+                   Style="{StaticResource Caption}"
+                   Margin="0,8,0,0"
+                   TextTrimming="CharacterEllipsis" />
+    </Grid>
+</UserControl>

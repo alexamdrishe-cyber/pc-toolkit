@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>PcToolkit.Core</RootNamespace>
+    <AssemblyName>PcToolkit.Core</AssemblyName>
+    <!-- Тест видеокарты обращается к Direct3D 11 напрямую через указатели на функции COM. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      Оптимизация включена и в отладочной сборке: здесь живут ядра тестов процессора и памяти.
+      Без неё JIT оставляет циклы неоптимизированными, и замер в сборке из build.cmd/run.cmd
+      получался в 3–5 раз медленнее, чем в установленной программе, — баллы были несопоставимы.
+    -->
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Датчики железа. Лицензия MPL-2.0. Использует драйвер PawnIO. -->
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
+    <!-- WMI для раздела «Система». Та же версия, что у LibreHardwareMonitorLib. -->
+    <PackageReference Include="System.Management" Version="10.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Каталог настроек оптимизации: открытый файл, встраивается в сборку. -->
+    <EmbeddedResource Include="Tweaks\tweaks.json" LogicalName="PcToolkit.Core.Tweaks.tweaks.json" />
+    <!-- Правила очистки: тоже открытый файл, встраивается в сборку. -->
+    <EmbeddedResource Include="Cleanup\cleanup.json" LogicalName="PcToolkit.Core.Cleanup.cleanup.json" />
+    <!-- Рекомендации для предустановленных приложений Microsoft Store. -->
+    <EmbeddedResource Include="Apps\store-apps.json" LogicalName="PcToolkit.Core.Apps.store-apps.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PcToolkit.Core.Tests" />
+  </ItemGroup>
+
+</Project>

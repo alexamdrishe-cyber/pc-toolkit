@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PcToolkit.Core/PcToolkit.Core.csproj" />
+    <Project Path="src/PcToolkit.Desktop/PcToolkit.Desktop.csproj" />
+    <Project Path="src/PcToolkit.Service/PcToolkit.Service.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PcToolkit.Core.Tests/PcToolkit.Core.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>PcToolkit.Service</RootNamespace>
+    <AssemblyName>PcToolkit.Service</AssemblyName>
+    <!--
+      Служба собирается прямо в папку service рядом с приложением: установщик в приложении
+      берёт её оттуда и копирует в Program Files.
+    -->
+    <OutDir>$(MSBuildThisFileDirectory)..\PcToolkit.Desktop\bin\$(Configuration)\$(TargetFramework)\service\</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PcToolkit.Core\PcToolkit.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- ServiceBase для службы Windows. Та же версия, что у System.Management. -->
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>
