@@ -98,6 +98,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             DiskHealthHistory.Load(), Settings.InstallCommand, RestartAsAdminCommand);
         Disks = new DisksViewModel(diskHealth, new DiskTestViewModel(_gate, benchmarkHistory),
                                    new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand));
+        Crashes = new CrashesViewModel();
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -124,6 +125,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 new NavItemViewModel("Система", Icons.System, SystemInfo, "процессор, материнская плата, BIOS, память, диски, отчёт"),
                 new NavItemViewModel("Диски", Icons.Disk, Disks,
                     "здоровье дисков, SMART, износ и ресурс SSD, битые секторы, скорость диска, место на диске, крупные папки и файлы"),
+                new NavItemViewModel("Сбои", Icons.Crash, Crashes,
+                    "синий экран, BSOD, внезапные выключения и перезагрузки, вылеты игр, ошибки драйвера видеокарты, WHEA, журнал событий"),
             }),
             new NavGroupViewModel("Игры и скорость", new[]
             {
@@ -175,6 +178,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public CleanupViewModel Cleanup { get; }
 
     public DisksViewModel Disks { get; }
+
+    public CrashesViewModel Crashes { get; }
 
     public AppsViewModel Apps { get; }
 
@@ -363,6 +368,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     cleanup.EnsureScanned();
                 else if (value.Page is DisksViewModel disks)
                     disks.OnShown();
+                else if (value.Page is CrashesViewModel crashes)
+                    crashes.EnsureLoaded();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
             }

@@ -30,6 +30,10 @@ public static class ShellService
     public static void ShowFileInExplorer(string path) =>
         TryStart(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"") { UseShellExecute = true });
 
+    /// <summary>Открывает оснастку Windows: «Просмотр событий» (eventvwr.msc), «Диспетчер устройств» (devmgmt.msc).</summary>
+    public static void OpenSystemTool(string name) =>
+        TryStart(new ProcessStartInfo(name) { UseShellExecute = true });
+
     /// <summary>
     /// Запускает новую копию приложения с запросом прав администратора (окно UAC).
     /// Возвращает false, если пользователь отказался или запуск не удался.

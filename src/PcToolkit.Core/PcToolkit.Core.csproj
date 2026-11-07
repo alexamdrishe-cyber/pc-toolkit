@@ -18,6 +18,8 @@
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <!-- WMI для раздела «Система». Та же версия, что у LibreHardwareMonitorLib. -->
     <PackageReference Include="System.Management" Version="10.0.2" />
+    <!-- Журнал событий Windows для экрана «Сбои». Та же версия, что у ServiceController в приложении. -->
+    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
