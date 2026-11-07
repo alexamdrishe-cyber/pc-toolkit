@@ -1,6 +1,13 @@
+using System.Globalization;
+using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Input;
+using PcToolkit.Core;
+using PcToolkit.Core.Diagnostics;
+using PcToolkit.Core.Inventory;
 using PcToolkit.Core.Logging;
+using PcToolkit.Core.Platform;
 using PcToolkit.Core.Service;
 using PcToolkit.Core.Settings;
 using PcToolkit.Desktop.Mvvm;
@@ -8,7 +15,7 @@ using PcToolkit.Desktop.Services;
 
 namespace PcToolkit.Desktop.ViewModels;
 
-/// <summary>Экран «Настройки»: служба PC Toolkit и частота обновления датчиков.</summary>
+/// <summary>Экран «Настройки»: служба PC Toolkit, частота обновления датчиков, отчёт для разработчика.</summary>
 public sealed class SettingsViewModel : ObservableObject
 {
     private readonly ServiceInfo? _info;
@@ -17,6 +24,8 @@ public sealed class SettingsViewModel : ObservableObject
     private ServiceInstallState _state;
     private bool _isBusy;
     private string _resultText = "";
+    private string _reportResultText = "";
+    private bool _isReportBusy;
     private int _sensorIntervalMs = (int)AppSettings.SensorInterval(AppSettings.Load().SensorIntervalMs).TotalMilliseconds;
 
     public SettingsViewModel(ServiceInfo? info, bool isElevated, bool usingService)
@@ -30,7 +39,29 @@ public sealed class SettingsViewModel : ObservableObject
                                           () => !IsBusy && ServiceInstaller.PackageAvailable);
         UninstallCommand = new RelayCommand(() => _ = RunAsync(LaunchArguments.UninstallService),
                                             () => !IsBusy && IsInstalled);
+        CreateReportCommand = new RelayCommand(() => _ = CreateReportAsync(), () => !_isReportBusy);
+        OpenLogsCommand = new RelayCommand(() => ShellService.OpenFolder(AppLog.LogDirectory));
     }
+
+    public ICommand CreateReportCommand { get; }
+
+    public ICommand OpenLogsCommand { get; }
+
+    public string ReportContentsText =>
+        "Если что-то работает не так, соберите архив и пришлите его разработчику. Внутри: " + DeveloperReport.ContentsText +
+        ". Документов, паролей и личных файлов там нет. Архив появится на рабочем столе.";
+
+    public string ReportResultText
+    {
+        get => _reportResultText;
+        private set
+        {
+            if (SetProperty(ref _reportResultText, value))
+                OnPropertyChanged(nameof(HasReportResult));
+        }
+    }
+
+    public bool HasReportResult => _reportResultText.Length > 0;
 
     /// <summary>Частоту опроса датчиков поменяли в настройках.</summary>
     public event Action<TimeSpan>? SensorIntervalChanged;
@@ -128,6 +159,65 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     private bool NeedsUpdate => _state == ServiceInstallState.Stopped || _info is null || !_info.IsCurrent;
+
+    private async Task CreateReportAsync()
+    {
+        if (_isReportBusy)
+            return;
+
+        _isReportBusy = true;
+        RelayCommand.Refresh();
+        ReportResultText = "Собираю отчёт…";
+        try
+        {
+            string about = BuildAbout();
+            string path = await Task.Run(() =>
+            {
+                string? system = null;
+                try
+                {
+                    system = SystemInfoProvider.Collect().ToText();
+                }
+                catch (Exception ex)
+                {
+                    system = "Не удалось собрать сведения о системе: " + ex.Message;
+                }
+
+                return DeveloperReport.Create(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), about, system);
+            });
+
+            ReportResultText = $"Готово: {Path.GetFileName(path)} на рабочем столе. Пришлите этот файл разработчику.";
+            ShellService.ShowFileInExplorer(path);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Не удалось собрать отчёт для разработчика.", ex);
+            ReportResultText = "Не получилось собрать отчёт: " + ex.Message;
+        }
+        finally
+        {
+            _isReportBusy = false;
+            RelayCommand.Refresh();
+        }
+    }
+
+    private string BuildAbout()
+    {
+        EnvironmentStatus environment = EnvironmentStatus.Detect();
+        var text = new StringBuilder();
+        text.AppendLine($"PC Toolkit {typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3)} (сборка {ServiceProtocol.BuildId})");
+        text.AppendLine($"Отчёт создан: {DateTimeOffset.Now:dd.MM.yyyy HH:mm:ss zzz}");
+        text.AppendLine($"Windows: {OsInfo.FriendlyName} ({Environment.OSVersion.Version})");
+        text.AppendLine($"Работает без перезагрузки: {Formatting.Uptime(OsInfo.Uptime)}");
+        text.AppendLine($"Права администратора: {(environment.IsElevated ? "да" : "нет")}");
+        text.AppendLine($"Служба: {StatusTitle}" + (_info is null ? "" : $", протокол {_info.Version}, сборка {_info.BuildId}"));
+        text.AppendLine($"Датчики через службу: {(_usingService ? "да" : "нет")}");
+        text.AppendLine($"PawnIO: {environment.PawnIoVersion?.ToString() ?? "не установлен"}");
+        text.AppendLine($"Опрос датчиков: раз в {_sensorIntervalMs} мс");
+        text.AppendLine($"Логических процессоров: {Environment.ProcessorCount}");
+        text.AppendLine($"Язык интерфейса Windows: {CultureInfo.CurrentUICulture.Name}");
+        return text.ToString();
+    }
 
     private async Task RunAsync(string argument)
     {
