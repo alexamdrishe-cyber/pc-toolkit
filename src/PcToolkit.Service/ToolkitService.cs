@@ -1,5 +1,6 @@
 using System.ServiceProcess;
 using PcToolkit.Core.Changes;
+using PcToolkit.Core.Disks;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
 using PcToolkit.Core.Sensors;
@@ -108,8 +109,30 @@ public sealed class ServiceHost : IDisposable
             case ServiceOps.Frames:
                 return Frames(request);
 
+            case ServiceOps.Disks:
+                return Disks();
+
             default:
                 return ServiceResponse.Fail($"Неизвестная команда «{request.Op}».");
+        }
+    }
+
+    private readonly object _disksLock = new();
+
+    private ServiceResponse Disks()
+    {
+        // Только чтение: сведения о дисках и SMART. Два запроса подряд не опрашивают диски одновременно.
+        lock (_disksLock)
+        {
+            try
+            {
+                return new ServiceResponse { Ok = true, Disks = DiskHealthReader.ReadAll() };
+            }
+            catch (Exception ex)
+            {
+                AppLog.Error("Не удалось прочитать SMART дисков.", ex);
+                return ServiceResponse.Fail(ex.Message);
+            }
         }
     }
 

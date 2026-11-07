@@ -20,6 +20,7 @@ public static class DeveloperReport
     {
         "settings.json", "journal.json", "benchmarks.json", "games.json", "game-session.json",
         "fps-sessions.json", "cleanup-history.json", "removed-store-apps.json", "sensors.txt", "gpu-tuning-check.json",
+        "disk-health.json",
     };
 
     public static string DataDirectory { get; } = Path.Combine(

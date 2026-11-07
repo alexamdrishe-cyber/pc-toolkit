@@ -19,6 +19,23 @@ public static class Formatting
         return unit == 0 ? $"{value:0} {ByteUnits[unit]}" : $"{value:0.#} {ByteUnits[unit]}";
     }
 
+    /// <summary>Размер, как его пишут производители дисков: 1 ТБ = 1000 ГБ («диск на 1 ТБ», «записано 12,3 ТБ»).</summary>
+    public static string DecimalBytes(double bytes)
+    {
+        int unit = 0;
+        while (bytes >= 1000 && unit < ByteUnits.Length - 1)
+        {
+            bytes /= 1000;
+            unit++;
+        }
+
+        return unit <= 3 ? $"{bytes:0} {ByteUnits[unit]}" : $"{bytes:0.#} {ByteUnits[unit]}";
+    }
+
+    /// <summary>Целое число с разделителем разрядов, как принято в русском тексте: «12 345» (неразрывный пробел).</summary>
+    public static string Number(long value) =>
+        value.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', '\u00A0');
+
     public static string Uptime(TimeSpan time)
     {
         if (time.TotalDays >= 1)

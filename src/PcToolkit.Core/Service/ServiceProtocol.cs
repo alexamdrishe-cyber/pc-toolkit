@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using PcToolkit.Core.Changes;
+using PcToolkit.Core.Disks;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Sensors;
 
@@ -52,6 +53,9 @@ public static class ServiceOps
 
     /// <summary>Счётчик кадров: кто выводит кадры и новые кадры выбранного процесса.</summary>
     public const string Frames = "frames";
+
+    /// <summary>Физические диски и их SMART (читается только с правами администратора).</summary>
+    public const string Disks = "disks";
 }
 
 public sealed class ServiceRequest
@@ -98,6 +102,8 @@ public sealed class ServiceResponse
 
     /// <summary>Время службы в момент ответа (QPC): общее для всех процессов компьютера.</summary>
     public long? Now { get; set; }
+
+    public List<DiskHealthData>? Disks { get; set; }
 
     public static ServiceResponse Fail(string error) => new() { Ok = false, Error = error };
 }

@@ -36,6 +36,10 @@ public sealed class ServiceClient : IPrivilegedWriter, IDisposable
     public ServiceResponse? GetSensors(int timeoutMs = 2000, int? intervalMs = null) =>
         Send(new ServiceRequest { Op = ServiceOps.Sensors, IntervalMs = intervalMs }, timeoutMs);
 
+    /// <summary>Диски и SMART от службы. null — службы нет; Ok = false — служба старая и команды не знает (или ошибка).</summary>
+    public ServiceResponse? GetDisks(int timeoutMs = 20000) =>
+        Send(new ServiceRequest { Op = ServiceOps.Disks }, timeoutMs);
+
     public void Write(ChangeDefinition change, ValueSnapshot value)
     {
         ServiceResponse response = Send(new ServiceRequest { Op = ServiceOps.Write, Change = change, Value = value }, 15000)
