@@ -50,8 +50,8 @@
         <DataTemplate DataType="{x:Type vm:CleanupPreviewViewModel}">
             <views:CleanupPreviewView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type vm:DiskAnalyzerViewModel}">
-            <views:DiskAnalyzerView />
+        <DataTemplate DataType="{x:Type vm:DisksViewModel}">
+            <views:DisksView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />

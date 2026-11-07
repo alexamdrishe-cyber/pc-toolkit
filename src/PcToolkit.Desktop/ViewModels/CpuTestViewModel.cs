@@ -894,7 +894,7 @@ public sealed class CpuTestViewModel : ObservableObject
     }
 }
 
-/// <summary>Страница «Тесты»: вкладки по устройствам.</summary>
+/// <summary>Страница «Тесты»: вкладки по устройствам (замер скорости диска — на экране «Диски»).</summary>
 public sealed class BenchmarksViewModel : ObservableObject
 {
     private string _tab = "cpu";
@@ -904,7 +904,6 @@ public sealed class BenchmarksViewModel : ObservableObject
         Cpu = new CpuTestViewModel(gate, history);
         Gpu = new GpuTestViewModel(gate, history);
         Memory = new MemoryTestViewModel(gate, history);
-        Disk = new DiskTestViewModel(gate, history);
     }
 
     public CpuTestViewModel Cpu { get; }
@@ -913,15 +912,11 @@ public sealed class BenchmarksViewModel : ObservableObject
 
     public MemoryTestViewModel Memory { get; }
 
-    public DiskTestViewModel Disk { get; }
-
     public bool IsCpuTab { get => _tab == "cpu"; set => SetTab("cpu", value); }
 
     public bool IsGpuTab { get => _tab == "gpu"; set => SetTab("gpu", value); }
 
     public bool IsMemoryTab { get => _tab == "memory"; set => SetTab("memory", value); }
-
-    public bool IsDiskTab { get => _tab == "disk"; set => SetTab("disk", value); }
 
     public bool IsPlaceholderTab => false;
 
@@ -941,7 +936,6 @@ public sealed class BenchmarksViewModel : ObservableObject
         Cpu.Shutdown();
         Gpu.Shutdown();
         Memory.Shutdown();
-        Disk.Shutdown();
     }
 
     private void SetTab(string tab, bool value)
@@ -952,12 +946,9 @@ public sealed class BenchmarksViewModel : ObservableObject
         _tab = tab;
         if (tab == "memory")
             Memory.Refresh();
-        if (tab == "disk" && !Disk.IsRunning)
-            Disk.RefreshDrives();
         OnPropertyChanged(nameof(IsCpuTab));
         OnPropertyChanged(nameof(IsGpuTab));
         OnPropertyChanged(nameof(IsMemoryTab));
-        OnPropertyChanged(nameof(IsDiskTab));
         OnPropertyChanged(nameof(IsPlaceholderTab));
         OnPropertyChanged(nameof(PlaceholderText));
     }

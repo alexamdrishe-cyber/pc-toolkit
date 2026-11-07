@@ -113,7 +113,7 @@ public sealed class SizeRowViewModel
     public ICommand ShowInExplorerCommand { get; }
 }
 
-/// <summary>Экран «Место на диске»: что занимает место, по папкам и крупным файлам. Только чтение.</summary>
+/// <summary>Вкладка «Место» экрана «Диски»: что занимает место, по папкам и крупным файлам. Только чтение.</summary>
 public sealed class DiskAnalyzerViewModel : ObservableObject
 {
     private readonly bool _isElevated;

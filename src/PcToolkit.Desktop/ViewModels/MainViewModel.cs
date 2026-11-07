@@ -5,6 +5,7 @@ using PcToolkit.Core;
 using PcToolkit.Core.Benchmarks;
 using PcToolkit.Core.Changes;
 using PcToolkit.Core.Cleanup;
+using PcToolkit.Core.Disks;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
 using PcToolkit.Core.Overclock;
@@ -87,10 +88,16 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         Journal = new JournalViewModel(_engine, this);
         Cleanup = new CleanupViewModel(CleanupCatalog.LoadEmbedded(), CleanupHistory.Load(), _gate, this,
                                        _envStatus.IsElevated, RestartAsAdminCommand);
-        DiskAnalyzer = new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand);
         Apps = new AppsViewModel(_gate, this);
         BenchmarkHistory benchmarkHistory = BenchmarkHistory.Load();
         Benchmarks = new BenchmarksViewModel(_gate, benchmarkHistory);
+
+        // SMART: напрямую с правами администратора, иначе через службу.
+        var diskHealth = new DiskHealthViewModel(
+            () => DiskHealthSource.Read(_envStatus.IsElevated, _envStatus.ServiceConnected ? _service : null),
+            DiskHealthHistory.Load(), Settings.InstallCommand, RestartAsAdminCommand);
+        Disks = new DisksViewModel(diskHealth, new DiskTestViewModel(_gate, benchmarkHistory),
+                                   new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand));
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -115,17 +122,18 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 home,
                 new NavItemViewModel("Мониторинг", Icons.Monitoring, Monitoring, "датчики, температуры, графики, частоты, вентиляторы, запись CSV"),
                 new NavItemViewModel("Система", Icons.System, SystemInfo, "процессор, материнская плата, BIOS, память, диски, отчёт"),
+                new NavItemViewModel("Диски", Icons.Disk, Disks,
+                    "здоровье дисков, SMART, износ и ресурс SSD, битые секторы, скорость диска, место на диске, крупные папки и файлы"),
             }),
             new NavGroupViewModel("Игры и скорость", new[]
             {
                 new NavItemViewModel("Игры", Icons.Games, Games, "профили игр, оверлей FPS, замеры FPS до и после"),
-                new NavItemViewModel("Тесты", Icons.Tests, Benchmarks, "стресс-тест, стабильность, бенчмарк, процессор, видеокарта, память, диск"),
+                new NavItemViewModel("Тесты", Icons.Tests, Benchmarks, "стресс-тест, стабильность, бенчмарк, процессор, видеокарта, память"),
             }),
             new NavGroupViewModel("Обслуживание", new[]
             {
                 new NavItemViewModel("Оптимизация", Icons.Optimize, Optimization, "настройки Windows, твики, конфиденциальность, питание"),
                 new NavItemViewModel("Очистка", Icons.Cleanup, Cleanup, "временные файлы, кэш браузеров, кэш шейдеров, корзина"),
-                new NavItemViewModel("Место на диске", Icons.Disk, DiskAnalyzer, "крупные папки и файлы, что занимает место"),
                 new NavItemViewModel("Приложения", Icons.Apps, Apps, "удалить программу, следы, приложения Microsoft Store"),
             }),
         };
@@ -166,7 +174,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
 
     public CleanupViewModel Cleanup { get; }
 
-    public DiskAnalyzerViewModel DiskAnalyzer { get; }
+    public DisksViewModel Disks { get; }
 
     public AppsViewModel Apps { get; }
 
@@ -353,8 +361,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     Home.RefreshSideInfo();
                 if (value.Page is CleanupViewModel cleanup)
                     cleanup.EnsureScanned();
-                else if (value.Page is DiskAnalyzerViewModel analyzer)
-                    analyzer.EnsureLoaded();
+                else if (value.Page is DisksViewModel disks)
+                    disks.OnShown();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
             }
@@ -518,6 +526,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         _source.StateChanged -= OnSourceStateChanged;
         Monitoring.Dispose();
         Benchmarks.Shutdown();
+        Disks.Shutdown();
         Games.Dispose();
         AdlxGpuTuning.ShutdownShared();
         _source.Dispose();
