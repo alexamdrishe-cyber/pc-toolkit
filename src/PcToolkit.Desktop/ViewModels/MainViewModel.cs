@@ -99,6 +99,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         Disks = new DisksViewModel(diskHealth, new DiskTestViewModel(_gate, benchmarkHistory),
                                    new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand));
         Crashes = new CrashesViewModel();
+        Drivers = new DriversViewModel();
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -138,6 +139,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 new NavItemViewModel("Оптимизация", Icons.Optimize, Optimization, "настройки Windows, твики, конфиденциальность, питание"),
                 new NavItemViewModel("Очистка", Icons.Cleanup, Cleanup, "временные файлы, кэш браузеров, кэш шейдеров, корзина"),
                 new NavItemViewModel("Приложения", Icons.Apps, Apps, "удалить программу, следы, приложения Microsoft Store"),
+                new NavItemViewModel("Драйверы", Icons.Driver, Drivers,
+                    "драйвер не установлен, неизвестное устройство, драйвер видеокарты, чипсет, диспетчер устройств"),
             }),
         };
         BottomNav = new[]
@@ -180,6 +183,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public DisksViewModel Disks { get; }
 
     public CrashesViewModel Crashes { get; }
+
+    public DriversViewModel Drivers { get; }
 
     public AppsViewModel Apps { get; }
 
@@ -370,6 +375,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     disks.OnShown();
                 else if (value.Page is CrashesViewModel crashes)
                     crashes.EnsureLoaded();
+                else if (value.Page is DriversViewModel drivers)
+                    drivers.EnsureLoaded();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
             }
