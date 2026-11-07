@@ -12,7 +12,23 @@ public enum FindingSeverity
     Good,
 }
 
-public sealed record Finding(FindingSeverity Severity, string Title, string Detail);
+public sealed record Finding(FindingSeverity Severity, string Title, string Detail)
+{
+    /// <summary>Экран с подробностями: <see cref="FindingAreas"/>. null — перейти некуда.</summary>
+    public string? Area { get; init; }
+
+    /// <summary>Совет, а не проблема (XMP, старый драйвер): показывается отдельно и не влияет на итог проверки.</summary>
+    public bool IsTip { get; init; }
+}
+
+/// <summary>Куда ведёт «Подробнее» у результата проверки.</summary>
+public static class FindingAreas
+{
+    public const string Disks = "disks";
+    public const string Crashes = "crashes";
+    public const string Drivers = "drivers";
+    public const string Memory = "memory";
+}
 
 /// <summary>
 /// Быстрая проверка состояния компьютера по текущему снимку датчиков.

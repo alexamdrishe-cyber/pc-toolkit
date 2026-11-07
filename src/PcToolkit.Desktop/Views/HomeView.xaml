@@ -77,6 +77,37 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <!-- Результат проверки системы: цветная точка, что найдено, пояснение и «Подробнее», если есть куда перейти. -->
+        <DataTemplate x:Key="FindingTemplate">
+            <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
+                         Fill="{StaticResource WarningBrush}" />
+                <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                </StackPanel>
+                <Button Grid.Column="2" Style="{StaticResource LinkButton}" VerticalAlignment="Top"
+                        Command="{Binding DataContext.OpenAreaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                        CommandParameter="{Binding}"
+                        Visibility="{Binding Area, Converter={StaticResource NullToCollapsed}}">
+                    <TextBlock Text="Подробнее →" />
+                </Button>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Severity}" Value="Critical">
+                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Severity}" Value="Info">
+                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource InfoBrush}" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
@@ -242,29 +273,14 @@
                     </Grid>
 
                     <ItemsControl ItemsSource="{Binding Problems}" Margin="54,6,0,0" Focusable="False"
-                                  Visibility="{Binding HasProblems, Converter={StaticResource BoolToVis}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0,8,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="18" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                             Fill="{StaticResource WarningBrush}" />
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
-                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
-                                    </StackPanel>
-                                </Grid>
-                                <DataTemplate.Triggers>
-                                    <DataTrigger Binding="{Binding Severity}" Value="Critical">
-                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
-                                    </DataTrigger>
-                                </DataTemplate.Triggers>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                  ItemTemplate="{StaticResource FindingTemplate}"
+                                  Visibility="{Binding HasProblems, Converter={StaticResource BoolToVis}}" />
+
+                    <!-- Советы: не проблемы, а то, что может сделать компьютер быстрее -->
+                    <StackPanel Margin="54,10,0,0" Visibility="{Binding HasTips, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="СОВЕТЫ" Style="{StaticResource SectionLabel}" />
+                        <ItemsControl ItemsSource="{Binding Tips}" Focusable="False" ItemTemplate="{StaticResource FindingTemplate}" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

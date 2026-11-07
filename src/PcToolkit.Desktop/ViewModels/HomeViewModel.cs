@@ -53,6 +53,8 @@ public sealed class HomeViewModel : ObservableObject
     private EnvironmentStatus _environment;
     private HardwareSnapshot _latest = HardwareSnapshot.Empty;
     private IReadOnlyList<Finding> _problems = Array.Empty<Finding>();
+    private IReadOnlyList<Finding> _tips = Array.Empty<Finding>();
+    private readonly Dictionary<string, IReadOnlyList<Finding>> _extraFindings = new();
     private IReadOnlyList<HomeRecordingRow> _recordings = Array.Empty<HomeRecordingRow>();
     private IReadOnlyList<HomeTestRow> _tests = Array.Empty<HomeTestRow>();
     private string _statusTitle = "Проверка запустится, как только придут данные датчиков";
@@ -83,6 +85,11 @@ public sealed class HomeViewModel : ObservableObject
             navigate(_games);
         });
         OpenMonitoringCommand = new RelayCommand(() => navigate(MonitoringPage!));
+        OpenAreaCommand = new RelayCommand(p =>
+        {
+            if (p is Finding { Area: { } area })
+                OpenArea?.Invoke(area);
+        });
 
         Actions = new[]
         {
@@ -118,6 +125,12 @@ public sealed class HomeViewModel : ObservableObject
     public ICommand OpenGamesCommand { get; }
 
     public ICommand OpenMonitoringCommand { get; }
+
+    /// <summary>«Подробнее» у результата проверки: параметр — <see cref="Finding"/>.</summary>
+    public ICommand OpenAreaCommand { get; }
+
+    /// <summary>Переход к экрану по <see cref="Finding.Area"/> (задаёт главная модель).</summary>
+    public Action<string>? OpenArea { get; set; }
 
     public ICommand RecordFpsCommand => _games.ToggleRecordingCommand;
 
@@ -190,6 +203,30 @@ public sealed class HomeViewModel : ObservableObject
     }
 
     public bool HasProblems => _problems.Count > 0;
+
+    /// <summary>Советы: XMP, один модуль памяти, старый драйвер видеокарты.</summary>
+    public IReadOnlyList<Finding> Tips
+    {
+        get => _tips;
+        private set
+        {
+            if (SetProperty(ref _tips, value))
+                OnPropertyChanged(nameof(HasTips));
+        }
+    }
+
+    public bool HasTips => _tips.Count > 0;
+
+    /// <summary>
+    /// Результаты фоновых проверок (диски, сбои, драйверы, память) для «Проверки системы».
+    /// <paramref name="source"/> — откуда: новые результаты того же источника заменяют прежние.
+    /// </summary>
+    public void SetFindings(string source, IReadOnlyList<Finding> findings)
+    {
+        _extraFindings[source] = findings;
+        if (_autoCheckDone)
+            RunCheck();
+    }
 
     public string PawnIoChip => _environment.PawnIoVersion is { } version ? $"Драйвер PawnIO {version}" : "PawnIO не установлен";
 
@@ -332,14 +369,27 @@ public sealed class HomeViewModel : ObservableObject
 
     private void RunCheck()
     {
-        IReadOnlyList<Finding> findings = SystemCheck.Run(_latest, _environment);
-        Problems = findings.Where(f => f.Severity is FindingSeverity.Critical or FindingSeverity.Warning).ToList();
-        FindingSeverity worst = findings.Count == 0 ? FindingSeverity.Good : findings.Min(f => f.Severity);
+        List<Finding> findings = SystemCheck.Run(_latest, _environment)
+            .Concat(_extraFindings.Values.SelectMany(f => f))
+            .ToList();
+        Problems = findings.Where(f => !f.IsTip && f.Severity is FindingSeverity.Critical or FindingSeverity.Warning)
+                           .OrderBy(f => f.Severity)
+                           .ToList();
+        Tips = findings.Where(f => f.IsTip).ToList();
+        List<Finding> checks = findings.Where(f => !f.IsTip).ToList();
+        FindingSeverity worst = checks.Count == 0 ? FindingSeverity.Good : checks.Min(f => f.Severity);
         StatusSeverity = worst;
         if (Problems.Count == 0)
         {
+            var checkedParts = new List<string> { "температуры", "загрузка", "память", "место на дисках" };
+            if (_extraFindings.ContainsKey("disks"))
+                checkedParts.Add("здоровье дисков");
+            if (_extraFindings.ContainsKey("crashes"))
+                checkedParts.Add("сбои за неделю");
+            if (_extraFindings.ContainsKey("drivers"))
+                checkedParts.Add("драйверы");
             StatusTitle = "Серьёзных проблем не найдено";
-            StatusDetail = $"Проверка в {DateTime.Now:HH:mm}: температуры, загрузка, память и место на дисках в норме.";
+            StatusDetail = $"Проверка в {DateTime.Now:HH:mm}: {string.Join(", ", checkedParts)} — в норме.";
         }
         else
         {

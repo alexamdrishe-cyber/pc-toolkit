@@ -63,6 +63,17 @@ public sealed class SettingsViewModel : ObservableObject
 
     public bool HasReportResult => _reportResultText.Length > 0;
 
+    /// <summary>Уведомления в трее о сбоях, перегреве, дисках и месте.</summary>
+    public bool ProblemNotifications
+    {
+        get => AppSettings.Load().ProblemNotifications;
+        set
+        {
+            AppSettings.Update(s => s.ProblemNotifications = value);
+            OnPropertyChanged();
+        }
+    }
+
     /// <summary>Частоту опроса датчиков поменяли в настройках.</summary>
     public event Action<TimeSpan>? SensorIntervalChanged;
 

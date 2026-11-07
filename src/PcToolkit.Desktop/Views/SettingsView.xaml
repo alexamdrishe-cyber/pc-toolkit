@@ -97,6 +97,20 @@
                 </StackPanel>
             </Border>
 
+            <!-- Уведомления -->
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Уведомления" FontSize="15" FontWeight="SemiBold" />
+                    <CheckBox IsChecked="{Binding ProblemNotifications, Mode=TwoWay}" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Сообщать о проблемах" />
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                       Text="Уведомление в углу экрана, пока PC Toolkit открыт или работает в трее: после синего экрана или внезапного выключения, при перегреве процессора или видеокарты, если у диска появились тревожные признаки или на нём почти не осталось места. Щелчок по уведомлению открывает подробности." />
+                        </StackPanel>
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
             <!-- Отчёт для разработчика -->
             <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                 <StackPanel>

@@ -34,6 +34,12 @@ public sealed class AppSettings
     /// <summary>Подсказка «приложение работает в трее» уже показывалась.</summary>
     public bool TrayHintShown { get; set; }
 
+    /// <summary>Уведомлять в трее о проблемах: сбои, перегрев, здоровье дисков, место на диске.</summary>
+    public bool ProblemNotifications { get; set; } = true;
+
+    /// <summary>Когда журнал сбоев проверялся в прошлый раз: уведомления только о том, что случилось после.</summary>
+    public DateTime? LastCrashCheck { get; set; }
+
     /// <summary>Боковое меню свёрнуто в полоску со значками (Ctrl+B).</summary>
     public bool SidebarCollapsed { get; set; }
 

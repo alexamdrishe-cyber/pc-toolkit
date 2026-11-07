@@ -21,6 +21,7 @@ public sealed class TrayIcon : IDisposable
     private const int WmLButtonUp = 0x0202;
     private const int WmLButtonDblClk = 0x0203;
     private const int WmRButtonUp = 0x0205;
+    private const int NinBalloonUserClick = 0x0405;
     private const int NimAdd = 0;
     private const int NimModify = 1;
     private const int NimDelete = 2;
@@ -57,6 +58,9 @@ public sealed class TrayIcon : IDisposable
 
     /// <summary>Щелчок по значку (открыть окно).</summary>
     public event EventHandler? Activated;
+
+    /// <summary>Щелчок по уведомлению.</summary>
+    public event EventHandler? BalloonClicked;
 
     public void SetTooltip(string text)
     {
@@ -135,6 +139,8 @@ public sealed class TrayIcon : IDisposable
         {
             if (mouse is WmLButtonUp or WmLButtonDblClk)
                 Activated?.Invoke(this, EventArgs.Empty);
+            else if (mouse == NinBalloonUserClick)
+                BalloonClicked?.Invoke(this, EventArgs.Empty);
             else if (mouse == WmRButtonUp)
                 ShowMenu();
         }

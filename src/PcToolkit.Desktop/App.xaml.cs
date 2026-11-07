@@ -18,6 +18,7 @@ namespace PcToolkit.Desktop;
 public partial class App : Application
 {
     private SingleInstance? _instance;
+    private string? _notificationArea;
     private MainViewModel? _main;
     private TrayIcon? _tray;
     private GlobalHotkeys? _hotkeys;
@@ -200,7 +201,24 @@ public partial class App : Application
                 new TrayMenuItem("Выход", ExitApplication),
             });
             _tray.Activated += (_, _) => ShowMainWindow();
-            games.Notification += (_, text) => _tray?.ShowBalloon("PC Toolkit", text);
+            games.Notification += (_, text) =>
+            {
+                _notificationArea = null;
+                _tray?.ShowBalloon("PC Toolkit", text);
+            };
+
+            // Сбои, перегрев, диски, место: щелчок по уведомлению открывает экран с подробностями.
+            _main.HealthNotification += notification => Dispatcher.InvokeAsync(() =>
+            {
+                _notificationArea = notification.Area;
+                _tray?.ShowBalloon(notification.Title, notification.Text);
+            });
+            _tray.BalloonClicked += (_, _) =>
+            {
+                ShowMainWindow();
+                if (_notificationArea is { } area)
+                    _main?.OpenArea(area);
+            };
 
             _hotkeys = new GlobalHotkeys();
             var busy = new List<string>();

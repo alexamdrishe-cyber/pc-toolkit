@@ -5,6 +5,7 @@ using PcToolkit.Core;
 using PcToolkit.Core.Benchmarks;
 using PcToolkit.Core.Changes;
 using PcToolkit.Core.Cleanup;
+using PcToolkit.Core.Diagnostics;
 using PcToolkit.Core.Disks;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
@@ -51,6 +52,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     private int _applyCount;
     private long _applyTicks;
     private readonly HashSet<object> _visited = new();
+    private readonly HealthMonitor _health;
 
     public MainViewModel(ISensorSource source, Dispatcher dispatcher, ServiceClient? service = null, ServiceInfo? serviceInfo = null)
     {
@@ -114,7 +116,10 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         {
             MonitoringPage = Monitoring,
             RevertGpuTuningCommand = new RelayCommand(RevertGpuTuning),
+            OpenArea = OpenArea,
         };
+        _health = new HealthMonitor(Home, Disks.Health, Drivers, _gate);
+        _health.Notification += n => HealthNotification?.Invoke(n);
 
         var home = new NavItemViewModel("Главная", Icons.Home, Home, "сводка, проверка системы, последние замеры");
         NavGroups = new[]
@@ -256,6 +261,38 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public System.Collections.ObjectModel.ObservableCollection<SearchResultViewModel> SearchResults { get; } = new();
 
     /// <summary>Переход на страницу из других экранов (например, быстрые действия на главной).</summary>
+    /// <summary>Уведомление о проблеме для трея: сбой, перегрев, диск, место.</summary>
+    public event Action<HealthNotification>? HealthNotification;
+
+    /// <summary>Открывает экран с подробностями по <see cref="Finding.Area"/> или уведомлению.</summary>
+    public void OpenArea(string area)
+    {
+        switch (area)
+        {
+            case FindingAreas.Disks:
+                Disks.ShowTab("health");
+                Navigate(Disks);
+                break;
+            case "space":
+                Disks.ShowTab("space");
+                Navigate(Disks);
+                break;
+            case FindingAreas.Crashes:
+                Navigate(Crashes);
+                break;
+            case FindingAreas.Drivers:
+                Navigate(Drivers);
+                break;
+            case FindingAreas.Memory:
+                Benchmarks.IsMemoryTab = true;
+                Navigate(Benchmarks);
+                break;
+            case "monitoring":
+                Navigate(Monitoring);
+                break;
+        }
+    }
+
     public void Navigate(object page)
     {
         NavItemViewModel? item = AllNavItems.FirstOrDefault(i => ReferenceEquals(i.Page, page));
@@ -428,6 +465,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
 
         _source.Start();
         SystemInfo.EnsureLoaded();
+        // Диски, сбои, драйверы и память — в фоне, когда запуск уже позади.
+        _health.Start(TimeSpan.FromSeconds(12));
         RecoverInterruptedChanges();
         RecoverInterruptedGpuCheck();
         Journal.Refresh();
@@ -542,6 +581,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         Benchmarks.Shutdown();
         Disks.Shutdown();
         Games.Dispose();
+        _health.Dispose();
         AdlxGpuTuning.ShutdownShared();
         _source.Dispose();
         _service?.Dispose();
@@ -705,6 +745,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         // Фактическая частота: служба старой версии отдаёт снимки раз в секунду, что бы ни выбрали.
         Monitoring.SetInterval(TimeSpan.FromSeconds(_history.RecentSampleSeconds));
         Benchmarks.Update(snapshot);
+        _health.OnSnapshot(snapshot);
         Games.Update(snapshot);
 
         if (!_installingDriver)
