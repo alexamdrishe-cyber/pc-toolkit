@@ -7,6 +7,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using PcToolkit.Core;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
 using PcToolkit.Core.Sensors;
@@ -348,9 +349,9 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         }
     }
 
-    public bool HasComparison => _comparison is { B: not null };
+    public bool HasComparison => _comparison is { HasB: true };
 
-    public bool HasSingleRecording => _comparison is { B: null };
+    public bool HasSingleRecording => _comparison is { HasB: false };
 
     public bool HasNoSelection => _comparison is null;
 
@@ -996,38 +997,19 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         UpdateComparison();
     }
 
-    /// <summary>Отмечено не больше двух замеров: при третьей отметке снимается самая старая.</summary>
-    internal void OnCompareChanged(RecordingItemViewModel item)
-    {
-        if (item.IsCompared)
-        {
-            var marked = Recordings.Where(r => r.IsCompared && r != item).OrderBy(r => r.MarkedAt).ToList();
-            while (marked.Count >= 2)
-            {
-                marked[0].SetComparedSilently(false);
-                marked.RemoveAt(0);
-            }
-        }
-
-        UpdateComparison();
-    }
+    internal void OnMarksChanged() => UpdateComparison();
 
     private void ClearComparison()
     {
-        foreach (RecordingItemViewModel item in Recordings.Where(r => r.IsCompared))
-            item.SetComparedSilently(false);
+        foreach (RecordingItemViewModel item in Recordings)
+            item.ClearMarks();
         UpdateComparison();
     }
 
     private void UpdateComparison()
     {
-        var marked = Recordings.Where(r => r.IsCompared).Select(r => r.Recording).OrderBy(r => r.At).ToList();
-        Comparison = marked.Count switch
-        {
-            0 => null,
-            1 => new ComparisonData(marked[0], null),
-            _ => new ComparisonData(marked[0], marked[1]),
-        };
+        Comparison = ComparisonData.Create(Recordings.Where(r => r.IsBefore).Select(r => r.Recording),
+                                           Recordings.Where(r => r.IsAfter).Select(r => r.Recording));
     }
 
     private void SetTab(string tab, bool value)
@@ -1224,12 +1206,13 @@ public sealed class PresenterViewModel
     public ICommand AddCommand { get; }
 }
 
-/// <summary>Сохранённый замер в списке.</summary>
+/// <summary>Сохранённый замер в списке; отмечается как «до» или «после» для сравнения.</summary>
 public sealed class RecordingItemViewModel : ObservableObject
 {
     private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
     private readonly GamesViewModel _owner;
-    private bool _isCompared;
+    private bool _isBefore;
+    private bool _isAfter;
 
     public RecordingItemViewModel(FpsRecording recording, GamesViewModel owner)
     {
@@ -1251,110 +1234,245 @@ public sealed class RecordingItemViewModel : ObservableObject
 
     public bool ProfileActive => Recording.ProfileActive;
 
-    public DateTime MarkedAt { get; private set; }
-
-    public bool IsCompared
+    /// <summary>Замер в группе «до». Замер может быть только в одной группе.</summary>
+    public bool IsBefore
     {
-        get => _isCompared;
-        set
-        {
-            if (!SetProperty(ref _isCompared, value))
-                return;
-            MarkedAt = DateTime.Now;
-            _owner.OnCompareChanged(this);
-        }
+        get => _isBefore;
+        set => SetMarks(value, value ? false : _isAfter);
+    }
+
+    /// <summary>Замер в группе «после».</summary>
+    public bool IsAfter
+    {
+        get => _isAfter;
+        set => SetMarks(value ? false : _isBefore, value);
     }
 
     public ICommand DeleteCommand { get; }
 
-    internal void SetComparedSilently(bool value)
+    internal void ClearMarks()
     {
-        _isCompared = value;
-        OnPropertyChanged(nameof(IsCompared));
+        _isBefore = false;
+        _isAfter = false;
+        OnPropertyChanged(nameof(IsBefore));
+        OnPropertyChanged(nameof(IsAfter));
+    }
+
+    private void SetMarks(bool before, bool after)
+    {
+        if (before == _isBefore && after == _isAfter)
+            return;
+
+        _isBefore = before;
+        _isAfter = after;
+        OnPropertyChanged(nameof(IsBefore));
+        OnPropertyChanged(nameof(IsAfter));
+        _owner.OnMarksChanged();
     }
 }
 
-/// <summary>Один замер (B = null) или сравнение двух: A — более ранний, B — более поздний.</summary>
+/// <summary>
+/// Подробности замера или сравнение замеров «до» и «после». С каждой стороны может быть несколько прогонов одной сцены:
+/// тогда в таблице средние по прогонам, а вывод учитывает разброс между ними (<see cref="FpsComparison"/>).
+/// </summary>
 public sealed class ComparisonData
 {
     private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
 
-    public ComparisonData(FpsRecording a, FpsRecording? b)
+    private ComparisonData(IReadOnlyList<FpsRecording> a, IReadOnlyList<FpsRecording> b)
     {
         A = a;
         B = b;
-        Rows = BuildRows(a, b);
+        if (b.Count > 0)
+        {
+            Fps = FpsComparison.Compare(a.Select(r => r.AverageFps).ToList(), b.Select(r => r.AverageFps).ToList());
+            Low = FpsComparison.Compare(a.Select(r => r.Low1Fps).ToList(), b.Select(r => r.Low1Fps).ToList());
+        }
+
+        Rows = BuildRows();
     }
 
-    public FpsRecording A { get; }
+    /// <summary>null — ничего не отмечено. Если отмечены только «после», они показываются как обычный набор замеров.</summary>
+    public static ComparisonData? Create(IEnumerable<FpsRecording> before, IEnumerable<FpsRecording> after)
+    {
+        List<FpsRecording> a = before.OrderBy(r => r.At).ToList();
+        List<FpsRecording> b = after.OrderBy(r => r.At).ToList();
+        if (a.Count == 0)
+            (a, b) = (b, a);
+        return a.Count == 0 ? null : new ComparisonData(a, b);
+    }
 
-    public FpsRecording? B { get; }
+    public IReadOnlyList<FpsRecording> A { get; }
 
-    public string TitleA => $"{A.GameName} · {A.At.LocalDateTime.ToString("d MMM, HH:mm", Russian)} · {(A.ProfileActive ? "с профилем" : "без профиля")}";
+    public IReadOnlyList<FpsRecording> B { get; }
 
-    public string TitleB => B is null ? "" : $"{B.GameName} · {B.At.LocalDateTime.ToString("d MMM, HH:mm", Russian)} · {(B.ProfileActive ? "с профилем" : "без профиля")}";
+    public bool HasB => B.Count > 0;
 
-    public IReadOnlyList<double> TimelineA => A.FpsTimeline;
+    /// <summary>Сравнение среднего FPS и 1% low (только когда есть «после»).</summary>
+    public MetricChange? Fps { get; }
 
-    public IReadOnlyList<double> TimelineB => B?.FpsTimeline ?? (IReadOnlyList<double>)Array.Empty<double>();
+    public MetricChange? Low { get; }
+
+    public string TitleA => (HasB ? "До: " : "") + Describe(A);
+
+    public string TitleB => HasB ? "После: " + Describe(B) : "";
+
+    public string HeaderA => HasB ? "ДО" : A.Count > 1 ? "СРЕДНЕЕ" : "ЗАМЕР";
+
+    public string TimelineCaption => A.Count > 1 || B.Count > 1 ? "FPS ПО СЕКУНДАМ — ПЕРВЫЙ ЗАМЕР С КАЖДОЙ СТОРОНЫ" : "FPS ПО СЕКУНДАМ";
+
+    public IReadOnlyList<double> TimelineA => A[0].FpsTimeline;
+
+    public IReadOnlyList<double> TimelineB => HasB ? B[0].FpsTimeline : Array.Empty<double>();
 
     public IReadOnlyList<ComparisonRow> Rows { get; }
+
+    /// <summary>Разброс среднего FPS между прогонами — насколько повторяются замеры одной сцены.</summary>
+    public string SpreadText
+    {
+        get
+        {
+            double? spreadA = FpsComparison.Spread(A.Select(r => r.AverageFps).ToList());
+            double? spreadB = FpsComparison.Spread(B.Select(r => r.AverageFps).ToList());
+            if (spreadA is null && spreadB is null)
+                return "";
+
+            var parts = new List<string>();
+            if (spreadA is double sa)
+                parts.Add(HasB ? $"до — {Number(sa)} %" : $"{Number(sa)} %");
+            if (spreadB is double sb)
+                parts.Add($"после — {Number(sb)} %");
+            string text = "Разброс среднего FPS между прогонами: " + string.Join(", ", parts) + ".";
+            if (Math.Max(spreadA ?? 0, spreadB ?? 0) > 5)
+                text += " Прогоны заметно отличаются: для точного сравнения записывайте одну и ту же сцену одинаковое время.";
+            return text;
+        }
+    }
+
+    public bool HasSpread => SpreadText.Length > 0;
 
     public string Verdict
     {
         get
         {
-            if (B is null)
-                return A.ProfileText.Length > 0 ? "Профиль во время замера: " + A.ProfileText : "";
+            if (!HasB)
+            {
+                if (A.Count > 1)
+                    return $"Отмечено {A.Count} {Formatting.Plural(A.Count, "замер", "замера", "замеров")} — в таблице средние по ним. " +
+                           "Отметьте замеры «После», чтобы сравнить.";
+                return A[0].ProfileText.Length > 0 ? "Профиль во время замера: " + A[0].ProfileText : "";
+            }
 
-            double avg = Change(A.AverageFps, B.AverageFps);
-            double low = Change(A.Low1Fps, B.Low1Fps);
-            string Describe(double change) => Math.Abs(change) < 3 ? "почти не изменился" : change > 0 ? $"вырос на {change:0.#} %" : $"упал на {-change:0.#} %";
-            return $"Во втором замере средний FPS {Describe(avg)}, 1% low {Describe(low)}. " +
-                   "Разница меньше 3 % обычно в пределах погрешности: сцены в игре никогда не совпадают полностью.";
+            var parts = new List<string> { Sentence("Средний FPS", Fps!), Sentence("1% low", Low!) };
+            if (!Fps!.HasInterval)
+            {
+                parts.Add("По одному прогону настоящую разницу не отличить от случайной: сцены в игре не повторяются точно. " +
+                          $"Запишите по {FpsComparison.RecommendedRuns} прогона одной сцены «до» и «после» и отметьте их все — " +
+                          "тогда программа учтёт разброс и скажет, выходит ли разница за погрешность.");
+            }
+            else if (Fps.Verdict == ChangeVerdict.Unclear || Low!.Verdict == ChangeVerdict.Unclear)
+            {
+                parts.Add("Чтобы вывод стал точнее, запишите ещё 2–3 прогона с каждой стороны на той же сцене.");
+            }
+
+            if (A.Concat(B).Select(r => r.GameId).Distinct().Count() > 1)
+                parts.Add("Внимание: в сравнении разные игры.");
+            return string.Join(" ", parts);
         }
     }
 
-    private static double Change(double before, double after) => before > 0 ? (after - before) / before * 100 : 0;
+    private static string Sentence(string metric, MetricChange c)
+    {
+        string direction = c.ChangePercent > 0 ? "вырос" : "упал";
+        if (!c.HasInterval)
+        {
+            return c.Verdict == ChangeVerdict.Same
+                ? $"{metric} почти не изменился ({Signed(c.ChangePercent)} %)."
+                : $"{metric} {direction} на {Number(Math.Abs(c.ChangePercent))} %.";
+        }
 
-    private static IReadOnlyList<ComparisonRow> BuildRows(FpsRecording a, FpsRecording? b)
+        string range = $"от {Signed(c.LowPercent!.Value)} до {Signed(c.HighPercent!.Value)} %";
+        return c.Verdict switch
+        {
+            ChangeVerdict.Same => $"{metric} не изменился: с учётом погрешности разница {range}.",
+            ChangeVerdict.Unclear => $"{metric}: {Signed(c.ChangePercent)} %, но прогоны слишком разные — с учётом погрешности разница {range}, " +
+                                     "так что нельзя сказать, есть ли она.",
+            _ => $"{metric} {direction} на {Number(Math.Abs(c.ChangePercent))} % — это больше погрешности (с её учётом {range}).",
+        };
+    }
+
+    private static string Number(double value) => value.ToString("0.#", Russian);
+
+    private static string Signed(double value)
+    {
+        string text = Number(Math.Abs(value));
+        return text == "0" ? "0" : (value > 0 ? "+" : "−") + text;
+    }
+
+    private static string Describe(IReadOnlyList<FpsRecording> runs)
+    {
+        FpsRecording first = runs[0];
+        string game = runs.Select(r => r.GameName).Distinct().Count() == 1 ? first.GameName : "разные игры";
+        string profile = runs.All(r => r.ProfileActive) ? "с профилем" : runs.Any(r => r.ProfileActive) ? "с профилем и без" : "без профиля";
+        if (runs.Count == 1)
+            return $"{game} · {first.At.LocalDateTime.ToString("d MMM, HH:mm", Russian)} · {profile}";
+
+        DateTime from = first.At.LocalDateTime;
+        DateTime to = runs[^1].At.LocalDateTime;
+        string period = from.Date == to.Date
+            ? $"{from.ToString("d MMM, HH:mm", Russian)}–{to.ToString("HH:mm", Russian)}"
+            : $"{from.ToString("d MMM", Russian)} – {to.ToString("d MMM", Russian)}";
+        return $"{game} · {runs.Count} {Formatting.Plural(runs.Count, "замер", "замера", "замеров")}, {period} · {profile}";
+    }
+
+    private IReadOnlyList<ComparisonRow> BuildRows()
     {
         var rows = new List<ComparisonRow>
         {
-            Row("Средний FPS", a.AverageFps, b?.AverageFps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
-            Row("1% low", a.Low1Fps, b?.Low1Fps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
-            Row("0,1% low", a.Low01Fps, b?.Low01Fps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
-            Row("Время кадра, среднее", a.AverageFrameMs, b?.AverageFrameMs, higherIsBetter: false, v => v.ToString("0.0", Russian) + " мс"),
-            Row("Время кадра, 99%", a.P99FrameMs, b?.P99FrameMs, higherIsBetter: false, v => v.ToString("0.0", Russian) + " мс"),
-            Row("Кадров дольше 50 мс", a.LongFrames, b?.LongFrames, higherIsBetter: false, v => v.ToString("0", Russian)),
-            Row("Длительность", a.Seconds, b?.Seconds, null, v => GamesViewModel.Duration(v)),
+            Row("Средний FPS", r => r.AverageFps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
+            Row("1% low", r => r.Low1Fps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
+            Row("0,1% low", r => r.Low01Fps, higherIsBetter: true, v => GamesViewModel.Fps(v)),
+            Row("Время кадра, среднее", r => r.AverageFrameMs, higherIsBetter: false, v => v.ToString("0.0", Russian) + " мс"),
+            Row("Время кадра, 99%", r => r.P99FrameMs, higherIsBetter: false, v => v.ToString("0.0", Russian) + " мс"),
+            Row("Кадров дольше 50 мс", r => r.LongFrames, higherIsBetter: false, v => v.ToString("0.#", Russian)),
+            Row("Длительность", r => r.Seconds, null, v => GamesViewModel.Duration(v)),
         };
 
-        if (a.CpuLoad is not null || b?.CpuLoad is not null)
-            rows.Add(Row("Загрузка CPU", a.CpuLoad, b?.CpuLoad, null, v => v.ToString("0", Russian) + " %"));
-        if (a.GpuLoad is not null || b?.GpuLoad is not null)
-            rows.Add(Row("Загрузка GPU", a.GpuLoad, b?.GpuLoad, null, v => v.ToString("0", Russian) + " %"));
-        if (a.GpuTemperatureMax is not null || b?.GpuTemperatureMax is not null)
-            rows.Add(Row("Температура GPU, макс.", a.GpuTemperatureMax, b?.GpuTemperatureMax, false, v => v.ToString("0", Russian) + " °C"));
-        if (a.CpuTemperatureMax is not null || b?.CpuTemperatureMax is not null)
-            rows.Add(Row("Температура CPU, макс.", a.CpuTemperatureMax, b?.CpuTemperatureMax, false, v => v.ToString("0", Russian) + " °C"));
-        if (a.GpuPower is not null || b?.GpuPower is not null)
-            rows.Add(Row("Мощность GPU, средняя", a.GpuPower, b?.GpuPower, null, v => v.ToString("0", Russian) + " Вт"));
+        List<FpsRecording> all = A.Concat(B).ToList();
+        if (all.Any(r => r.CpuLoad is not null))
+            rows.Add(Row("Загрузка CPU", r => r.CpuLoad, null, v => v.ToString("0", Russian) + " %"));
+        if (all.Any(r => r.GpuLoad is not null))
+            rows.Add(Row("Загрузка GPU", r => r.GpuLoad, null, v => v.ToString("0", Russian) + " %"));
+        if (all.Any(r => r.GpuTemperatureMax is not null))
+            rows.Add(Row("Температура GPU, макс.", r => r.GpuTemperatureMax, higherIsBetter: false, v => v.ToString("0", Russian) + " °C"));
+        if (all.Any(r => r.CpuTemperatureMax is not null))
+            rows.Add(Row("Температура CPU, макс.", r => r.CpuTemperatureMax, higherIsBetter: false, v => v.ToString("0", Russian) + " °C"));
+        if (all.Any(r => r.GpuPower is not null))
+            rows.Add(Row("Мощность GPU, средняя", r => r.GpuPower, null, v => v.ToString("0", Russian) + " Вт"));
         return rows;
     }
 
-    private static ComparisonRow Row(string name, double? a, double? b, bool? higherIsBetter, Func<double, string> format)
+    private ComparisonRow Row(string name, Func<FpsRecording, double?> value, bool? higherIsBetter, Func<double, string> format)
     {
-        string aText = a is double av ? format(av) : "—";
-        string bText = b is double bv ? format(bv) : "—";
+        List<double> a = A.Select(value).OfType<double>().ToList();
+        List<double> b = B.Select(value).OfType<double>().ToList();
+        string aText = a.Count > 0 ? format(a.Average()) : "—";
+        string bText = !HasB ? "" : b.Count > 0 ? format(b.Average()) : "—";
         string delta = "";
         string kind = "Same";
-        if (a is double x && b is double y && x > 0)
+        if (a.Count > 0 && b.Count > 0 && a.Average() > 0)
         {
-            double change = (y - x) / x * 100;
-            delta = (change >= 0 ? "+" : "−") + Math.Abs(change).ToString("0.#", Russian) + " %";
-            if (higherIsBetter is bool higher && Math.Abs(change) >= 3)
-                kind = (change > 0) == higher ? "Better" : "Worse";
+            MetricChange change = FpsComparison.Compare(a, b, higherIsBetter ?? true);
+            delta = Signed(change.ChangePercent) + " %";
+            if (higherIsBetter is not null)
+            {
+                kind = change.Verdict switch
+                {
+                    ChangeVerdict.Better => "Better",
+                    ChangeVerdict.Worse => "Worse",
+                    _ => "Same",
+                };
+            }
         }
 
         return new ComparisonRow(name, aText, bText, delta, kind);

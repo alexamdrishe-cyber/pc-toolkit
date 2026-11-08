@@ -406,7 +406,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="СОХРАНЁННЫЕ ЗАМЕРЫ — отметьте один или два" Style="{StaticResource SectionLabel}" Margin="16,12,16,8" />
+                        <TextBlock Text="СОХРАНЁННЫЕ ЗАМЕРЫ — отметьте «до» и «после»" Style="{StaticResource SectionLabel}" Margin="16,12,16,8" />
                         <TextBlock Grid.Row="1" Text="Замеров пока нет." Style="{StaticResource Caption}" HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Visibility="{Binding HasRecordings, Converter={StaticResource InverseBoolToVis}}" />
                         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Focusable="False">
@@ -416,14 +416,19 @@
                                         <Border x:Name="Row" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="14,8" Background="Transparent">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="30" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <CheckBox IsChecked="{Binding IsCompared, Mode=TwoWay}" VerticalAlignment="Center" ToolTip="Сравнить" />
-                                                <StackPanel Grid.Column="1" Margin="0,0,8,0">
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,4,0">
+                                                    <ToggleButton Content="До" IsChecked="{Binding IsBefore, Mode=TwoWay}" Style="{StaticResource ChipToggle}"
+                                                                  ToolTip="Замер «до» изменения (например, без профиля)" />
+                                                    <ToggleButton Content="После" IsChecked="{Binding IsAfter, Mode=TwoWay}" Style="{StaticResource ChipToggle}" Margin="4,0,0,0"
+                                                                  ToolTip="Замер «после» изменения (например, с профилем)" />
+                                                </StackPanel>
+                                                <StackPanel Margin="0,0,8,0">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="210" />
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="150" />
                                                         <Border Style="{StaticResource Badge}" Margin="8,0,0,0" Background="{StaticResource AccentSoftBrush}"
                                                                 Visibility="{Binding ProfileActive, Converter={StaticResource BoolToVis}}">
                                                             <TextBlock Text="профиль" Style="{StaticResource BadgeText}" Foreground="{StaticResource AccentBrush}" />
@@ -455,7 +460,7 @@
                     <Grid>
                         <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" FontSize="13" VerticalAlignment="Top"
                                    Visibility="{Binding HasNoSelection, Converter={StaticResource BoolToVis}}"
-                                   Text="Отметьте один замер, чтобы посмотреть подробности, или два — чтобы сравнить их, например без профиля и с профилем, или до и после обновления драйвера." />
+                                   Text="Отметьте замер кнопкой «До», чтобы посмотреть подробности, или замеры «До» и «После», чтобы сравнить их: например без профиля и с профилем или до и после обновления драйвера. Для надёжного вывода запишите по 3 прогона одной сцены с каждой стороны и отметьте их все — программа учтёт разброс между прогонами и скажет, выходит ли разница за погрешность." />
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False"
                                       Visibility="{Binding HasNoSelection, Converter={StaticResource InverseBoolToVis}}">
@@ -476,7 +481,7 @@
                                             Command="{Binding DataContext.ClearComparisonCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 </Grid>
 
-                                <TextBlock Text="FPS ПО СЕКУНДАМ" Style="{StaticResource SectionLabel}" Margin="0,14,0,4" />
+                                <TextBlock Text="{Binding TimelineCaption}" Style="{StaticResource SectionLabel}" Margin="0,14,0,4" />
                                 <controls:Sparkline Values="{Binding TimelineA}" Height="140" Unit="FPS" Capacity="0" SampleSeconds="1"
                                                     Stroke="{StaticResource AccentBrush}" GridBrush="{StaticResource LineBrush}" EmptyText="нет данных" />
                                 <controls:Sparkline Values="{Binding TimelineB}" Height="140" Unit="FPS" Capacity="0" SampleSeconds="1" Margin="0,8,0,0"
@@ -491,8 +496,8 @@
                                         <ColumnDefinition Width="90" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="ПОКАЗАТЕЛЬ" Style="{StaticResource SectionLabel}" />
-                                    <TextBlock Grid.Column="1" Text="ЗАМЕР 1" Style="{StaticResource SectionLabel}" HorizontalAlignment="Right" />
-                                    <TextBlock Grid.Column="2" Text="ЗАМЕР 2" Style="{StaticResource SectionLabel}" HorizontalAlignment="Right"
+                                    <TextBlock Grid.Column="1" Text="{Binding HeaderA}" Style="{StaticResource SectionLabel}" HorizontalAlignment="Right" />
+                                    <TextBlock Grid.Column="2" Text="ПОСЛЕ" Style="{StaticResource SectionLabel}" HorizontalAlignment="Right"
                                                Visibility="{Binding DataContext.HasComparison, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}" />
                                     <TextBlock Grid.Column="3" Text="РАЗНИЦА" Style="{StaticResource SectionLabel}" HorizontalAlignment="Right"
                                                Visibility="{Binding DataContext.HasComparison, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}" />
@@ -519,7 +524,9 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <TextBlock Text="{Binding Verdict}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                                <TextBlock Text="{Binding Verdict}" TextWrapping="Wrap" LineHeight="20" Margin="0,14,0,0" />
+                                <TextBlock Text="{Binding SpreadText}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                           Visibility="{Binding HasSpread, Converter={StaticResource BoolToVis}}" />
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
