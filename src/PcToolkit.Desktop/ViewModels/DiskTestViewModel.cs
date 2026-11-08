@@ -6,6 +6,7 @@ using PcToolkit.Core.Benchmarks;
 using PcToolkit.Core.Benchmarks.Disk;
 using PcToolkit.Core.Inventory;
 using PcToolkit.Core.Logging;
+using PcToolkit.Core.Storage;
 using PcToolkit.Desktop.Mvvm;
 
 namespace PcToolkit.Desktop.ViewModels;
@@ -117,7 +118,7 @@ public sealed class DiskTestViewModel : ObservableObject
         StartCommand = new RelayCommand(() => _ = RunAsync(), () => !IsRunning && Drives.Any(d => d.IsSelected));
         StopCommand = new RelayCommand(() => _cancel?.Cancel(), () => IsRunning);
 
-        RefreshDrives();
+        // Список дисков — при открытии вкладки и в фоне: сетевой или «уснувший» USB-диск может отвечать секундами.
         if (_history.Disk.FirstOrDefault() is { } last)
             Show(last);
     }
@@ -216,31 +217,30 @@ public sealed class DiskTestViewModel : ObservableObject
         private set => SetProperty(ref _classSummary, value);
     }
 
-    /// <summary>Перечитывает список дисков (при открытии вкладки: могли подключить флешку).</summary>
-    public void RefreshDrives()
+    /// <summary>Перечитывает список дисков (при открытии вкладки: могли подключить флешку). Чтение — в фоне.</summary>
+    public void RefreshDrives() => _ = RefreshDrivesAsync();
+
+    private int _driveRefresh;
+
+    private async Task RefreshDrivesAsync()
     {
+        int refresh = ++_driveRefresh;
+        IReadOnlyList<DriveSpaceInfo> drives = await Task.Run(() => DriveSpace.Read(includeExternal: true));
+        if (refresh != _driveRefresh)
+            return; // пока читали, начали новое чтение
+
         string? selected = Drives.FirstOrDefault(d => d.IsSelected)?.Root;
         string systemRoot = Path.GetPathRoot(Environment.SystemDirectory) ?? "C:\\";
         var list = new List<DriveOptionViewModel>();
-        foreach (DriveInfo drive in DriveInfo.GetDrives())
+        foreach (DriveSpaceInfo drive in drives)
         {
-            try
-            {
-                if (!drive.IsReady || drive.DriveType is not (DriveType.Fixed or DriveType.Removable))
-                    continue;
-
-                string label = drive.VolumeLabel.Length > 0 ? drive.VolumeLabel : drive.DriveType == DriveType.Removable ? "Съёмный диск" : "Локальный диск";
-                string title = $"{drive.Name.TrimEnd('\\')} {label}";
-                string details = $"свободно {Formatting.Bytes((ulong)drive.AvailableFreeSpace)} из {Formatting.Bytes((ulong)drive.TotalSize)}";
-                bool isSelected = selected is not null
-                    ? string.Equals(selected, drive.Name, StringComparison.OrdinalIgnoreCase)
-                    : string.Equals(systemRoot, drive.Name, StringComparison.OrdinalIgnoreCase);
-                list.Add(new DriveOptionViewModel(drive.Name, title, details, isSelected));
-            }
-            catch (IOException)
-            {
-                // Диск отключили во время чтения — пропускаем.
-            }
+            string label = drive.Label.Length > 0 ? drive.Label : drive.Type == DriveType.Removable ? "Съёмный диск" : "Локальный диск";
+            string title = $"{drive.Letter} {label}";
+            string details = $"свободно {Formatting.Bytes((ulong)drive.AvailableBytes)} из {Formatting.Bytes((ulong)drive.TotalBytes)}";
+            bool isSelected = selected is not null
+                ? string.Equals(selected, drive.Root, StringComparison.OrdinalIgnoreCase)
+                : string.Equals(systemRoot, drive.Root, StringComparison.OrdinalIgnoreCase);
+            list.Add(new DriveOptionViewModel(drive.Root, title, details, isSelected));
         }
 
         if (list.Count > 0 && !list.Any(d => d.IsSelected))
@@ -332,23 +332,7 @@ public sealed class DiskTestViewModel : ObservableObject
             _slot?.Dispose();
             _slot = null;
             IsRunning = false;
-            RefreshDrivesFreeSpace();
-        }
-    }
-
-    private void RefreshDrivesFreeSpace()
-    {
-        foreach (DriveOptionViewModel drive in Drives)
-        {
-            try
-            {
-                var info = new DriveInfo(drive.Root);
-                string free = $"свободно {Formatting.Bytes((ulong)info.AvailableFreeSpace)} из {Formatting.Bytes((ulong)info.TotalSize)}";
-                drive.Details = drive.Model.Length > 0 ? $"{drive.Model} · {free}" : free;
-            }
-            catch (IOException)
-            {
-            }
+            RefreshDrives(); // свободное место после теста — тоже в фоне
         }
     }
 

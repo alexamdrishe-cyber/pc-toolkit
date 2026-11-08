@@ -130,6 +130,24 @@ public static class HealthFindings
     }
 
     /// <summary>Память на базовой частоте (не включён XMP/EXPO) или один модуль (одноканальный режим).</summary>
+    /// <summary>Мало места на внутренних дисках (внешние в фоновой проверке не читаются, чтобы их не будить).</summary>
+    public static IEnumerable<Finding> FromDriveSpace(IEnumerable<Storage.DriveSpaceInfo> drives)
+    {
+        foreach (Storage.DriveSpaceInfo drive in drives)
+        {
+            if (drive.TotalBytes <= 0 || drive.FreePercent >= Thresholds.DiskFreeWarningPercent)
+                continue;
+
+            yield return new Finding(FindingSeverity.Warning,
+                $"Мало места на диске {drive.Letter}: свободно {drive.FreePercent:0} %",
+                $"Свободно {Formatting.Bytes((ulong)drive.AvailableBytes)} из {Formatting.Bytes((ulong)drive.TotalBytes)}. " +
+                "Windows и игры работают хуже, когда диск почти заполнен.")
+            {
+                Area = FindingAreas.Space,
+            };
+        }
+    }
+
     public static IEnumerable<Finding> FromMemory(MemoryConfig? config)
     {
         if (config is not { SpeedMts: > 0 } c)

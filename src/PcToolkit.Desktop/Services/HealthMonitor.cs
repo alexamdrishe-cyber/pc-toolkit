@@ -135,7 +135,7 @@ public sealed class HealthMonitor : IDisposable
                 Notify(notification);
             AppSettings.Update(s => s.LastCrashCheck = now);
 
-            CheckDiskSpace();
+            await CheckDiskSpaceAsync();
 
             await Task.Run(_thermal.Save);
             Finding? warmer = _thermal.CheckTrend(DateOnly.FromDateTime(now));
@@ -180,44 +180,31 @@ public sealed class HealthMonitor : IDisposable
         Notify(new HealthNotification($"{title}: {t:0} °C", $"Температура держится выше {limit:0} °C. {advice}", "monitoring"));
     }
 
-    private void CheckDiskSpace()
+    /// <summary>
+    /// Место на внутренних дисках — в фоне: раздел может отвечать секундами (сетевой, «уснувший» USB-диск),
+    /// и окно в это время не должно замирать. Внешние диски не читаются, чтобы не будить их каждые полчаса.
+    /// </summary>
+    private async Task CheckDiskSpaceAsync()
     {
-        DriveInfo[] drives;
-        try
-        {
-            drives = DriveInfo.GetDrives();
-        }
-        catch (IOException)
-        {
-            return;
-        }
+        IReadOnlyList<Core.Storage.DriveSpaceInfo> drives = await Task.Run(() => Core.Storage.DriveSpace.Read(includeExternal: false));
+        _home.SetFindings("space", HealthFindings.FromDriveSpace(drives).ToList());
 
-        foreach (DriveInfo drive in drives)
+        foreach (Core.Storage.DriveSpaceInfo drive in drives)
         {
-            try
+            if (drive.TotalBytes <= 0)
+                continue;
+            if (drive.FreePercent >= LowSpacePercent)
             {
-                if (drive.DriveType != DriveType.Fixed || !drive.IsReady || drive.TotalSize <= 0)
-                    continue;
-
-                double free = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
-                string name = drive.Name.TrimEnd('\\');
-                if (free >= LowSpacePercent)
-                {
-                    _lowSpaceNotified.Remove(name);
-                    continue;
-                }
-
-                if (!_lowSpaceNotified.Add(name))
-                    continue;
-
-                Notify(new HealthNotification($"Почти нет места на диске {name}",
-                    $"Свободно {Formatting.Bytes((ulong)drive.AvailableFreeSpace)} ({free:0} %). Windows и игры работают хуже, когда диск заполнен. " +
-                    "Что занимает место — «Диски» → «Место», освободить — «Очистка».", "space"));
+                _lowSpaceNotified.Remove(drive.Letter);
+                continue;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                // Диск отключили во время проверки.
-            }
+
+            if (!_lowSpaceNotified.Add(drive.Letter))
+                continue;
+
+            Notify(new HealthNotification($"Почти нет места на диске {drive.Letter}",
+                $"Свободно {Formatting.Bytes((ulong)drive.AvailableBytes)} ({drive.FreePercent:0} %). Windows и игры работают хуже, когда диск заполнен. " +
+                "Что занимает место — «Диски» → «Место», освободить — «Очистка».", "space"));
         }
     }
 

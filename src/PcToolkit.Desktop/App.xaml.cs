@@ -114,9 +114,12 @@ public partial class App : Application
         ISensorSource source = useService
             ? new ServiceSensorSource(service)
             : new LhmSensorSource(TimeSpan.FromSeconds(1));
+        long beforeModels = SinceStartMs;
         _main = new MainViewModel(source, Dispatcher, serviceInfo is { IsCompatible: true } ? service : null, serviceInfo);
+        long beforeWindow = SinceStartMs;
         var window = new MainWindow { DataContext = _main, Icon = AppIconFactory.Render(64) };
-        AppLog.Info($"Интерфейс собран через {SinceStartMs} мс после запуска.");
+        AppLog.Info($"Интерфейс собран через {SinceStartMs} мс после запуска " +
+                    $"(экраны {beforeWindow - beforeModels} мс, окно {SinceStartMs - beforeWindow} мс).");
         window.ContentRendered += (_, _) => AppLog.Info($"Окно на экране через {SinceStartMs} мс после запуска.");
         MainWindow = window;
         window.Closing += OnMainWindowClosing;

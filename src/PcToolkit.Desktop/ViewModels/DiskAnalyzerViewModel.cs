@@ -13,17 +13,16 @@ public sealed class DriveChoiceViewModel : ObservableObject
 {
     private bool _isSelected;
 
-    public DriveChoiceViewModel(DriveInfo drive, Action<DriveChoiceViewModel> selected)
+    public DriveChoiceViewModel(DriveSpaceInfo drive, Action<DriveChoiceViewModel> selected)
     {
-        RootPath = drive.RootDirectory.FullName;
-        string letter = RootPath.TrimEnd('\\');
-        string label = string.IsNullOrWhiteSpace(drive.VolumeLabel) ? "Локальный диск" : drive.VolumeLabel;
-        Title = $"{label} ({letter})";
-        TotalBytes = drive.TotalSize;
-        UsedBytes = drive.TotalSize - drive.TotalFreeSpace;
+        RootPath = drive.Root;
+        string label = string.IsNullOrWhiteSpace(drive.Label) ? "Локальный диск" : drive.Label;
+        Title = $"{label} ({drive.Letter})";
+        TotalBytes = drive.TotalBytes;
+        UsedBytes = drive.TotalBytes - drive.FreeBytes;
         UsedFraction = TotalBytes > 0 ? (double)UsedBytes / TotalBytes : 0;
         Details = $"Занято {Formatting.Bytes((ulong)UsedBytes)} из {Formatting.Bytes((ulong)TotalBytes)}, " +
-                  $"свободно {Formatting.Bytes((ulong)drive.TotalFreeSpace)}";
+                  $"свободно {Formatting.Bytes((ulong)drive.FreeBytes)}";
         _selected = selected;
     }
 
@@ -135,7 +134,7 @@ public sealed class DiskAnalyzerViewModel : ObservableObject
         ScanCommand = new RelayCommand(() => _ = ScanAsync(), () => !IsScanning && SelectedDrive is not null);
         CancelCommand = new RelayCommand(() => _cancel?.Cancel(), () => IsScanning);
         UpCommand = new RelayCommand(() => Navigate(_current?.Parent), () => _current?.Parent is not null);
-        RefreshDrivesCommand = new RelayCommand(LoadDrives, () => !IsScanning);
+        RefreshDrivesCommand = new RelayCommand(() => _ = LoadDrivesAsync(), () => !IsScanning);
     }
 
     public IReadOnlyList<DriveChoiceViewModel> Drives
@@ -237,30 +236,33 @@ public sealed class DiskAnalyzerViewModel : ObservableObject
         private set => SetProperty(ref _largestFiles, value);
     }
 
-    /// <summary>Список дисков читается при первом открытии экрана.</summary>
+    /// <summary>Список дисков читается при первом открытии экрана — в фоне: сетевой или «уснувший» USB-диск отвечает секундами.</summary>
     public void EnsureLoaded()
     {
-        if (Drives.Count == 0)
-            LoadDrives();
+        if (Drives.Count == 0 && !_loadingDrives)
+            _ = LoadDrivesAsync();
     }
 
-    private void LoadDrives()
+    private bool _loadingDrives;
+
+    private async Task LoadDrivesAsync()
     {
-        string? previous = SelectedDrive?.RootPath;
-        var drives = new List<DriveChoiceViewModel>();
-        foreach (DriveInfo drive in DriveInfo.GetDrives())
+        if (_loadingDrives)
+            return;
+
+        _loadingDrives = true;
+        IReadOnlyList<DriveSpaceInfo> found;
+        try
         {
-            try
-            {
-                if (drive.IsReady && drive.DriveType is DriveType.Fixed or DriveType.Removable)
-                    drives.Add(new DriveChoiceViewModel(drive, d => SelectedDrive = d));
-            }
-            catch (IOException ex)
-            {
-                AppLog.Warn($"Диск {drive.Name} недоступен.", ex);
-            }
+            found = await Task.Run(() => DriveSpace.Read(includeExternal: true));
+        }
+        finally
+        {
+            _loadingDrives = false;
         }
 
+        string? previous = SelectedDrive?.RootPath;
+        var drives = found.Select(d => new DriveChoiceViewModel(d, choice => SelectedDrive = choice)).ToList();
         Drives = drives;
         DriveChoiceViewModel? select = drives.FirstOrDefault(d => d.RootPath == previous)
                                        ?? drives.FirstOrDefault(d => d.RootPath.StartsWith(

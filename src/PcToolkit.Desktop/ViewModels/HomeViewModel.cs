@@ -381,7 +381,9 @@ public sealed class HomeViewModel : ObservableObject
         StatusSeverity = worst;
         if (Problems.Count == 0)
         {
-            var checkedParts = new List<string> { "температуры", "загрузка", "память", "место на дисках" };
+            var checkedParts = new List<string> { "температуры", "загрузка", "память" };
+            if (_extraFindings.ContainsKey("space"))
+                checkedParts.Add("место на дисках");
             if (_extraFindings.ContainsKey("disks"))
                 checkedParts.Add("здоровье дисков");
             if (_extraFindings.ContainsKey("crashes"))

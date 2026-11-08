@@ -59,6 +59,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         _source = source;
         _dispatcher = dispatcher;
         _service = service;
+        var steps = new StartupSteps();
         EnvironmentStatus detected = EnvironmentStatus.Detect();
         // Служба нужна, только когда у самого приложения нет прав администратора.
         _envStatus = detected with { ServiceConnected = service is not null && !detected.IsElevated };
@@ -78,6 +79,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             Monitoring.SetInterval(interval);
         };
         SystemInfo = new SystemInfoViewModel();
+        steps.Done("настройки, мониторинг, система");
 
         // Движок изменений — единственное место, которое меняет систему.
         // Параметры, которым нужны права администратора, без прав записываются через службу.
@@ -89,9 +91,12 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         TweakCatalog catalog = TweakCatalog.LoadEmbedded(factory);
         Optimization = new OptimizationViewModel(_engine, catalog, factory, this, _envStatus.HasFullSensors, RestartAsAdminCommand);
         Journal = new JournalViewModel(_engine, this);
+        steps.Done("оптимизация и журнал");
         Cleanup = new CleanupViewModel(CleanupCatalog.LoadEmbedded(), CleanupHistory.Load(), _gate, this,
                                        _envStatus.IsElevated, RestartAsAdminCommand);
+        steps.Done("очистка");
         Apps = new AppsViewModel(_gate, this);
+        steps.Done("приложения");
         BenchmarkHistory benchmarkHistory = BenchmarkHistory.Load();
         Benchmarks = new BenchmarksViewModel(_gate, benchmarkHistory);
 
@@ -101,6 +106,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             DiskHealthHistory.Load(), Settings.InstallCommand, RestartAsAdminCommand);
         Disks = new DisksViewModel(diskHealth, new DiskTestViewModel(_gate, benchmarkHistory),
                                    new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand));
+        steps.Done("тесты и диски");
         Crashes = new CrashesViewModel(() => Disks.Health.Reports
             .GroupBy(r => r.Disk.Number)
             .ToDictionary(g => g.Key, g => g.First().Title));
@@ -114,6 +120,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 ? new ServiceFrameSource(_service)
                 : new UnavailableFrameSource("нужна служба PC Toolkit или запуск от имени администратора");
         Games = new GamesViewModel(frames, dispatcher, Settings.InstallCommand, frames is not UnavailableFrameSource);
+        steps.Done("игры");
 
         Home = new HomeViewModel(_envStatus, RestartAsAdminCommand, InstallDriverCommand, Settings.InstallCommand,
                                  Games, benchmarkHistory, Navigate, Optimization, Cleanup, Benchmarks, Apps)
@@ -122,6 +129,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             RevertGpuTuningCommand = new RelayCommand(RevertGpuTuning),
             OpenArea = OpenArea,
         };
+        steps.Done("главная");
         _health = new HealthMonitor(Home, Disks.Health, Drivers, _gate);
         _health.Notification += n => HealthNotification?.Invoke(n);
 
@@ -171,6 +179,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         RunSearchCommand = new RelayCommand(p => RunSearch(p as SearchResultViewModel));
 
         SelectedNav = home;
+        steps.Done("меню и первый экран");
 
         _source.SnapshotReady += OnSnapshotReady;
         _source.StateChanged += OnSourceStateChanged;

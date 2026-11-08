@@ -596,7 +596,8 @@ public static class OrphanScanner
             if (string.IsNullOrEmpty(root))
                 return false;
             var drive = new DriveInfo(root);
-            if (!drive.IsReady || drive.DriveType != DriveType.Fixed)
+            // Сначала тип (без обращения к диску): сетевой раздел выключенного компьютера ответил бы на IsReady через десяток секунд.
+            if (drive.DriveType != DriveType.Fixed || !drive.IsReady)
                 return false;
             if (File.Exists(path) || Directory.Exists(path) || AlternatePaths(path).Any(p => File.Exists(p) || Directory.Exists(p)))
                 return false;

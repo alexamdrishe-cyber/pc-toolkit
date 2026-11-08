@@ -28,6 +28,7 @@ public static class FindingAreas
     public const string Crashes = "crashes";
     public const string Drivers = "drivers";
     public const string Memory = "memory";
+    public const string Space = "space";
 }
 
 /// <summary>
@@ -100,13 +101,12 @@ public static class SystemCheck
                 "Закройте ненужные программы. Если так постоянно, памяти может не хватать для ваших задач."));
         }
 
-        CheckDiskSpace(findings);
-
+        // Место на дисках проверяет фоновый монитор (HealthFindings.FromDriveSpace): разделы могут отвечать секундами.
         if (!findings.Any(f => f.Severity is FindingSeverity.Critical or FindingSeverity.Warning))
         {
             findings.Add(new Finding(FindingSeverity.Good,
                 "Серьёзных проблем не найдено",
-                "Температуры, загрузка памяти и свободное место на дисках в норме на момент проверки."));
+                "Температуры и загрузка памяти в норме на момент проверки."));
         }
 
         return findings.OrderBy(f => f.Severity).ToList();
@@ -143,40 +143,5 @@ public static class SystemCheck
             findings.Add(new Finding(FindingSeverity.Critical, $"Очень высокая температура {what}: {value:0} °C", advice));
         else if (state == HealthState.Warning)
             findings.Add(new Finding(FindingSeverity.Warning, $"Высокая температура {what}: {value:0} °C", advice));
-    }
-
-    private static void CheckDiskSpace(List<Finding> findings)
-    {
-        DriveInfo[] drives;
-        try
-        {
-            drives = DriveInfo.GetDrives();
-        }
-        catch
-        {
-            return;
-        }
-
-        foreach (DriveInfo drive in drives)
-        {
-            try
-            {
-                if (drive.DriveType != DriveType.Fixed || !drive.IsReady || drive.TotalSize <= 0)
-                    continue;
-
-                double freePercent = 100.0 * drive.AvailableFreeSpace / drive.TotalSize;
-                if (freePercent >= Thresholds.DiskFreeWarningPercent)
-                    continue;
-
-                findings.Add(new Finding(FindingSeverity.Warning,
-                    $"Мало места на диске {drive.Name.TrimEnd('\\')}: свободно {freePercent:0} %",
-                    $"Свободно {Formatting.Bytes((ulong)drive.AvailableFreeSpace)} из {Formatting.Bytes((ulong)drive.TotalSize)}. " +
-                    "Windows и игры работают хуже, когда диск почти заполнен."));
-            }
-            catch
-            {
-                // Диск отключили во время проверки: пропускаем.
-            }
-        }
     }
 }
