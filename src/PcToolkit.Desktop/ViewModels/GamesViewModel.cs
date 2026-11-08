@@ -116,6 +116,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         PublishProfiles();
         UpdateMonitorUsage();
         _ = Task.Run(WatchLoop);
+        _dispatcher.InvokeAsync(() => _ = DetectRadeonAsync(), DispatcherPriority.ApplicationIdle);
         // Список игр нужен и без открытого экрана: по нему запись FPS узнаёт игру.
         _dispatcher.InvokeAsync(() => _ = LoadAsync(), DispatcherPriority.ApplicationIdle);
     }
@@ -632,7 +633,43 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             HighPriority = p.HighPriority,
             Overlay = p.Overlay,
             RecordFps = p.RecordFps,
+            RadeonMode = p.RadeonMode,
+            ChillMinFps = p.ChillMinFps,
+            ChillMaxFps = p.ChillMaxFps,
+            Sharpening = p.Sharpening,
+            Sharpness = p.Sharpness,
         }).ToList();
+    }
+
+    /// <summary>Видеокарта AMD с настройками Anti-Lag, Chill или резкости: тогда в профиле есть раздел «Видеокарта AMD».</summary>
+    public RadeonState? Radeon { get; private set; }
+
+    public bool RadeonAvailable => Radeon is not null;
+
+    public bool RadeonAntiLagSupported => Radeon?.AntiLagSupported == true;
+
+    public bool RadeonChillSupported => Radeon?.ChillSupported == true;
+
+    public bool RadeonSharpeningSupported => Radeon?.SharpeningSupported == true;
+
+    public double ChillFpsMin => Radeon?.ChillRange?.Min ?? 30;
+
+    public double ChillFpsMax => Radeon?.ChillRange?.Max ?? 300;
+
+    private async Task DetectRadeonAsync()
+    {
+        RadeonState? state = await Task.Run(() => AdlxRadeonGraphics.Instance.Read(out _));
+        Radeon = state;
+        OnPropertyChanged(nameof(Radeon));
+        OnPropertyChanged(nameof(RadeonAvailable));
+        OnPropertyChanged(nameof(RadeonAntiLagSupported));
+        OnPropertyChanged(nameof(RadeonChillSupported));
+        OnPropertyChanged(nameof(RadeonSharpeningSupported));
+        OnPropertyChanged(nameof(ChillFpsMin));
+        OnPropertyChanged(nameof(ChillFpsMax));
+        if (state is not null)
+            AppLog.Info($"Игровые настройки AMD: Anti-Lag {(state.AntiLagSupported ? "есть" : "нет")}, Chill {(state.ChillSupported ? $"есть ({state.ChillRange?.Min}–{state.ChillRange?.Max} FPS)" : "нет")}, " +
+                        $"резкость {(state.SharpeningSupported ? "есть" : "нет")}; сейчас: {RadeonPlan.Describe(state.Values)}.");
     }
 
     /// <summary>Раз в 2 секунды: какие игры запущены; применить или откатить профили.</summary>
@@ -1134,6 +1171,85 @@ public sealed class GameItemViewModel : ObservableObject
         set => _owner.UpdateProfile(this, p => p.RecordFps = value);
     }
 
+    // ---- Видеокарта AMD ----
+
+    public bool RadeonNone
+    {
+        get => (Profile?.RadeonMode ?? RadeonModes.None) == RadeonModes.None;
+        set
+        {
+            if (value)
+                _owner.UpdateProfile(this, p => p.RadeonMode = RadeonModes.None);
+        }
+    }
+
+    public bool RadeonAntiLag
+    {
+        get => Profile?.RadeonMode == RadeonModes.AntiLag;
+        set
+        {
+            if (value)
+                _owner.UpdateProfile(this, p => p.RadeonMode = RadeonModes.AntiLag);
+        }
+    }
+
+    public bool RadeonChill
+    {
+        get => Profile?.RadeonMode == RadeonModes.Chill;
+        set
+        {
+            if (value)
+                _owner.UpdateProfile(this, p => p.RadeonMode = RadeonModes.Chill);
+        }
+    }
+
+    public string RadeonModeText => Profile?.RadeonMode switch
+    {
+        RadeonModes.AntiLag => "Radeon Anti-Lag уменьшает задержку между нажатием и реакцией на экране — заметно в шутерах, когда видеокарта загружена полностью. " +
+                               "Radeon Chill на это время выключится: вместе они не работают.",
+        RadeonModes.Chill => "Radeon Chill снижает частоту кадров, когда в игре ничего не происходит, и поднимает её в движении: видеокарта тише, холоднее " +
+                             "и меньше потребляет. Для соревновательных шутеров не подходит.",
+        _ => "Anti-Lag и Chill не меняются — как настроено в AMD Software.",
+    };
+
+    public double ChillMinFps
+    {
+        get => Profile?.ChillMinFps ?? 60;
+        set => _owner.UpdateProfile(this, p =>
+        {
+            p.ChillMinFps = (int)Math.Round(value);
+            if (p.ChillMaxFps < p.ChillMinFps)
+                p.ChillMaxFps = p.ChillMinFps;
+        });
+    }
+
+    public double ChillMaxFps
+    {
+        get => Profile?.ChillMaxFps ?? 144;
+        set => _owner.UpdateProfile(this, p =>
+        {
+            p.ChillMaxFps = (int)Math.Round(value);
+            if (p.ChillMinFps > p.ChillMaxFps)
+                p.ChillMinFps = p.ChillMaxFps;
+        });
+    }
+
+    public string ChillText => $"{ChillMinFps:0}–{ChillMaxFps:0} FPS";
+
+    public bool Sharpening
+    {
+        get => Profile?.Sharpening ?? false;
+        set => _owner.UpdateProfile(this, p => p.Sharpening = value);
+    }
+
+    public double Sharpness
+    {
+        get => Profile?.Sharpness ?? 80;
+        set => _owner.UpdateProfile(this, p => p.Sharpness = (int)Math.Round(value));
+    }
+
+    public string SharpnessText => $"{Sharpness:0} %";
+
     public string ProfileSummary => Profile is { Enabled: true } profile ? "Профиль: " + profile.Summary : "";
 
     /// <summary>Сейчас: запущена ли игра и что сделал профиль.</summary>
@@ -1167,6 +1283,16 @@ public sealed class GameItemViewModel : ObservableObject
         OnPropertyChanged(nameof(HighPriority));
         OnPropertyChanged(nameof(Overlay));
         OnPropertyChanged(nameof(RecordFps));
+        OnPropertyChanged(nameof(RadeonNone));
+        OnPropertyChanged(nameof(RadeonAntiLag));
+        OnPropertyChanged(nameof(RadeonChill));
+        OnPropertyChanged(nameof(RadeonModeText));
+        OnPropertyChanged(nameof(ChillMinFps));
+        OnPropertyChanged(nameof(ChillMaxFps));
+        OnPropertyChanged(nameof(ChillText));
+        OnPropertyChanged(nameof(Sharpening));
+        OnPropertyChanged(nameof(Sharpness));
+        OnPropertyChanged(nameof(SharpnessText));
         OnPropertyChanged(nameof(ProfileSummary));
         RefreshStatus();
     }

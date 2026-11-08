@@ -243,6 +243,68 @@
                                                    Text="Вся игровая сессия попадёт во вкладку «Замеры FPS»: средний FPS, 1% low, рывки — для сравнения «до и после»." />
                                     </StackPanel>
                                 </CheckBox>
+
+                                <!-- Видеокарта AMD: только если драйвер даёт эти настройки -->
+                                <StackPanel Visibility="{Binding DataContext.RadeonAvailable, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="ВИДЕОКАРТА AMD" Style="{StaticResource SectionLabel}" Margin="0,14,0,6" />
+                                    <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Content="Не менять" GroupName="radeon-mode" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding RadeonNone, Mode=TwoWay}" />
+                                            <RadioButton Content="Anti-Lag" GroupName="radeon-mode" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding RadeonAntiLag, Mode=TwoWay}"
+                                                         IsEnabled="{Binding DataContext.RadeonAntiLagSupported, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            <RadioButton Content="Chill" GroupName="radeon-mode" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding RadeonChill, Mode=TwoWay}"
+                                                         IsEnabled="{Binding DataContext.RadeonChillSupported, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <TextBlock Text="{Binding RadeonModeText}" Style="{StaticResource OptionText}" Margin="0,6,0,0" />
+
+                                    <Grid Margin="0,8,0,0" Visibility="{Binding RadeonChill, Converter={StaticResource BoolToVis}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="В покое, FPS" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                        <Slider Grid.Column="1" Minimum="{Binding DataContext.ChillFpsMin, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                Maximum="{Binding DataContext.ChillFpsMax, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                TickFrequency="5" IsSnapToTickEnabled="True"
+                                                Value="{Binding ChillMinFps, Mode=TwoWay, Delay=300}" />
+                                        <TextBlock Grid.Row="1" Text="В движении, FPS" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,6,0,0" />
+                                        <Slider Grid.Row="1" Grid.Column="1" Margin="0,6,0,0"
+                                                Minimum="{Binding DataContext.ChillFpsMin, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                Maximum="{Binding DataContext.ChillFpsMax, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                TickFrequency="5" IsSnapToTickEnabled="True"
+                                                Value="{Binding ChillMaxFps, Mode=TwoWay, Delay=300}" />
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ChillText}" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    </Grid>
+
+                                    <CheckBox IsChecked="{Binding Sharpening, Mode=TwoWay}" Margin="0,10,0,4"
+                                              IsEnabled="{Binding DataContext.RadeonSharpeningSupported, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                        <StackPanel>
+                                            <TextBlock Text="Резкость (Radeon Image Sharpening)" />
+                                            <TextBlock Style="{StaticResource OptionText}"
+                                                       Text="Делает картинку чётче, особенно со сглаживанием TAA или на пониженном разрешении. На FPS почти не влияет." />
+                                        </StackPanel>
+                                    </CheckBox>
+                                    <Grid Margin="28,2,0,0" Visibility="{Binding Sharpening, Converter={StaticResource BoolToVis}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="50" />
+                                        </Grid.ColumnDefinitions>
+                                        <Slider Minimum="10" Maximum="100" TickFrequency="10" IsSnapToTickEnabled="True"
+                                                Value="{Binding Sharpness, Mode=TwoWay, Delay=300}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding SharpnessText}" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <TextBlock Style="{StaticResource OptionText}" Margin="0,6,0,0"
+                                               Text="Эти настройки драйвера действуют на все игры, поэтому включаются только пока идёт эта игра. После выхода вернётся как было — если вы не поменяли их сами в AMD Software." />
+                                </StackPanel>
                             </StackPanel>
 
                             <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="8" BorderThickness="1"

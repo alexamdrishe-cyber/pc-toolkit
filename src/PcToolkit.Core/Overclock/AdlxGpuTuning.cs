@@ -384,6 +384,154 @@ public sealed unsafe class AdlxGpuTuning : IDisposable
         };
     }
 
+    // ===================== Игровые настройки (IADLX3DSettingsServices) =====================
+    // Номера методов — из C-интерфейса ADLX SDK (I3DSettings.h, ISystem.h).
+    private const int SystemGet3DSettingsServices = 7;
+    private const int Services3DGetAntiLag = 3;
+    private const int Services3DGetChill = 4;
+    private const int Services3DGetImageSharpening = 6;
+
+    /// <summary>
+    /// Radeon Anti-Lag, Radeon Chill и Radeon Image Sharpening: поддержка, состояние и диапазоны.
+    /// Действуют на все игры сразу (как «Глобальная графика» в AMD Software).
+    /// </summary>
+    public Games.RadeonState Read3DSettings()
+    {
+        lock (_lock)
+        {
+            ThrowIfDisposed();
+            bool antiLagSupported = false, chillSupported = false, sharpSupported = false;
+            bool? antiLag = null, chill = null, sharpening = null;
+            int? chillMin = null, chillMax = null, sharpness = null;
+            TuningRange? chillRange = null, sharpRange = null;
+
+            Try3D(Services3DGetAntiLag, "Radeon Anti-Lag", o =>
+            {
+                antiLagSupported = GetBool(o, 3); // IsSupported
+                if (antiLagSupported)
+                    antiLag = GetBool(o, 4);      // IsEnabled
+            });
+            Try3D(Services3DGetChill, "Radeon Chill", o =>
+            {
+                chillSupported = GetBool(o, 3);
+                if (!chillSupported)
+                    return;
+                chill = GetBool(o, 4);
+                chillRange = GetRange(o, 5);      // GetFPSRange
+                chillMin = GetInt(o, 6);          // GetMinFPS
+                chillMax = GetInt(o, 7);          // GetMaxFPS
+            });
+            Try3D(Services3DGetImageSharpening, "Radeon Image Sharpening", o =>
+            {
+                sharpSupported = GetBool(o, 3);
+                if (!sharpSupported)
+                    return;
+                sharpening = GetBool(o, 4);
+                sharpRange = GetRange(o, 5);      // GetSharpnessRange
+                sharpness = GetInt(o, 6);         // GetSharpness
+            });
+
+            var values = new Games.RadeonValues
+            {
+                AntiLag = antiLag,
+                Chill = chill,
+                ChillMinFps = chillMin,
+                ChillMaxFps = chillMax,
+                Sharpening = sharpening,
+                Sharpness = sharpness,
+            };
+            return new Games.RadeonState(values, antiLagSupported, chillSupported, sharpSupported, chillRange, sharpRange);
+        }
+    }
+
+    /// <summary>
+    /// Записывает заданные (не null) значения. Сначала выключения, потом включения: Anti-Lag и Chill взаимно
+    /// исключают друг друга, и включение одного драйвер сопровождает выключением другого.
+    /// </summary>
+    public void Apply3DSettings(Games.RadeonValues values)
+    {
+        lock (_lock)
+        {
+            ThrowIfDisposed();
+            if (values.AntiLag == false)
+                With3D(Services3DGetAntiLag, o => Check(CallByte(o, 5, 0), "Radeon Anti-Lag")); // SetEnabled
+            if (values.Chill == false)
+                With3D(Services3DGetChill, o => Check(CallByte(o, 8, 0), "Radeon Chill"));
+            if (values.Sharpening == false)
+                With3D(Services3DGetImageSharpening, o => Check(CallByte(o, 7, 0), "Radeon Image Sharpening"));
+
+            if (values.ChillMinFps is not null || values.ChillMaxFps is not null || values.Chill == true)
+            {
+                With3D(Services3DGetChill, o =>
+                {
+                    TuningRange range = GetRange(o, 5);
+                    int min = range.Snap(values.ChillMinFps ?? GetInt(o, 6));
+                    int max = range.Snap(values.ChillMaxFps ?? GetInt(o, 7));
+                    if (min > max)
+                        (min, max) = (max, min);
+                    // Минимум не может быть больше максимума даже на мгновение: сначала максимум — с запасом, потом минимум, потом нужный максимум.
+                    Check(CallInt(o, 10, range.Max), "Radeon Chill: максимум FPS"); // SetMaxFPS
+                    Check(CallInt(o, 9, min), "Radeon Chill: минимум FPS");         // SetMinFPS
+                    Check(CallInt(o, 10, max), "Radeon Chill: максимум FPS");
+                    if (values.Chill == true)
+                        Check(CallByte(o, 8, 1), "Radeon Chill");                   // SetEnabled
+                });
+            }
+
+            if (values.AntiLag == true)
+                With3D(Services3DGetAntiLag, o => Check(CallByte(o, 5, 1), "Radeon Anti-Lag"));
+
+            if (values.Sharpness is not null || values.Sharpening == true)
+            {
+                With3D(Services3DGetImageSharpening, o =>
+                {
+                    if (values.Sharpness is int sharpness)
+                        Check(CallInt(o, 8, GetRange(o, 5).Snap(sharpness)), "Radeon Image Sharpening: резкость"); // SetSharpness
+                    if (values.Sharpening == true)
+                        Check(CallByte(o, 7, 1), "Radeon Image Sharpening");                                     // SetEnabled
+                });
+            }
+
+            AppLog.Info("ADLX: игровые настройки — " + Games.RadeonPlan.Describe(values) + ".");
+        }
+    }
+
+    private void With3D(int method, Action<IntPtr> action)
+    {
+        IntPtr services;
+        Check(CallPtr(_system, SystemGet3DSettingsServices, &services), "игровые настройки драйвера");
+        try
+        {
+            IntPtr setting;
+            Check(((delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr*, int>)Fn(services, method))(services, _gpu, &setting), "игровая настройка");
+            try
+            {
+                action(setting);
+            }
+            finally
+            {
+                Release(setting);
+            }
+        }
+        finally
+        {
+            Release(services);
+        }
+    }
+
+    private void Try3D(int method, string name, Action<IntPtr> action)
+    {
+        try
+        {
+            With3D(method, action);
+        }
+        catch (AdlxException ex)
+        {
+            if (_loggedMissing.Add(name))
+                AppLog.Info($"ADLX: {name} недоступен ({ex.Message}).");
+        }
+    }
+
     /// <summary>Сбрасывает все настройки видеокарты к заводским (как кнопка «Сброс» в Adrenalin).</summary>
     public void ResetToFactory()
     {

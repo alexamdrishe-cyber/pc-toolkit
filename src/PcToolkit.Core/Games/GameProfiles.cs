@@ -33,7 +33,24 @@ public sealed class GameProfile
     /// <summary>Записывать замер FPS за всю игровую сессию.</summary>
     public bool RecordFps { get; set; }
 
-    public bool HasActions => PowerPlan || HighPriority || Overlay || RecordFps;
+    /// <summary>Видеокарта AMD: «» — не менять, «antilag» — Radeon Anti-Lag, «chill» — Radeon Chill (<see cref="RadeonModes"/>).</summary>
+    public string RadeonMode { get; set; } = RadeonModes.None;
+
+    /// <summary>Radeon Chill: частота кадров, когда в игре ничего не происходит.</summary>
+    public int ChillMinFps { get; set; } = 60;
+
+    /// <summary>Radeon Chill: частота кадров в движении.</summary>
+    public int ChillMaxFps { get; set; } = 144;
+
+    /// <summary>Видеокарта AMD: Radeon Image Sharpening на время игры.</summary>
+    public bool Sharpening { get; set; }
+
+    /// <summary>Сила резкости, %.</summary>
+    public int Sharpness { get; set; } = 80;
+
+    public bool HasRadeon => RadeonMode.Length > 0 || Sharpening;
+
+    public bool HasActions => PowerPlan || HighPriority || Overlay || RecordFps || HasRadeon;
 
     public string Summary
     {
@@ -48,6 +65,12 @@ public sealed class GameProfile
                 parts.Add("оверлей");
             if (RecordFps)
                 parts.Add("запись FPS");
+            if (RadeonMode == RadeonModes.AntiLag)
+                parts.Add("Anti-Lag");
+            else if (RadeonMode == RadeonModes.Chill)
+                parts.Add($"Chill {ChillMinFps}–{ChillMaxFps} FPS");
+            if (Sharpening)
+                parts.Add("резкость");
             return parts.Count == 0 ? "ничего не делает" : string.Join(", ", parts);
         }
     }
@@ -140,6 +163,12 @@ public sealed record RunningGame(GameProfile Profile, int MainProcessId, string 
     /// <summary>Процессы, которым повышен приоритет: после игры (или выключения пункта) он возвращается.</summary>
     public IReadOnlyList<int> RaisedProcesses { get; init; } = Array.Empty<int>();
 
+    /// <summary>Что сделано с настройками видеокарты AMD; null — профиль их не трогает.</summary>
+    public string? GraphicsNote { get; init; }
+
+    /// <summary>Игра держит настройки видеокарты (после неё их нужно вернуть).</summary>
+    public bool HoldsGraphics { get; init; }
+
     public IReadOnlyList<string> Applied
     {
         get
@@ -149,6 +178,8 @@ public sealed record RunningGame(GameProfile Profile, int MainProcessId, string 
                 list.Add(PowerNote);
             if (PriorityNote is not null)
                 list.Add(PriorityNote);
+            if (GraphicsNote is not null)
+                list.Add(GraphicsNote);
             if (Profile.Overlay)
                 list.Add("Оверлей с FPS включён");
             if (Profile.RecordFps)
@@ -178,20 +209,27 @@ public sealed class GameSessionManager
     private readonly string _statePath;
     private readonly Dictionary<string, RunningGame> _running = new();
     private readonly Dictionary<int, ProcessPriorityClass> _originalPriority = new();
+    private readonly IRadeonGraphics _radeon;
+    private readonly string _graphicsPath;
     private SessionState? _state;
+    private GraphicsState? _graphics;
 
     /// <param name="powerTarget">Параметр «активная схема питания»; аргумент — схема, наличие которой проверить.</param>
     /// <param name="setHighPriority">Повышает приоритет процесса; возвращает текст ошибки или null.</param>
     /// <param name="restorePriority">Возвращает приоритет процесса, повышенный через <paramref name="setHighPriority"/>.</param>
+    /// <param name="radeon">Настройки видеокарты AMD (Anti-Lag, Chill, резкость).</param>
     public GameSessionManager(Func<Guid?, ISettingTarget>? powerTarget = null, string? statePath = null,
-        Func<int, string?>? setHighPriority = null, Action<int>? restorePriority = null)
+        Func<int, string?>? setHighPriority = null, Action<int>? restorePriority = null, IRadeonGraphics? radeon = null)
     {
         _powerTarget = powerTarget ?? (scheme => new PowerSchemeTarget(scheme));
         _setHighPriority = setHighPriority ?? SetHighPriority;
         _restorePriority = restorePriority ?? RestorePriority;
+        _radeon = radeon ?? AdlxRadeonGraphics.Instance;
         _statePath = statePath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcToolkit", "game-session.json");
+        _graphicsPath = Path.Combine(Path.GetDirectoryName(_statePath)!, Path.GetFileNameWithoutExtension(_statePath) + "-graphics.json");
         _state = LoadState();
+        _graphics = LoadGraphics();
     }
 
     public event EventHandler<RunningGame>? GameStarted;
@@ -210,13 +248,13 @@ public sealed class GameSessionManager
         }
     }
 
-    /// <summary>Есть незавершённая сессия с прошлого запуска (схема питания ещё не возвращена).</summary>
+    /// <summary>Есть незавершённая сессия с прошлого запуска (схема питания или настройки видеокарты ещё не возвращены).</summary>
     public bool HasPendingState
     {
         get
         {
             lock (_lock)
-                return _state is not null;
+                return _state is not null || _graphics is not null;
         }
     }
 
@@ -266,6 +304,8 @@ public sealed class GameSessionManager
             // Схему питания больше не держит ни одна игра (или она осталась от сбоя прошлого запуска): возвращаем.
             if (_state is not null && !_running.Values.Any(g => g.PowerNote is not null))
                 RevertPower();
+            if (_graphics is not null && !_running.Values.Any(g => g.HoldsGraphics))
+                RevertGraphics();
         }
 
         foreach (RunningGame game in stopped)
@@ -286,6 +326,8 @@ public sealed class GameSessionManager
             _running.Clear();
             if (_state is not null)
                 RevertPower();
+            if (_graphics is not null)
+                RevertGraphics();
         }
     }
 
@@ -297,6 +339,8 @@ public sealed class GameSessionManager
             game = game with { PowerNote = ApplyPower(profile) };
         if (profile.HighPriority)
             game = RaisePriority(game, main);
+        if (profile.HasRadeon)
+            game = ApplyGraphics(game, profile);
         return game;
     }
 
@@ -336,11 +380,103 @@ public sealed class GameSessionManager
             result = result with { PriorityNote = null, RaisedProcesses = Array.Empty<int>() };
         }
 
+        if (!SameRadeon(game.Profile, profile))
+        {
+            // Настройки видеокарты поменяли посреди игры: возвращаем прежние (если эта игра их держала) и применяем новые.
+            AppLog.Info($"«{profile.Name}»: настройки видеокарты в профиле изменены посреди игры.");
+            result = result with { GraphicsNote = null, HoldsGraphics = false };
+            if (_graphics is not null && !_running.Values.Any(g => g.HoldsGraphics && g.Profile.GameId != profile.GameId))
+                RevertGraphics();
+            if (profile.HasRadeon)
+                result = ApplyGraphics(result, profile);
+        }
+
         return result;
     }
 
     private static bool SameOptions(GameProfile a, GameProfile b) =>
-        a.PowerPlan == b.PowerPlan && a.HighPriority == b.HighPriority && a.Overlay == b.Overlay && a.RecordFps == b.RecordFps;
+        a.PowerPlan == b.PowerPlan && a.HighPriority == b.HighPriority && a.Overlay == b.Overlay && a.RecordFps == b.RecordFps
+        && SameRadeon(a, b);
+
+    private static bool SameRadeon(GameProfile a, GameProfile b) =>
+        a.RadeonMode == b.RadeonMode && a.Sharpening == b.Sharpening
+        && (a.RadeonMode != RadeonModes.Chill || (a.ChillMinFps == b.ChillMinFps && a.ChillMaxFps == b.ChillMaxFps))
+        && (!a.Sharpening || a.Sharpness == b.Sharpness);
+
+    /// <summary>
+    /// Включает Anti-Lag, Chill или резкость на время игры. Что было до игры, сначала записывается в файл:
+    /// после сбоя приложения настройки вернутся при следующем запуске.
+    /// </summary>
+    private RunningGame ApplyGraphics(RunningGame game, GameProfile profile)
+    {
+        try
+        {
+            if (_graphics is not null)
+            {
+                // Настройки уже держит другая игра (или остались от сбоя): не перебиваем, вернутся, когда их отпустят все.
+                _graphics.Games.Add(profile.GameId);
+                SaveGraphics();
+                return game with { GraphicsNote = "Видеокарта: " + RadeonPlan.Describe(_graphics.Applied), HoldsGraphics = true };
+            }
+
+            RadeonState? state = _radeon.Read(out string? error);
+            if (state is null)
+                return game with { GraphicsNote = "Настройки видеокарты AMD не менялись: " + error };
+
+            RadeonValues wanted = RadeonPlan.Wanted(profile, state);
+            if (wanted.IsEmpty)
+                return game with { GraphicsNote = "Видеокарта не поддерживает выбранные настройки AMD — ничего не менялось" };
+            if (!RadeonPlan.Differs(wanted, state.Values))
+                return game with { GraphicsNote = "Видеокарта: " + RadeonPlan.Describe(wanted) + " — уже было включено" };
+
+            _graphics = new GraphicsState { Before = RadeonPlan.Before(wanted, state.Values), Applied = wanted, Games = { profile.GameId } };
+            SaveGraphics();
+            _radeon.Apply(wanted);
+            string text = "Видеокарта: " + RadeonPlan.Describe(wanted);
+            AppLog.Info($"«{profile.Name}»: {text} (было: {RadeonPlan.Describe(_graphics.Before)}).");
+            return game with { GraphicsNote = text, HoldsGraphics = true };
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Не удалось включить настройки видеокарты AMD для игры.", ex);
+            if (_graphics is not null)
+                RevertGraphics(); // могло примениться частично — возвращаем, что успели
+            return game with { GraphicsNote = "Настройки видеокарты AMD не изменены: " + ex.Message };
+        }
+    }
+
+    private void RevertGraphics()
+    {
+        GraphicsState state = _graphics!;
+        try
+        {
+            RadeonState? now = _radeon.Read(out string? error);
+            if (now is null)
+            {
+                AppLog.Warn("Не удалось вернуть настройки видеокарты AMD после игры: " + error);
+                return;
+            }
+
+            RadeonValues restore = RadeonPlan.Restore(state.Before, state.Applied, now.Values);
+            if (restore.IsEmpty)
+            {
+                AppLog.Info("Настройки видеокарты после игры поменяли вручную — оставляю как есть.");
+                return;
+            }
+
+            _radeon.Apply(restore);
+            AppLog.Info("Настройки видеокарты AMD возвращены после игры.");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Не удалось вернуть настройки видеокарты AMD после игры.", ex);
+        }
+        finally
+        {
+            _graphics = null;
+            DeleteFile(_graphicsPath);
+        }
+    }
 
     private RunningGame RaisePriority(RunningGame game, RunningProcess process)
     {
@@ -527,17 +663,66 @@ public sealed class GameSessionManager
         }
     }
 
-    private void DeleteState()
+    private void DeleteState() => DeleteFile(_statePath);
+
+    private static void DeleteFile(string path)
     {
         try
         {
-            if (File.Exists(_statePath))
-                File.Delete(_statePath);
+            if (File.Exists(path))
+                File.Delete(path);
         }
         catch (Exception ex)
         {
             AppLog.Warn("Не удалось удалить файл состояния игровой сессии.", ex);
         }
+    }
+
+    private GraphicsState? LoadGraphics()
+    {
+        try
+        {
+            if (File.Exists(_graphicsPath))
+            {
+                GraphicsState? state = JsonSerializer.Deserialize<GraphicsState>(File.ReadAllText(_graphicsPath));
+                if (state is { Applied.IsEmpty: false })
+                {
+                    AppLog.Info("Найдены настройки видеокарты незавершённой игровой сессии: вернутся, когда игры будут закрыты.");
+                    return state;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось прочитать состояние настроек видеокарты.", ex);
+        }
+
+        return null;
+    }
+
+    private void SaveGraphics()
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(_graphicsPath)!);
+            File.WriteAllText(_graphicsPath, JsonSerializer.Serialize(_graphics, Json));
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось сохранить состояние настроек видеокарты.", ex);
+        }
+    }
+
+    /// <summary>Настройки видеокарты на время игры: что было до и что поставлено.</summary>
+    public sealed class GraphicsState
+    {
+        public RadeonValues Before { get; set; } = new();
+
+        public RadeonValues Applied { get; set; } = new();
+
+        public HashSet<string> Games { get; set; } = new();
+
+        public DateTimeOffset At { get; set; } = DateTimeOffset.Now;
     }
 
     /// <summary>Что вернуть после игры.</summary>
