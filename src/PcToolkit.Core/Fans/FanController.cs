@@ -11,15 +11,19 @@ public enum FanChannelKind
 }
 
 /// <summary>
-/// Обороты вентиляторов по кривым — раз в секунду, по свежим температурам. Обороты растут быстро и падают
-/// медленно, с запасом в пару процентов: вентиляторы не «качаются» от каждого скачка температуры.
-/// Защита от перегрева: процессор или видеокарта от <see cref="OverheatOn"/> °C — все управляемые вентиляторы на 100 %,
-/// пока обе температуры не опустятся ниже <see cref="OverheatOff"/> °C.
+/// Обороты вентиляторов по кривым — раз в секунду, по свежим температурам. Температуры для кривых сглаживаются
+/// за несколько секунд: процессор Ryzen подскакивает на 10–15 °C на долю секунды, и вентилятор не должен «вздыхать»
+/// от каждого такого скачка. Обороты растут быстро и падают медленно, с запасом в пару процентов.
+/// Защита от перегрева — по мгновенным температурам: процессор или видеокарта от <see cref="OverheatOn"/> °C —
+/// все управляемые вентиляторы на 100 %, пока обе температуры не опустятся ниже <see cref="OverheatOff"/> °C.
 /// </summary>
 public sealed class FanController
 {
     public const double OverheatOn = 90;
     public const double OverheatOff = 80;
+
+    /// <summary>Доля новой температуры за шаг (секунду): за 3 секунды — около 70 % скачка, секундный всплеск — треть.</summary>
+    public const double DefaultSmoothing = 0.35;
 
     /// <summary>На сколько процентов за секунду обороты могут вырасти и упасть.</summary>
     public const double RiseStep = 8;
@@ -29,19 +33,37 @@ public sealed class FanController
     public const double DeadBand = 2;
 
     private readonly Dictionary<string, double> _current = new();
+    private readonly double _smoothing;
+    private double? _cpu;
+    private double? _gpu;
+    private double? _hotSpot;
+
+    /// <param name="smoothing">Доля новой температуры за шаг: 1 — без сглаживания.</param>
+    public FanController(double smoothing = DefaultSmoothing)
+    {
+        _smoothing = Math.Clamp(smoothing, 0.05, 1);
+    }
 
     public bool Overheat { get; private set; }
 
     /// <summary>
-    /// Обороты на этот шаг: Id → % (null — отдать вентилятор BIOS). Вентиляторы с ролью «помпа» и «не управлять»,
-    /// а также те, для чьей кривой нет температуры, отдаются BIOS.
+    /// Обороты на этот шаг: Id → % (null — отдать вентилятор BIOS или драйверу видеокарты). Вентиляторы с ролью
+    /// «помпа» и «не управлять», видеокарта на автоматике драйвера, а также те, для чьей кривой нет температуры,
+    /// отдаются BIOS и драйверу.
     /// </summary>
-    public IReadOnlyDictionary<string, double?> Tick(FanSettings settings, IEnumerable<FanChannel> channels, double? cpuTemperature, double? gpuTemperature)
+    /// <param name="gpuHotSpot">Горячая точка видеокарты: по ней кривая её вентиляторов (если нет — по температуре ядра).</param>
+    public IReadOnlyDictionary<string, double?> Tick(FanSettings settings, IEnumerable<FanChannel> channels, double? cpuTemperature, double? gpuTemperature,
+                                                     double? gpuHotSpot = null)
     {
         if (cpuTemperature >= OverheatOn || gpuTemperature >= OverheatOn)
             Overheat = true;
         else if (Overheat && (cpuTemperature ?? 0) < OverheatOff && (gpuTemperature ?? 0) < OverheatOff)
             Overheat = false;
+
+        _cpu = Smooth(_cpu, cpuTemperature);
+        _gpu = Smooth(_gpu, gpuTemperature);
+        _hotSpot = Smooth(_hotSpot, gpuHotSpot);
+        double? cpu = _cpu, gpu = _gpu, gpuFans = _hotSpot ?? _gpu;
 
         FanTemplate template = settings.Active;
         var result = new Dictionary<string, double?>();
@@ -51,18 +73,19 @@ public sealed class FanController
             FanRole role = channel.Kind == FanChannelKind.GpuNvidia ? FanRole.Gpu : config.Role;
             double? temperature = role switch
             {
-                FanRole.Cpu => cpuTemperature,
-                FanRole.Gpu => gpuTemperature,
+                FanRole.Cpu => cpu,
+                FanRole.Gpu => gpuFans,
                 FanRole.Case => template.CaseSource switch
                 {
-                    CaseSource.Cpu => cpuTemperature,
-                    CaseSource.Hottest => Max(cpuTemperature, gpuTemperature),
-                    _ => gpuTemperature ?? cpuTemperature,
+                    CaseSource.Cpu => cpu,
+                    CaseSource.Hottest => Max(cpu, gpu),
+                    _ => gpu ?? cpu,
                 },
                 _ => null,
             };
 
-            if (!settings.Enabled || role is FanRole.Pump or FanRole.Ignore || config.Unresponsive || temperature is null)
+            if (!settings.Enabled || role is FanRole.Pump or FanRole.Ignore || (role == FanRole.Gpu && template.GpuByDriver) ||
+                config.Unresponsive || temperature is null)
             {
                 result[channel.Id] = null;
                 _current.Remove(channel.Id);
@@ -120,6 +143,11 @@ public sealed class FanController
             return FanRole.Cpu;
         return channel.Kind == FanChannelKind.Motherboard && channel.Id.EndsWith("/control/0", StringComparison.Ordinal) ? FanRole.Cpu : FanRole.Case;
     }
+
+    private double? Smooth(double? previous, double? value) =>
+        value is not double v || double.IsNaN(v) ? null
+        : previous is not double p ? v
+        : p + (v - p) * _smoothing;
 
     private static double? Max(double? a, double? b) => a is null ? b : b is null ? a : Math.Max(a.Value, b.Value);
 }

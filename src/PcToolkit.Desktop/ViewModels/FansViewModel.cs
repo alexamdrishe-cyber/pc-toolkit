@@ -174,7 +174,7 @@ public sealed class FanCardViewModel : ObservableObject
     internal void Update(FanChannel? channel, double? duty, FanChannelConfig? config)
     {
         RpmText = channel?.Rpm is double rpm ? rpm.ToString("N0", Russian) + " об/мин" : "обороты не видны";
-        DutyText = duty is double d ? $"{d:0} %" : "BIOS";
+        DutyText = duty is double d ? $"{d:0} %" : Kind == FanChannelKind.GpuNvidia ? "драйвер" : "BIOS";
         Status = config switch
         {
             { Unresponsive: true } => "Обороты не меняются от управления: вентилятор, похоже, на трёх проводах или подключён через хаб",
@@ -326,7 +326,8 @@ public sealed class FansViewModel : ObservableObject
         };
 
         FanTemplate active = Settings.Active;
-        GpuCurve = new FanCurveCardViewModel("Видеокарта", "по температуре видеокарты", GpuColor, active.Gpu, c => EditTemplate(t => t.Gpu = c));
+        GpuCurve = new FanCurveCardViewModel("Видеокарта", "по горячей точке видеокарты — по ней драйвер крутит вентиляторы", GpuColor, active.Gpu,
+                                             c => EditTemplate(t => t.Gpu = c));
         CpuCurve = new FanCurveCardViewModel("Процессор", "по температуре процессора", CpuColor, active.Cpu, c => EditTemplate(t => t.Cpu = c));
         CaseCurve = new FanCurveCardViewModel("Корпус", "по температуре видеокарты", CaseColor, active.Case, c => EditTemplate(t => t.Case = c));
 
@@ -397,12 +398,62 @@ public sealed class FansViewModel : ObservableObject
         private set => SetProperty(ref _gpuFanText, value);
     }
 
-    public string AmdStatus => _fans.AmdProblem is { } problem
-        ? "Не получилось: " + problem
-        : !Settings.Enabled
-            ? "Вентиляторами управляет драйвер видеокарты — как настроено в AMD Software."
-            : $"Драйвер крутит вентиляторы по кривой «{Settings.Active.Name}»" +
-              (Settings.Active.GpuZeroRpm ? "; пока видеокарта холодная, они стоят." : ".");
+    public string AmdStatus
+    {
+        get
+        {
+            if (_fans.AmdProblem is { } problem)
+                return "Не получилось: " + problem;
+            if (!Settings.Enabled)
+                return "Вентиляторами управляет драйвер видеокарты — как настроено в AMD Software.";
+
+            FanTemplate template = Settings.Active;
+            if (template.GpuByDriver)
+            {
+                return Settings.Mode == FanMode.Quiet
+                    ? "«Тихо»: вентиляторами управляет автоматика драйвера — она тише любой кривой."
+                    : $"Шаблон «{template.Name}»: вентиляторами управляет драйвер — как настроено в AMD Software.";
+            }
+
+            return $"Драйвер крутит вентиляторы по кривой «{template.Name}» — по горячей точке видеокарты" +
+                   (_fans.GpuHotSpot is double hot ? $", сейчас {hot:0} °C." : ".");
+        }
+    }
+
+    /// <summary>Видеокарта на автоматике драйвера (в «Тихо» и в шаблонах с «Как в драйвере»).</summary>
+    public bool GpuByDriver => Settings.Active.GpuByDriver;
+
+    /// <summary>Своя кривая видеокарты — показать график.</summary>
+    public bool GpuOwnCurve => !Settings.Active.GpuByDriver;
+
+    public bool GpuUseDriver
+    {
+        get => Settings.Active.GpuByDriver;
+        set
+        {
+            if (value)
+                EditTemplate(t => t.GpuByDriver = true);
+        }
+    }
+
+    public bool GpuUseCurve
+    {
+        get => !Settings.Active.GpuByDriver;
+        set
+        {
+            if (value)
+                EditTemplate(t => t.GpuByDriver = false);
+        }
+    }
+
+    /// <summary>Остановка в простое — настройка драйвера AMD, только для своей кривой.</summary>
+    public bool ShowZeroRpm => IsManual && _fans.AmdGpu is not null && !Settings.Active.GpuByDriver;
+
+    public string GpuDriverNote => _fans.AmdGpu is not null
+        ? "Вентиляторами видеокарты управляет её драйвер: в простое он держит обороты ниже, чем получается по ручной кривой, " +
+          "и может совсем останавливать вентиляторы, а под нагрузкой раскручивает их сам."
+        : "Вентиляторами видеокарты управляет её драйвер: в простое многие видеокарты совсем останавливают вентиляторы, " +
+          "а под нагрузкой драйвер раскручивает их сам.";
 
     public string TemperaturesText
     {
@@ -789,7 +840,8 @@ public sealed class FansViewModel : ObservableObject
 
         double? cpu = _fans.CpuTemperature;
         double? gpu = _fans.GpuTemperature;
-        TemperaturesText = $"Процессор {Temperature(cpu)} · видеокарта {Temperature(gpu)}";
+        TemperaturesText = $"Процессор {Temperature(cpu)} · видеокарта {Temperature(gpu)}" +
+                           (_fans.GpuHotSpot is double hot ? $", горячая точка {hot:0} °C" : "");
         GpuFanText = _fans.AmdGpu is null ? "" : AmdFanRpm();
         RefreshCurves();
         OnPropertyChanged(nameof(HasFans));
@@ -804,6 +856,7 @@ public sealed class FansViewModel : ObservableObject
         OnPropertyChanged(nameof(CaseFromCpu));
         OnPropertyChanged(nameof(CaseFromHottest));
         OnPropertyChanged(nameof(GpuZeroRpm));
+        OnPropertyChanged(nameof(ShowZeroRpm));
     }
 
     private string AmdFanRpm()
@@ -820,7 +873,10 @@ public sealed class FansViewModel : ObservableObject
         CpuCurve.Show(template.Cpu, editable);
         CaseCurve.Show(template.Case, editable);
 
-        GpuCurve.CurrentTemperature = _fans.GpuTemperature ?? double.NaN;
+        GpuCurve.CurrentTemperature = _fans.GpuHotSpot ?? _fans.GpuTemperature ?? double.NaN;
+        GpuCurve.Subtitle = _fans.GpuHotSpot is null && _fans.AmdGpu is null
+            ? "по температуре видеокарты"
+            : "по горячей точке видеокарты — по ней драйвер крутит вентиляторы";
         CpuCurve.CurrentTemperature = _fans.CpuTemperature ?? double.NaN;
         (string subtitle, double? caseTemperature) = template.CaseSource switch
         {
@@ -836,6 +892,13 @@ public sealed class FansViewModel : ObservableObject
         CpuCurve.IsVisible = any && Fans.Any(f => f.Role == FanRole.Cpu);
         CaseCurve.IsVisible = any && Fans.Any(f => f.Role == FanRole.Case);
         OnPropertyChanged(nameof(HasCurves));
+        OnPropertyChanged(nameof(GpuByDriver));
+        OnPropertyChanged(nameof(GpuOwnCurve));
+        OnPropertyChanged(nameof(GpuUseDriver));
+        OnPropertyChanged(nameof(GpuUseCurve));
+        OnPropertyChanged(nameof(ShowZeroRpm));
+        OnPropertyChanged(nameof(GpuDriverNote));
+        OnPropertyChanged(nameof(AmdStatus));
     }
 
     public bool HasCurves => GpuCurve.IsVisible || CpuCurve.IsVisible || CaseCurve.IsVisible;

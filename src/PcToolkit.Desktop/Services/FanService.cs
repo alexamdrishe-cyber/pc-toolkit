@@ -10,8 +10,8 @@ namespace PcToolkit.Desktop.Services;
 /// Управление вентиляторами, пока программа запущена (в том числе свёрнутой в трей). Раз в секунду считает обороты
 /// по кривым и отправляет их: через службу — «в аренду» на несколько секунд (программа закрылась или зависла —
 /// служба сама вернёт вентиляторы BIOS), без службы с правами администратора — в свою библиотеку датчиков.
-/// Видеокарте AMD кривая записывается в драйвер. Выход из программы или выключение управления — всё возвращается
-/// BIOS и драйверу видеокарты.
+/// Видеокарте AMD своя кривая (если она выбрана) записывается в драйвер; в «Тихо» видеокарта остаётся на его
+/// автоматике. Выход из программы или выключение управления — всё возвращается BIOS и драйверу видеокарты.
 /// </summary>
 public sealed class FanService : IDisposable
 {
@@ -58,6 +58,9 @@ public sealed class FanService : IDisposable
     public double? CpuTemperature { get; private set; }
 
     public double? GpuTemperature { get; private set; }
+
+    /// <summary>Горячая точка видеокарты: по ней драйвер AMD крутит вентиляторы по кривой.</summary>
+    public double? GpuHotSpot { get; private set; }
 
     /// <summary>Обороты вентиляторов видеокарты AMD (тахометр из библиотеки датчиков).</summary>
     public double? GpuFanRpm { get; private set; }
@@ -149,6 +152,7 @@ public sealed class FanService : IDisposable
             KeyMetrics metrics = KeyMetrics.From(snapshot);
             CpuTemperature = metrics.CpuTemperature?.Value;
             GpuTemperature = metrics.GpuTemperature?.Value;
+            GpuHotSpot = metrics.GpuHotSpot?.Value;
             GpuFanRpm = snapshot.Devices.FirstOrDefault(d => d.Kind == DeviceKind.GpuAmd)?.Sensors
                 .FirstOrDefault(s => s.Kind == SensorKind.Fan)?.Value;
             Channels = _canControlBoard ? FanChannels.FromSnapshot(snapshot) : Array.Empty<FanChannel>();
@@ -190,7 +194,7 @@ public sealed class FanService : IDisposable
         if (DateTime.Now - snapshot.Timestamp > StaleAfter)
             return;
 
-        var duties = new Dictionary<string, double?>(_controller.Tick(settings, Channels, CpuTemperature, GpuTemperature));
+        var duties = new Dictionary<string, double?>(_controller.Tick(settings, Channels, CpuTemperature, GpuTemperature, GpuHotSpot));
         DateTime now = DateTime.Now;
         foreach (string id in _overrides.Where(o => o.Value.Until <= now).Select(o => o.Key).ToList())
             _overrides.Remove(id);
@@ -254,7 +258,8 @@ public sealed class FanService : IDisposable
         if (AmdGpu is null)
             return;
 
-        if (!settings.Enabled)
+        // Управление выключено или видеокарта на автоматике драйвера — вернуть то, что было до программы.
+        if (!settings.Enabled || settings.Active.GpuByDriver)
         {
             if (_amd.HasSavedState)
             {

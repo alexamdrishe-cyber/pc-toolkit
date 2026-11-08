@@ -1,7 +1,8 @@
 <UserControl x:Class="PcToolkit.Desktop.Views.FansView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls">
+             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls"
+             xmlns:services="clr-namespace:PcToolkit.Desktop.Services">
 
     <UserControl.Resources>
         <!-- Карточка кривой: цветная точка, название, по какой температуре, сам график -->
@@ -211,11 +212,42 @@
                                 <Ellipse Width="9" Height="9" Fill="{Binding GpuCurve.AccentBrush}" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding GpuCurve.Title}" Style="{StaticResource CurveTitle}" Margin="8,0,0,0" />
                             </StackPanel>
-                            <TextBlock Text="{Binding GpuCurve.Subtitle}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                            <TextBlock TextWrapping="Wrap" Margin="0,2,0,8">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource Caption}">
+                                        <Setter Property="Text" Value="{Binding GpuCurve.Subtitle}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding GpuByDriver}" Value="True">
+                                                <Setter Property="Text" Value="как настроено в драйвере видеокарты" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                             <controls:FanCurveEditor Height="210" Curve="{Binding GpuCurve.Curve, Mode=TwoWay}" IsEditable="{Binding GpuCurve.IsEditable}"
-                                                     CurrentTemperature="{Binding GpuCurve.CurrentTemperature}" Accent="{Binding GpuCurve.Accent}" />
+                                                     CurrentTemperature="{Binding GpuCurve.CurrentTemperature}" Accent="{Binding GpuCurve.Accent}"
+                                                     Visibility="{Binding GpuOwnCurve, Converter={StaticResource BoolToVis}}" />
+                            <!-- Автоматика драйвера: кривой нет — объясняем, почему так тише -->
+                            <Border Height="210" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource ChartGridBrush}" Background="#10F59E4A"
+                                    Visibility="{Binding GpuByDriver, Converter={StaticResource BoolToVis}}">
+                                <StackPanel VerticalAlignment="Center" Margin="20,0">
+                                    <controls:IconView Icon="{x:Static services:Icons.Fan}" Width="30" Height="30" StrokeThickness="1.6"
+                                                       Foreground="{Binding GpuCurve.AccentBrush}" HorizontalAlignment="Left" />
+                                    <TextBlock Text="Автоматика драйвера" FontSize="14" FontWeight="SemiBold" Margin="0,12,0,0" />
+                                    <TextBlock Text="{Binding GpuDriverNote}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,5,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                                    Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Content="Как в драйвере" GroupName="gpu-source" Style="{StaticResource SegmentRadio}" IsChecked="{Binding GpuUseDriver, Mode=TwoWay}"
+                                                 ToolTip="Вентиляторами видеокарты управляет её драйвер — обычно так тише всего" />
+                                    <RadioButton Content="Своя кривая" GroupName="gpu-source" Style="{StaticResource SegmentRadio}" IsChecked="{Binding GpuUseCurve, Mode=TwoWay}"
+                                                 ToolTip="Обороты по своей кривой — по горячей точке видеокарты" />
+                                </StackPanel>
+                            </Border>
                             <CheckBox IsChecked="{Binding GpuZeroRpm, Mode=TwoWay}" Margin="0,10,0,0"
-                                      Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}">
+                                      Visibility="{Binding ShowZeroRpm, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Останавливать вентиляторы, пока видеокарта холодная" TextWrapping="Wrap" />
                             </CheckBox>
                         </StackPanel>

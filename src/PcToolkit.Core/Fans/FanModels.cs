@@ -179,6 +179,14 @@ public sealed class FanTemplate
 {
     public string Name { get; set; } = "";
 
+    /// <summary>
+    /// Вентиляторами видеокарты управляет её драйвер, программа их не трогает. Автоматика драйвера тише любой
+    /// кривой: она опускается ниже минимума ручной кривой и останавливает вентиляторы в простое (проверено на
+    /// RX 6700 XT: 600 об/мин против 950 на самой тихой кривой).
+    /// </summary>
+    public bool GpuByDriver { get; set; } = true;
+
+    /// <summary>Своя кривая видеокарты — по горячей точке: по ней драйвер AMD крутит вентиляторы.</summary>
     public FanCurve Gpu { get; set; } = FanPresets.QuietGpu;
 
     public FanCurve Cpu { get; set; } = FanPresets.QuietCpu;
@@ -193,6 +201,7 @@ public sealed class FanTemplate
     public FanTemplate Copy(string name) => new()
     {
         Name = name,
+        GpuByDriver = GpuByDriver,
         Gpu = Gpu,
         Cpu = Cpu,
         Case = Case,
@@ -209,18 +218,21 @@ public sealed class FanTemplate
 }
 
 /// <summary>
-/// Готовые кривые. «Тихо» — в простое почти не слышно, в игре обороты растут плавно; «Холодно» — заметно
-/// быстрее и раньше. Корпусные в обоих режимах идут по температуре видеокарты.
+/// Готовые кривые. «Тихо» — в простое не громче BIOS, в игре обороты растут плавно; видеокарта — на автоматике
+/// драйвера (она тише любой кривой). «Холодно» — заметно быстрее и раньше, видеокарта — по своей кривой.
+/// Корпусные в обоих режимах идут по температуре видеокарты. Кривые видеокарты — по горячей точке (она на 10–20 °C
+/// выше температуры ядра): по ней драйвер AMD крутит вентиляторы.
 /// </summary>
 public static class FanPresets
 {
-    public static FanCurve QuietGpu { get; } = FanCurve.Of((50, 20), (60, 28), (70, 38), (80, 55), (90, 80));
+    /// <summary>Начало для своей кривой видеокарты: в простое минимум, в игре — как заводская автоматика.</summary>
+    public static FanCurve QuietGpu { get; } = FanCurve.Of((50, 18), (65, 24), (75, 33), (85, 48), (95, 72));
 
-    public static FanCurve QuietCpu { get; } = FanCurve.Of((40, 25), (55, 32), (65, 42), (75, 60), (85, 100));
+    public static FanCurve QuietCpu { get; } = FanCurve.Of((45, 20), (60, 28), (70, 40), (80, 60), (90, 100));
 
-    public static FanCurve QuietCase { get; } = FanCurve.Of((40, 25), (55, 32), (65, 42), (75, 58), (85, 80));
+    public static FanCurve QuietCase { get; } = FanCurve.Of((40, 22), (55, 28), (65, 38), (75, 55), (85, 80));
 
-    public static FanCurve CoolGpu { get; } = FanCurve.Of((40, 30), (55, 45), (65, 60), (75, 78), (85, 100));
+    public static FanCurve CoolGpu { get; } = FanCurve.Of((45, 22), (60, 30), (70, 45), (80, 62), (90, 88));
 
     public static FanCurve CoolCpu { get; } = FanCurve.Of((35, 40), (50, 55), (60, 70), (70, 85), (80, 100));
 
@@ -235,6 +247,7 @@ public static class FanPresets
     public static FanTemplate Quiet => new()
     {
         Name = "Тихо",
+        GpuByDriver = true,
         Gpu = QuietGpu,
         Cpu = QuietCpu,
         Case = QuietCase,
@@ -245,6 +258,7 @@ public static class FanPresets
     public static FanTemplate Cool => new()
     {
         Name = "Холодно",
+        GpuByDriver = false,
         Gpu = CoolGpu,
         Cpu = CoolCpu,
         Case = CoolCase,

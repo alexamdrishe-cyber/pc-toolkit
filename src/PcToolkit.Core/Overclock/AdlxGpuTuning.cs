@@ -260,6 +260,12 @@ public sealed unsafe class AdlxGpuTuning : IDisposable
                             $"память {info.SupportsVram}, вентиляторы {info.SupportsFan}, питание {info.SupportsPower}, автонастройка {info.SupportsAuto}; " +
                             $"прочитано — ядро {info.MaxFrequencyRange is not null}, память {info.VramFrequencyRange is not null}, " +
                             $"питание {info.PowerLimitRange is not null}, кривая {info.FanCurve.Count} точек, Zero RPM {info.ZeroRpm is not null}.");
+                if (info.FanSpeedRange is { } speed && info.FanTemperatureRange is { } temperature)
+                {
+                    AppLog.Info($"ADLX: вентиляторы — скорость {speed.Min}–{speed.Max} % (шаг {speed.Step}), температура {temperature.Min}–{temperature.Max} °C " +
+                                $"(шаг {temperature.Step}); кривая {FormatCurve(info.FanCurve)}, по умолчанию {FormatCurve(info.FanCurveDefault)}; " +
+                                $"остановка в простое {info.ZeroRpm?.ToString() ?? "—"}.");
+                }
             }
 
             return info;

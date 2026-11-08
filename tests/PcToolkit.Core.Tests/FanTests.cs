@@ -9,6 +9,9 @@ public sealed class FanTests
     private static FanChannel Board(int index, double? rpm = 900) =>
         new($"/lpc/it8655e/0/control/{index}", $"Fan #{index + 1}", "ITE IT8655E", FanChannelKind.Motherboard, rpm, null);
 
+    private static FanChannel Nvidia() =>
+        new("/gpu-nvidia/0/control/0", "GPU Fan", "NVIDIA GeForce RTX 3060", FanChannelKind.GpuNvidia, 1200, null);
+
     private static FanSettings Enabled(FanMode mode = FanMode.Quiet)
     {
         var settings = new FanSettings { Enabled = true, Mode = mode };
@@ -69,7 +72,7 @@ public sealed class FanTests
     [Fact]
     public void SpeedRisesFastAndFallsSlowly()
     {
-        var controller = new FanController();
+        var controller = new FanController(smoothing: 1);
         FanSettings settings = Enabled(FanMode.Cool);
         FanChannel cpu = Board(0);
 
@@ -137,7 +140,7 @@ public sealed class FanTests
         Assert.Equal(45, controller.Tick(settings, new[] { Board(1) }, 30, 30)[Board(1).Id]);
         settings.Channels[1].MinDuty = 0;
         controller.Reset();
-        Assert.Equal(25, controller.Tick(settings, new[] { Board(1) }, 20, 20)[Board(1).Id]); // первая точка «Тихо», выше общего минимума 10 %
+        Assert.Equal(22, controller.Tick(settings, new[] { Board(1) }, 20, 20)[Board(1).Id]); // первая точка «Тихо», выше общего минимума 10 %
     }
 
     [Fact]
@@ -228,9 +231,69 @@ public sealed class FanTests
         List<FanPoint> points = AmdGpuFans.ToDriver(FanPresets.CoolGpu, 3, new TuningRange(25, 100, 5), new TuningRange(0, 100, 5));
 
         Assert.Equal(3, points.Count);
-        Assert.Equal(40, points[0].Temperature);
-        Assert.Equal(85, points[^1].Temperature);
+        Assert.Equal(45, points[0].Temperature);
+        Assert.Equal(90, points[^1].Temperature);
         Assert.All(points, p => Assert.Equal(0, p.Speed % 5));
+    }
+
+    [Fact]
+    public void QuietLeavesGpuFansToTheDriver()
+    {
+        var controller = new FanController();
+
+        Assert.Null(controller.Tick(Enabled(FanMode.Quiet), new[] { Nvidia() }, 40, 60, 75)[Nvidia().Id]);
+        Assert.Equal(FanPresets.CoolGpu.DutyAt(75), controller.Tick(Enabled(FanMode.Cool), new[] { Nvidia() }, 40, 60, 75)[Nvidia().Id]!.Value, 1);
+    }
+
+    [Fact]
+    public void GpuCurveFollowsHotSpotAndFallsBackToCore()
+    {
+        FanSettings settings = Enabled(FanMode.Cool);
+
+        Assert.Equal(FanPresets.CoolGpu.DutyAt(70), new FanController().Tick(settings, new[] { Nvidia() }, 40, 50, 70)[Nvidia().Id]!.Value, 1);
+        Assert.Equal(FanPresets.CoolGpu.DutyAt(50), new FanController().Tick(settings, new[] { Nvidia() }, 40, 50, null)[Nvidia().Id]!.Value, 1);
+    }
+
+    [Fact]
+    public void ShortTemperatureSpikeBarelyMovesTheFan()
+    {
+        var controller = new FanController();
+        FanSettings settings = Enabled(FanMode.Quiet);
+        FanChannel cpu = Board(0);
+
+        double calm = controller.Tick(settings, new[] { cpu }, 50, 40)[cpu.Id]!.Value;
+        double spike = controller.Tick(settings, new[] { cpu }, 70, 40)[cpu.Id]!.Value; // секундный скачок Ryzen
+
+        Assert.True(spike < FanPresets.QuietCpu.DutyAt(70) - 10, $"после скачка {spike} %");
+        Assert.True(spike > calm);
+        Assert.False(controller.Overheat);
+    }
+
+    [Fact]
+    public void OldTemplatesKeepGpuOnTheDriver()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"pct-fans-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """
+                {"Enabled":true,"Mode":"Manual","Templates":[{"Name":"Мой шаблон","Gpu":{"Points":[{"Temperature":50,"Duty":20},{"Temperature":60,"Duty":28},
+                {"Temperature":70,"Duty":38},{"Temperature":80,"Duty":55},{"Temperature":90,"Duty":80}]},"GpuZeroRpm":true}],"SelectedTemplate":"Мой шаблон"}
+                """);
+
+            FanSettings settings = FanSettings.Load(path);
+
+            Assert.True(settings.Active.GpuByDriver);
+            Assert.Equal(20, settings.Active.Gpu.Points[0].Duty);
+            Assert.True(settings.Active.Copy("копия").GpuByDriver);
+            Assert.True(FanPresets.Quiet.GpuByDriver);
+            Assert.False(FanPresets.Cool.GpuByDriver);
+            Assert.False(FanPresets.Cool.Copy("моё").GpuByDriver);
+        }
+        finally
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
     }
 
     [Fact]
