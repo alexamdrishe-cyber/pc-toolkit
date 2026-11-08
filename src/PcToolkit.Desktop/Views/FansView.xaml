@@ -88,6 +88,15 @@
                 </TextBlock>
             </Border>
 
+            <!-- Другая программа управления вентиляторами -->
+            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,0,0,10"
+                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                    Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}">
+                <TextBlock TextWrapping="Wrap">
+                    <Run Text="Две программы на одни вентиляторы. " FontWeight="SemiBold" /><Run Text="{Binding ConflictText, Mode=OneWay}" />
+                </TextBlock>
+            </Border>
+
             <!-- Видеокарта AMD: кривая в драйвере -->
             <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="18,14"
                     Visibility="{Binding HasAmdGpu, Converter={StaticResource BoolToVis}}">

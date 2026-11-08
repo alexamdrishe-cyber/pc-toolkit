@@ -388,6 +388,18 @@ public sealed class FansViewModel : ObservableObject
 
     public bool HasBoardProblem => _fans.BoardProblem is not null;
 
+    /// <summary>Другая программа управления вентиляторами запущена, а наше управление включено.</summary>
+    public bool HasConflict => Settings.Enabled && _fans.Conflicts.Count > 0;
+
+    public string ConflictText => _fans.Conflicts.Count switch
+    {
+        0 => "",
+        1 => $"Запущена {_fans.Conflicts[0]} — она тоже умеет управлять вентиляторами. Если в ней включено управление, " +
+             "выключите его или закройте программу: вдвоём они перебивают друг друга, и обороты скачут.",
+        _ => $"Запущены {string.Join(", ", _fans.Conflicts)} — они тоже умеют управлять вентиляторами. Если в них включено " +
+             "управление, выключите его или закройте их: несколько программ перебивают друг друга, и обороты скачут.",
+    };
+
     public bool HasAmdGpu => _fans.AmdGpu is not null;
 
     public string AmdGpuName => _fans.AmdGpu is null ? "" : "Видеокарта AMD";
@@ -847,6 +859,8 @@ public sealed class FansViewModel : ObservableObject
         OnPropertyChanged(nameof(HasFans));
         OnPropertyChanged(nameof(BoardProblem));
         OnPropertyChanged(nameof(HasBoardProblem));
+        OnPropertyChanged(nameof(HasConflict));
+        OnPropertyChanged(nameof(ConflictText));
         OnPropertyChanged(nameof(HasAmdGpu));
         OnPropertyChanged(nameof(AmdGpuName));
         OnPropertyChanged(nameof(AmdStatus));

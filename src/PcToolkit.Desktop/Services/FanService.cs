@@ -31,6 +31,8 @@ public sealed class FanService : IDisposable
     private string? _gpuApplied;
     private bool _amdProbed;
     private bool _disposed;
+    private int _conflictCountdown;
+    private string _conflictsLogged = "";
 
     /// <param name="service">Служба, если программа работает через неё (без прав администратора).</param>
     /// <param name="local">Своя библиотека датчиков, если программа запущена с правами администратора без службы.</param>
@@ -74,6 +76,9 @@ public sealed class FanService : IDisposable
     public GpuTuningInfo? AmdGpu { get; private set; }
 
     public string? AmdProblem { get; private set; }
+
+    /// <summary>Запущенные программы, которые тоже умеют управлять вентиляторами (проверка раз в 10 секунд).</summary>
+    public IReadOnlyList<string> Conflicts { get; private set; } = Array.Empty<string>();
 
     /// <summary>Как драйвер видеокарты принял кривую (точки после округления к его шагам).</summary>
     public IReadOnlyList<FanPoint> AmdCurve { get; private set; } = Array.Empty<FanPoint>();
@@ -140,6 +145,7 @@ public sealed class FanService : IDisposable
         if (_disposed)
             return;
 
+        CheckConflicts();
         lock (_tickLock)
         {
             if (_disposed)
@@ -185,6 +191,24 @@ public sealed class FanService : IDisposable
         catch (Exception ex)
         {
             AppLog.Error("Ошибка в обработчике вентиляторов.", ex);
+        }
+    }
+
+    /// <summary>Раз в 10 секунд — не запущена ли другая программа управления вентиляторами (MSI Afterburner, FanControl…).</summary>
+    private void CheckConflicts()
+    {
+        if (Interlocked.Decrement(ref _conflictCountdown) > 0)
+            return;
+
+        _conflictCountdown = 10;
+        IReadOnlyList<string> conflicts = FanConflicts.Running();
+        Conflicts = conflicts;
+        string text = string.Join(", ", conflicts);
+        if (text != _conflictsLogged)
+        {
+            _conflictsLogged = text;
+            if (text.Length > 0)
+                AppLog.Info("Вентиляторами может управлять и другая программа: " + text + ".");
         }
     }
 

@@ -297,6 +297,15 @@ public sealed class FanTests
     }
 
     [Fact]
+    public void ConflictingFanProgramsAreFoundByProcessName()
+    {
+        IReadOnlyList<string> found = FanConflicts.Find(new[] { "explorer", "msiafterburner", "HWiNFO64", "HWiNFO32", "steam", "FanControl" });
+
+        Assert.Equal(new[] { "FanControl", "MSI Afterburner", "HWiNFO" }, found);
+        Assert.Empty(FanConflicts.Find(new[] { "explorer", "PcToolkit", "RadeonSoftware" }));
+    }
+
+    [Fact]
     public void CloneIsIndependent()
     {
         FanSettings settings = Enabled(FanMode.Manual);
