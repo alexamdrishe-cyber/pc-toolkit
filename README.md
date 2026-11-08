@@ -156,7 +156,7 @@ dotnet run --project src/PcToolkit.Desktop
 
 | Что | Путь |
 | --- | --- |
-| Журнал приложения | `%LocalAppData%\PcToolkit\logs\app.log` |
+| Журнал приложения (в том числе время запуска: «экраны N мс, окно M мс» и этапы дольше 250 мс) | `%LocalAppData%\PcToolkit\logs\app.log` |
 | Журнал изменений системы | `%LocalAppData%\PcToolkit\journal.json` |
 | История очистки | `%LocalAppData%\PcToolkit\cleanup-history.json` |
 | Настройки (в том числе вид мониторинга, закреплённые датчики, свёрнутое меню) | `%LocalAppData%\PcToolkit\settings.json` |
