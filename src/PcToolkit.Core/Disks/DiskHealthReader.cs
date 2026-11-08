@@ -157,7 +157,7 @@ public static class DiskHealthReader
                 Serial = Clean(descriptor.Serial),
                 Firmware = Clean(descriptor.Revision),
                 Bus = BusName(descriptor.BusType),
-                SizeBytes = QuerySize(handle),
+                SizeBytes = QuerySize(handle) is > 0 and long size ? size : VolumesSize(volumes.GetValueOrDefault(number)),
                 IsSsd = QuerySeekPenalty(handle) is bool seek ? !seek : null,
                 Volumes = volumes.TryGetValue(number, out List<string>? letters) ? letters : new List<string>(),
                 Attributes = attributes,
@@ -205,6 +205,29 @@ public static class DiskHealthReader
                && returned >= 32
             ? BinaryPrimitives.ReadInt64LittleEndian(output.AsSpan(24))
             : 0;
+    }
+
+    /// <summary>
+    /// Если диск не сообщил размер (так бывает у кардридеров и переходников USB), — хотя бы сумма размеров его разделов.
+    /// </summary>
+    private static long VolumesSize(List<string>? letters)
+    {
+        long total = 0;
+        foreach (string letter in letters ?? new List<string>())
+        {
+            try
+            {
+                var drive = new DriveInfo(letter);
+                if (drive.IsReady)
+                    total += drive.TotalSize;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+            {
+                // Раздел пропал во время проверки — без размера.
+            }
+        }
+
+        return total;
     }
 
     /// <summary>STORAGE_PROPERTY_QUERY: PropertyId, QueryType = PropertyStandardQuery, AdditionalParameters.</summary>

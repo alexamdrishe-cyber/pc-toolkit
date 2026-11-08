@@ -105,6 +105,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             .GroupBy(r => r.Disk.Number)
             .ToDictionary(g => g.Key, g => g.First().Title));
         Drivers = new DriversViewModel(ReinstallDriverCommand);
+        Network = new NetworkViewModel();
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -141,6 +142,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             {
                 new NavItemViewModel("Игры", Icons.Games, Games, "профили игр, оверлей FPS, замеры FPS до и после"),
                 new NavItemViewModel("Тесты", Icons.Tests, Benchmarks, "стресс-тест, стабильность, бенчмарк, процессор, видеокарта, память"),
+                new NavItemViewModel("Сеть", Icons.Network, Network, "пинг, джиттер, потери пакетов, Wi-Fi, сигнал, DNS, лаги в играх"),
             }),
             new NavGroupViewModel("Обслуживание", new[]
             {
@@ -193,6 +195,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public CrashesViewModel Crashes { get; }
 
     public DriversViewModel Drivers { get; }
+
+    public NetworkViewModel Network { get; }
 
     public AppsViewModel Apps { get; }
 
@@ -420,6 +424,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     crashes.EnsureLoaded();
                 else if (value.Page is DriversViewModel drivers)
                     drivers.EnsureLoaded();
+                else if (value.Page is NetworkViewModel network)
+                    network.EnsureLoaded();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
             }
