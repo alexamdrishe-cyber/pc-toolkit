@@ -167,10 +167,14 @@ public sealed class AppsViewModel : ObservableObject
             foreach (AppItemViewModel item in _all.Where(a => a.Advice.Level == AdviceLevel.Remove))
                 item.IsSelected = true;
         }, () => _all.Any(a => a.Advice.Level == AdviceLevel.Remove));
+        FindOrphansCommand = new RelayCommand(StartOrphanSearch, () => !IsLoading);
         RefreshRemoved();
     }
 
     public ICommand RefreshCommand { get; }
+
+    /// <summary>Найти остатки программ, удалённых раньше: сломанные ярлыки, автозапуск, задания, пустые папки.</summary>
+    public ICommand FindOrphansCommand { get; }
 
     public ICommand UninstallSelectedCommand { get; }
 
@@ -364,6 +368,26 @@ public sealed class AppsViewModel : ObservableObject
                 await LoadAsync();
         });
         _host.ShowOverlay(wizard);
+    }
+
+    private void StartOrphanSearch()
+    {
+        IDisposable? slot = _gate.TryEnter("Поиск остатков удалённых программ", out string? busy);
+        if (slot is null)
+        {
+            Message = $"Сейчас нельзя: выполняется «{busy}».";
+            return;
+        }
+
+        UninstallWizardViewModel wizard = UninstallWizardViewModel.ForOrphans(_removed, async changed =>
+        {
+            slot.Dispose();
+            _host.CloseOverlay();
+            if (changed)
+                await LoadAsync();
+        });
+        _host.ShowOverlay(wizard);
+        _ = wizard.FindOrphansAsync();
     }
 
     private async Task RestoreAsync(RemovedAppViewModel row)

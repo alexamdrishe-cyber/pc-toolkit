@@ -64,14 +64,23 @@ public sealed class LeftoverItemViewModel : ObservableObject
 
     public Leftover Item { get; }
 
-    public string Path => Item.Kind == LeftoverKind.RegistryKey && Item.View == Microsoft.Win32.RegistryView.Registry32
-        ? Item.Path + "  (32-битная часть)"
-        : Item.Path;
+    public string Path
+    {
+        get
+        {
+            string path = Item.Kind == LeftoverKind.RegistryValue ? $"{Item.Path}  →  «{Item.ValueName}»" : Item.Path;
+            return Item.Kind is LeftoverKind.RegistryKey or LeftoverKind.RegistryValue && Item.View == Microsoft.Win32.RegistryView.Registry32
+                ? path + "  (32-битная часть)"
+                : path;
+        }
+    }
 
     public string KindText => Item.Kind switch
     {
         LeftoverKind.Folder => "Папка",
         LeftoverKind.Shortcut => "Ярлык",
+        LeftoverKind.RegistryValue => "Автозапуск",
+        LeftoverKind.ScheduledTask => "Задание",
         _ => "Реестр",
     };
 
@@ -111,11 +120,25 @@ public sealed class UninstallWizardViewModel : ObservableObject
     private string _summary = "";
     private string _backupFolder = "";
     private IReadOnlyList<LeftoverItemViewModel> _leftovers = Array.Empty<LeftoverItemViewModel>();
+    private readonly bool _orphans;
+
+    /// <summary>
+    /// Мастер поиска остатков уже удалённых программ: сразу ищет, потом тот же шаг «следы» и итог.
+    /// Запуск поиска — <see cref="FindOrphansAsync"/>.
+    /// </summary>
+    public static UninstallWizardViewModel ForOrphans(RemovedStoreApps removed, Func<bool, Task> close) =>
+        new(Array.Empty<InstalledApp>(), removed, close, orphans: true);
 
     public UninstallWizardViewModel(IReadOnlyList<InstalledApp> apps, RemovedStoreApps removed, Func<bool, Task> close)
+        : this(apps, removed, close, orphans: false)
+    {
+    }
+
+    private UninstallWizardViewModel(IReadOnlyList<InstalledApp> apps, RemovedStoreApps removed, Func<bool, Task> close, bool orphans)
     {
         _removed = removed;
         _close = close;
+        _orphans = orphans;
         Apps = apps.Select(a => new WizardAppViewModel(a)).ToList();
 
         StartCommand = new RelayCommand(() => _ = RunAsync(), () => IsConfirm);
@@ -154,7 +177,12 @@ public sealed class UninstallWizardViewModel : ObservableObject
 
     public bool IsDone => _step == "done";
 
-    public bool ShowApps => !IsLeftovers;
+    public bool ShowApps => !IsLeftovers && Apps.Count > 0;
+
+    /// <summary>Идёт удаление программ (а не поиск остатков): показываются подсказки про окно деинсталлятора.</summary>
+    public bool IsUninstalling => IsWorking && !_orphans;
+
+    public string LeftoversTitle => _orphans ? "Найдены остатки удалённых программ" : "Найдены следы";
 
     public string CurrentText
     {
@@ -185,8 +213,12 @@ public sealed class UninstallWizardViewModel : ObservableObject
         get
         {
             long size = Leftovers.Where(l => l.Item.Kind == LeftoverKind.Folder).Sum(l => l.Item.SizeBytes);
-            return $"Найдено: {Leftovers.Count}" + (size > 0 ? $", папки занимают {Formatting.Bytes((ulong)size)}" : "") +
-                   ". Папки и ярлыки уйдут в Корзину, ключи реестра — после резервной копии. Снимите галочку с того, что хотите оставить.";
+            string intro = _orphans
+                ? "То, что осталось от программ, удалённых раньше: ярлыки, автозапуск и задания, которые ведут на несуществующие файлы, " +
+                  "записи в списке программ без самой программы и пустые папки. "
+                : "";
+            return intro + $"Найдено: {Leftovers.Count}" + (size > 0 ? $", папки занимают {Formatting.Bytes((ulong)size)}" : "") +
+                   ". Папки и ярлыки уйдут в Корзину, записи реестра и задания — после резервной копии. Снимите галочку с того, что хотите оставить.";
         }
     }
 
@@ -216,7 +248,41 @@ public sealed class UninstallWizardViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLeftovers));
         OnPropertyChanged(nameof(IsDone));
         OnPropertyChanged(nameof(ShowApps));
+        OnPropertyChanged(nameof(IsUninstalling));
         RelayCommand.Refresh();
+    }
+
+    /// <summary>Поиск остатков уже удалённых программ (режим <see cref="ForOrphans"/>).</summary>
+    public async Task FindOrphansAsync()
+    {
+        SetStep("working");
+        CurrentText = "Ищу остатки удалённых программ";
+        bool elevated = EnvironmentStatus.CurrentProcessElevated;
+        var progress = new Progress<string>(s => StatusText = s);
+        IReadOnlyList<Orphan> orphans;
+        try
+        {
+            orphans = await Task.Run(() => OrphanScanner.Find(InstalledAppsProvider.ListDesktop(), elevated, progress));
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Не удалось найти остатки удалённых программ.", ex);
+            Finish("Не удалось выполнить поиск: " + ex.Message);
+            return;
+        }
+
+        StatusText = "";
+        CurrentText = "";
+        if (orphans.Count == 0)
+        {
+            Finish("Ничего не найдено: ярлыков, автозапуска и заданий от удалённых программ нет, записей без программ и пустых папок тоже.");
+            return;
+        }
+
+        Leftovers = orphans.OrderBy(o => o.Item.Kind).ThenBy(o => o.Name, StringComparer.CurrentCultureIgnoreCase)
+                           .Select(o => new LeftoverItemViewModel(o.Name, o.Item)).ToList();
+        OnPropertyChanged(nameof(LeftoversCaption));
+        SetStep("leftovers");
     }
 
     private async Task RunAsync()
@@ -379,9 +445,12 @@ public sealed class UninstallWizardViewModel : ObservableObject
         if (failed.Count > 0)
             text += " Не удалось: " + string.Join("; ", failed.Take(3).Select(f => $"{Path.GetFileName(f.Item.Path)} — {f.Error}")) +
                     (failed.Count > 3 ? $" и ещё {failed.Count - 3}" : "") + ".";
-        text += " Папки и ярлыки можно вернуть из Корзины" + (results.Any(r => r.Removed && r.Item.Kind == LeftoverKind.RegistryKey)
-            ? ", ключи реестра — двойным щелчком по .reg-файлу в папке резервных копий."
-            : ".");
+        text += " Папки и ярлыки можно вернуть из Корзины";
+        if (results.Any(r => r.Removed && r.Item.Kind is LeftoverKind.RegistryKey or LeftoverKind.RegistryValue))
+            text += ", записи реестра — двойным щелчком по .reg-файлу в папке резервных копий";
+        if (results.Any(r => r.Removed && r.Item.Kind == LeftoverKind.ScheduledTask))
+            text += ", задания — через «Импортировать задачу» в Планировщике заданий (XML-файл в той же папке)";
+        text += ".";
         _changed = true;
         Finish(text);
     }

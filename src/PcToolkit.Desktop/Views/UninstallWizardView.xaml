@@ -30,7 +30,7 @@
                        Visibility="{Binding IsConfirm, Converter={StaticResource BoolToVis}}" />
             <TextBlock Text="{Binding CurrentText}" FontSize="19" FontWeight="SemiBold" TextWrapping="Wrap"
                        Visibility="{Binding IsWorking, Converter={StaticResource BoolToVis}}" />
-            <TextBlock Text="Найдены следы" FontSize="19" FontWeight="SemiBold"
+            <TextBlock Text="{Binding LeftoversTitle}" FontSize="19" FontWeight="SemiBold"
                        Visibility="{Binding IsLeftovers, Converter={StaticResource BoolToVis}}" />
             <TextBlock Text="Готово" FontSize="19" FontWeight="SemiBold"
                        Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}" />
@@ -78,8 +78,10 @@
             <StackPanel Visibility="{Binding IsWorking, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,14,0,0" />
                 <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,6,0,0"
+                           Visibility="{Binding IsUninstalling, Converter={StaticResource BoolToVis}}"
                            Text="Окно деинсталлятора может открыться за этим окном — проверьте панель задач. Если он уже закрылся, а здесь всё ещё ждём, нажмите «Продолжить»." />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0"
+                            Visibility="{Binding IsUninstalling, Converter={StaticResource BoolToVis}}">
                     <Button Content="Остановиться после этого" Command="{Binding StopAfterCurrentCommand}" Style="{StaticResource GhostButton}" />
                     <Button Content="Деинсталлятор закрылся — продолжить" Command="{Binding ContinueCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0" />
                 </StackPanel>
@@ -96,7 +98,7 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="30" />
-                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="88" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" Margin="0,2,0,0" />
@@ -128,7 +130,7 @@
             <StackPanel Visibility="{Binding IsDone, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" LineHeight="20" Margin="0,14,0,0" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-                    <Button Content="Резервные копии реестра" Command="{Binding OpenBackupCommand}" Style="{StaticResource GhostButton}"
+                    <Button Content="Резервные копии" Command="{Binding OpenBackupCommand}" Style="{StaticResource GhostButton}"
                             Visibility="{Binding HasBackup, Converter={StaticResource BoolToVis}}" />
                     <Button Content="Готово" Command="{Binding DoneCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
                 </StackPanel>

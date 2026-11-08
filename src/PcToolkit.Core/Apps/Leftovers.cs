@@ -13,13 +13,20 @@ public enum LeftoverKind
     Folder,
     Shortcut,
     RegistryKey,
+
+    /// <summary>Запись автозапуска (значение в разделе Run): <see cref="Leftover.ValueName"/> — её имя.</summary>
+    RegistryValue,
+
+    /// <summary>Задание Планировщика: <see cref="Leftover.Path"/> — «\Папка\Имя».</summary>
+    ScheduledTask,
 }
 
 /// <summary>
 /// Найденный след программы. Для реестра <see cref="Path"/> — «HKCU\Software\…» или «HKLM\SOFTWARE\…»,
-/// <see cref="View"/> — какая часть реестра (64 или 32 бита).
+/// <see cref="View"/> — какая часть реестра (64 или 32 бита), <see cref="ValueName"/> — имя значения (для автозапуска).
 /// </summary>
-public sealed record Leftover(LeftoverKind Kind, string Path, RegistryView View, long SizeBytes, bool NeedsAdmin, string Reason);
+public sealed record Leftover(LeftoverKind Kind, string Path, RegistryView View, long SizeBytes, bool NeedsAdmin, string Reason,
+                              string? ValueName = null);
 
 public sealed record LeftoverResult(Leftover Item, bool Removed, string? Error);
 
@@ -173,7 +180,35 @@ public static partial class LeftoverScanner
         if (includeUninstallEntry && app.Key is { } key && key.Exists())
             AddKey(result, seen, key.RegPath, key.View, key.Hive == RegistryHive.LocalMachine && !elevated, "запись в списке программ");
 
+        // 6. Автозапуск и задания Планировщика, которые запускали файлы из папок программы, а этих файлов уже нет.
+        foreach (string folder in AppFolders(app))
+        {
+            bool Inside(string target) => CleanupPaths.IsUnder(target, folder);
+            IEnumerable<Orphan> broken = OrphanScanner.BrokenAutoruns(elevated, Inside);
+            if (OperatingSystem.IsWindows())
+                broken = broken.Concat(OrphanScanner.BrokenTasks(elevated, Inside));
+            foreach (Orphan orphan in broken)
+            {
+                if (seen.Add($"{orphan.Item.Kind}|{orphan.Item.View}|{orphan.Item.Path}|{orphan.Item.ValueName}"))
+                    result.Add(orphan.Item);
+            }
+        }
+
         return result;
+    }
+
+    /// <summary>Папки программы: папка установки и папка её деинсталлятора (если это не системная папка и не корень).</summary>
+    internal static IEnumerable<string> AppFolders(InstalledApp app)
+    {
+        var folders = new List<string>();
+        if (app.InstallLocation.Length > 3 && SafeFull(app.InstallLocation) is { Length: > 0 } location && CleanupPaths.IsSafeRoot(location, out _))
+            folders.Add(location);
+        if (Uninstaller.Parse(app) is { } command && System.IO.Path.IsPathFullyQualified(command.FileName)
+            && System.IO.Path.GetDirectoryName(SafeFull(command.FileName)) is { Length: > 3 } directory
+            && CleanupPaths.IsSafeRoot(directory, out _)
+            && !folders.Any(f => f.Equals(directory, StringComparison.OrdinalIgnoreCase) || CleanupPaths.IsUnder(directory, f)))
+            folders.Add(directory);
+        return folders;
     }
 
     private static void AddKey(List<Leftover> result, HashSet<string> seen, string path, RegistryView view, bool needsAdmin, string reason)
@@ -211,7 +246,7 @@ public static partial class LeftoverScanner
         return Spaces().Replace(text, " ").Trim();
     }
 
-    private static IEnumerable<(string Root, string Place)> FolderRoots()
+    internal static IEnumerable<(string Root, string Place)> FolderRoots()
     {
         string local = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var roots = new List<(string, string)>
@@ -338,7 +373,7 @@ public static partial class LeftoverScanner
         return total;
     }
 
-    private static IEnumerable<string> SafeDirectories(string folder)
+    internal static IEnumerable<string> SafeDirectories(string folder)
     {
         try
         {
@@ -362,7 +397,7 @@ public static partial class LeftoverScanner
         }
     }
 
-    private static string SafeFull(string path)
+    internal static string SafeFull(string path)
     {
         try
         {
@@ -400,8 +435,13 @@ public static class LeftoverRemover
     {
         var results = new List<LeftoverResult>();
         int backupIndex = 0;
-        // Сначала файлы (пока программа видна в реестре, её файлы проще опознать), потом реестр.
-        foreach (Leftover item in items.OrderBy(i => i.Kind == LeftoverKind.RegistryKey ? 1 : 0))
+        // Сначала файлы (пока программа видна в реестре, её файлы проще опознать), потом автозапуск, задания и реестр.
+        foreach (Leftover item in items.OrderBy(i => i.Kind switch
+                 {
+                     LeftoverKind.Folder or LeftoverKind.Shortcut => 0,
+                     LeftoverKind.RegistryValue or LeftoverKind.ScheduledTask => 1,
+                     _ => 2,
+                 }))
         {
             try
             {
@@ -412,15 +452,23 @@ public static class LeftoverRemover
                     continue;
                 }
 
-                if (item.Kind == LeftoverKind.RegistryKey)
+                switch (item.Kind)
                 {
-                    Directory.CreateDirectory(backupFolder);
-                    string backup = System.IO.Path.Combine(backupFolder, $"{++backupIndex:00}.reg");
-                    RemoveKey(item, backup);
-                }
-                else
-                {
-                    MoveToRecycleBin(item.Path);
+                    case LeftoverKind.RegistryKey:
+                        Directory.CreateDirectory(backupFolder);
+                        RemoveKey(item, System.IO.Path.Combine(backupFolder, $"{++backupIndex:00}.reg"));
+                        break;
+                    case LeftoverKind.RegistryValue:
+                        Directory.CreateDirectory(backupFolder);
+                        RemoveValue(item, System.IO.Path.Combine(backupFolder, $"{++backupIndex:00}-autorun.reg"));
+                        break;
+                    case LeftoverKind.ScheduledTask:
+                        Directory.CreateDirectory(backupFolder);
+                        OrphanScanner.RemoveTask(item.Path, System.IO.Path.Combine(backupFolder, $"{++backupIndex:00}-task.xml"));
+                        break;
+                    default:
+                        MoveToRecycleBin(item.Path);
+                        break;
                 }
 
                 AppLog.Info($"Удалён след программы: {item.Path}");
@@ -470,6 +518,25 @@ public static class LeftoverRemover
                 using (RegistryKey root = RegistryKey.OpenBaseKey(hive, item.View))
                 using (RegistryKey? key = root.OpenSubKey(sub))
                     return key is null ? "ключа уже нет" : null;
+
+            case LeftoverKind.RegistryValue:
+            {
+                (RegistryHive valueHive, string valueKey) = SplitKey(item.Path);
+                if (!valueKey.Equals(OrphanScanner.RunKeyPath, StringComparison.OrdinalIgnoreCase))
+                    return "это не раздел автозапуска";
+                if (string.IsNullOrEmpty(item.ValueName))
+                    return "нет имени записи";
+                using RegistryKey root = RegistryKey.OpenBaseKey(valueHive, item.View);
+                using RegistryKey? key = root.OpenSubKey(valueKey);
+                if (key?.GetValue(item.ValueName) is not { } value)
+                    return "записи уже нет";
+                if (key.GetValueKind(item.ValueName) is not (RegistryValueKind.String or RegistryValueKind.ExpandString))
+                    return "необычный тип записи";
+                return OrphanScanner.IsMissingLocalPath(OrphanScanner.CommandTarget(value.ToString() ?? "")) ? null : "файл автозапуска снова на месте";
+            }
+
+            case LeftoverKind.ScheduledTask:
+                return OrphanScanner.ValidateTask(item.Path);
 
             default:
                 return "неизвестный тип";
@@ -539,6 +606,46 @@ public static class LeftoverRemover
 
         using RegistryKey root = RegistryKey.OpenBaseKey(hive, item.View);
         root.DeleteSubKeyTree(sub, throwOnMissingSubKey: false);
+    }
+
+    /// <summary>Убирает запись автозапуска, сохранив её в .reg-файл (двойной щелчок по нему вернёт запись).</summary>
+    private static void RemoveValue(Leftover item, string backup)
+    {
+        (RegistryHive hive, string sub) = SplitKey(item.Path);
+        using RegistryKey root = RegistryKey.OpenBaseKey(hive, item.View);
+        using RegistryKey key = root.OpenSubKey(sub, writable: true) ?? throw new IOException("Раздела автозапуска нет.");
+        string name = item.ValueName!;
+        object value = key.GetValue(name, null, RegistryValueOptions.DoNotExpandEnvironmentNames) ?? throw new IOException("Записи уже нет.");
+        File.WriteAllText(backup, RegFile(RegKeyName(hive, item.View, sub), name, value.ToString() ?? "", key.GetValueKind(name)), Encoding.Unicode);
+        key.DeleteValue(name, throwOnMissingValue: false);
+    }
+
+    /// <summary>Полное имя раздела для .reg-файла; у 32-битной части HKLM — через WOW6432Node.</summary>
+    internal static string RegKeyName(RegistryHive hive, RegistryView view, string sub)
+    {
+        if (hive == RegistryHive.LocalMachine && view == RegistryView.Registry32 && sub.StartsWith("Software\\", StringComparison.OrdinalIgnoreCase))
+            sub = "SOFTWARE\\WOW6432Node\\" + sub["Software\\".Length..];
+        return (hive == RegistryHive.LocalMachine ? "HKEY_LOCAL_MACHINE" : "HKEY_CURRENT_USER") + "\\" + sub;
+    }
+
+    /// <summary>Текст .reg-файла с одним строковым значением (REG_SZ или REG_EXPAND_SZ).</summary>
+    public static string RegFile(string keyName, string valueName, string value, RegistryValueKind kind)
+    {
+        static string Escape(string text) => text.Replace("\\", "\\\\").Replace("\"", "\\\"");
+        var text = new StringBuilder("Windows Registry Editor Version 5.00\r\n\r\n");
+        text.Append('[').Append(keyName).Append("]\r\n");
+        text.Append('"').Append(Escape(valueName)).Append("\"=");
+        if (kind == RegistryValueKind.ExpandString)
+        {
+            byte[] bytes = Encoding.Unicode.GetBytes(value + "\0");
+            text.Append("hex(2):").Append(string.Join(",", bytes.Select(b => b.ToString("x2"))));
+        }
+        else
+        {
+            text.Append('"').Append(Escape(value)).Append('"');
+        }
+
+        return text.Append("\r\n").ToString();
     }
 
     internal static (RegistryHive Hive, string SubKey) SplitKey(string path)
