@@ -74,6 +74,17 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Запуск вместе с Windows, свёрнутой в трей (для вентиляторов, профилей игр и уведомлений).</summary>
+    public bool StartWithWindows
+    {
+        get => Services.Autostart.IsEnabled;
+        set
+        {
+            Services.Autostart.Set(value);
+            OnPropertyChanged();
+        }
+    }
+
     /// <summary>Частоту опроса датчиков поменяли в настройках.</summary>
     public event Action<TimeSpan>? SensorIntervalChanged;
 

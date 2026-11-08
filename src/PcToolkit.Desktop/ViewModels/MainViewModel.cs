@@ -6,6 +6,7 @@ using PcToolkit.Core.Benchmarks;
 using PcToolkit.Core.Changes;
 using PcToolkit.Core.Cleanup;
 using PcToolkit.Core.Diagnostics;
+using PcToolkit.Core.Fans;
 using PcToolkit.Core.Disks;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
@@ -112,6 +113,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             .ToDictionary(g => g.Key, g => g.First().Title));
         Drivers = new DriversViewModel(ReinstallDriverCommand);
         Network = new NetworkViewModel();
+        _fanService = new FanService(FanSettings.Load(), _envStatus.ServiceConnected ? _service : null, source as LhmSensorSource, _envStatus.IsElevated);
+        Fans = new FansViewModel(_fanService, dispatcher);
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -140,6 +143,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             {
                 home,
                 new NavItemViewModel("Мониторинг", Icons.Monitoring, Monitoring, "датчики, температуры, графики, частоты, вентиляторы, запись CSV"),
+                new NavItemViewModel("Вентиляторы", Icons.Fan, Fans,
+                    "вентиляторы, кулеры, обороты, тихо, холодно, кривая, шум, корпусные вентиляторы, помпа, калибровка"),
                 new NavItemViewModel("Система", Icons.System, SystemInfo, "процессор, материнская плата, BIOS, память, диски, отчёт"),
                 new NavItemViewModel("Диски", Icons.Disk, Disks,
                     "здоровье дисков, SMART, износ и ресурс SSD, битые секторы, скорость диска, место на диске, крупные папки и файлы"),
@@ -181,6 +186,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         SelectedNav = home;
         steps.Done("меню и первый экран");
 
+        _source.SnapshotReady += (_, snapshot) => _fanService.OnSnapshot(snapshot);
         _source.SnapshotReady += OnSnapshotReady;
         _source.StateChanged += OnSourceStateChanged;
     }
@@ -206,6 +212,10 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public DriversViewModel Drivers { get; }
 
     public NetworkViewModel Network { get; }
+
+    public FansViewModel Fans { get; }
+
+    private readonly FanService _fanService;
 
     public AppsViewModel Apps { get; }
 
@@ -435,6 +445,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     drivers.EnsureLoaded();
                 else if (value.Page is NetworkViewModel network)
                     network.EnsureLoaded();
+                else if (value.Page is FansViewModel fans)
+                    fans.OnShown();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
             }
@@ -487,6 +499,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         }
 
         _source.Start();
+        _fanService.Start();
         SystemInfo.EnsureLoaded();
         // Диски, сбои, драйверы и память — в фоне, когда запуск уже позади.
         _health.Start(TimeSpan.FromSeconds(12));
@@ -598,6 +611,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             return;
 
         _disposed = true;
+        // Вентиляторы — первыми: вернуть BIOS и драйверу видеокарты, пока служба, датчики и библиотека AMD ещё работают.
+        _fanService.Dispose();
         _source.SnapshotReady -= OnSnapshotReady;
         _source.StateChanged -= OnSourceStateChanged;
         Monitoring.Dispose();

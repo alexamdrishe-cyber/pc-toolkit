@@ -31,6 +31,12 @@ public sealed class LhmSensorSource : ISensorSource
     private volatile string? _lastError;
     private bool _disposed;
 
+    // Управление вентиляторами: команды копятся здесь и выполняются в потоке датчиков (Computer не потокобезопасен).
+    private readonly object _controlLock = new();
+    private Dictionary<string, float?>? _pendingControls;
+    private bool _releaseControls;
+    private readonly HashSet<string> _controlled = new();
+
     public LhmSensorSource(TimeSpan? interval = null)
     {
         Interval = interval ?? TimeSpan.FromSeconds(1);
@@ -57,6 +63,46 @@ public sealed class LhmSensorSource : ISensorSource
     }
 
     public event EventHandler<HardwareSnapshot>? SnapshotReady;
+
+    /// <summary>
+    /// Обороты вентиляторов: Id управления → % (null — отдать вентилятор BIOS). Выполняется в потоке датчиков
+    /// перед ближайшим опросом; при остановке источника все вентиляторы возвращаются BIOS.
+    /// </summary>
+    public void SetControls(IReadOnlyDictionary<string, double?> duties)
+    {
+        lock (_controlLock)
+        {
+            _pendingControls ??= new Dictionary<string, float?>();
+            foreach ((string id, double? duty) in duties)
+                _pendingControls[id] = duty is double d ? (float)Math.Clamp(d, 0, 100) : null;
+        }
+
+        Wake();
+    }
+
+    /// <summary>Вернуть все вентиляторы, которыми управляла программа, BIOS.</summary>
+    public void ReleaseControls()
+    {
+        lock (_controlLock)
+        {
+            _pendingControls = null;
+            _releaseControls = true;
+        }
+
+        Wake();
+    }
+
+    private void Wake()
+    {
+        try
+        {
+            _wake.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Источник уже остановлен.
+        }
+    }
 
     public event EventHandler? StateChanged;
 
@@ -132,6 +178,8 @@ public sealed class LhmSensorSource : ISensorSource
             {
                 cycleTimer.Restart();
 
+                ApplyControls(computer, releaseAll: false);
+
                 HardwareSnapshot? snapshot = null;
                 try
                 {
@@ -172,8 +220,85 @@ public sealed class LhmSensorSource : ISensorSource
         }
         finally
         {
+            ApplyControls(computer, releaseAll: true);
             TryClose(computer);
             SetState(SensorSourceState.Stopped);
+        }
+    }
+
+    /// <summary>Выполняет накопившиеся команды вентиляторам (только в потоке датчиков).</summary>
+    private void ApplyControls(Computer computer, bool releaseAll)
+    {
+        Dictionary<string, float?>? pending;
+        lock (_controlLock)
+        {
+            pending = _pendingControls;
+            _pendingControls = null;
+            releaseAll |= _releaseControls;
+            _releaseControls = false;
+        }
+
+        if (pending is null && !(releaseAll && _controlled.Count > 0))
+            return;
+
+        foreach (ISensor sensor in ControlSensors(computer))
+        {
+            string id = sensor.Identifier.ToString();
+            try
+            {
+                if (releaseAll)
+                {
+                    if (_controlled.Remove(id))
+                    {
+                        sensor.Control.SetDefault();
+                        AppLog.Info($"Вентилятор «{sensor.Name}» ({sensor.Hardware.Name}) возвращён BIOS.");
+                    }
+
+                    continue;
+                }
+
+                if (pending is null || !pending.TryGetValue(id, out float? duty))
+                    continue;
+
+                if (duty is float value)
+                {
+                    sensor.Control.SetSoftware(value);
+                    if (_controlled.Add(id))
+                        AppLog.Info($"Вентилятор «{sensor.Name}» ({sensor.Hardware.Name}): обороты задаёт PC Toolkit.");
+                }
+                else if (_controlled.Remove(id))
+                {
+                    sensor.Control.SetDefault();
+                    AppLog.Info($"Вентилятор «{sensor.Name}» ({sensor.Hardware.Name}) возвращён BIOS.");
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportOnce("control:" + id, $"Не удалось управлять вентилятором «{sensor.Name}».", ex);
+            }
+        }
+    }
+
+    private static IEnumerable<ISensor> ControlSensors(Computer computer)
+    {
+        foreach (IHardware hardware in computer.Hardware)
+        {
+            foreach (ISensor sensor in SensorsOf(hardware))
+            {
+                if (sensor.SensorType == SensorType.Control && sensor.Control is not null)
+                    yield return sensor;
+            }
+        }
+    }
+
+    private static IEnumerable<ISensor> SensorsOf(IHardware hardware)
+    {
+        foreach (ISensor sensor in hardware.Sensors)
+            yield return sensor;
+        foreach (IHardware sub in hardware.SubHardware)
+        {
+            foreach (ISensor sensor in SensorsOf(sub))
+                yield return sensor;
         }
     }
 

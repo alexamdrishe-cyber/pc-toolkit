@@ -62,6 +62,9 @@
         <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
             <views:NetworkView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:FansViewModel}">
+            <views:FansView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
             <views:SettingsView />
         </DataTemplate>

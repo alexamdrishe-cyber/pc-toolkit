@@ -56,6 +56,12 @@ public static class ServiceOps
 
     /// <summary>Физические диски и их SMART (читается только с правами администратора).</summary>
     public const string Disks = "disks";
+
+    /// <summary>
+    /// Обороты вентиляторов. Действуют, пока приложение продлевает их (<see cref="ServiceRequest.LeaseMs"/>):
+    /// приложение закрылось или зависло — служба возвращает вентиляторы BIOS.
+    /// </summary>
+    public const string Fans = "fans";
 }
 
 public sealed class ServiceRequest
@@ -77,6 +83,15 @@ public sealed class ServiceRequest
     /// Старая служба поле не знает и просто его пропускает (опрашивает раз в секунду).
     /// </summary>
     public int? IntervalMs { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Fans"/>: Id управления → % (null — вернуть вентилятор BIOS).</summary>
+    public Dictionary<string, double?>? FanDuties { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Fans"/>: сколько миллисекунд действуют обороты, если приложение их не продлит.</summary>
+    public int? LeaseMs { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Fans"/>: вернуть BIOS все вентиляторы.</summary>
+    public bool ReleaseFans { get; set; }
 }
 
 public sealed class ServiceResponse

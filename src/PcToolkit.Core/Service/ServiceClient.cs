@@ -40,6 +40,14 @@ public sealed class ServiceClient : IPrivilegedWriter, IDisposable
     public ServiceResponse? GetDisks(int timeoutMs = 20000) =>
         Send(new ServiceRequest { Op = ServiceOps.Disks }, timeoutMs);
 
+    /// <summary>Обороты вентиляторов на <paramref name="leaseMs"/> мс. null — службы нет; Ok = false — служба старая или отказала.</summary>
+    public ServiceResponse? SetFans(IReadOnlyDictionary<string, double?> duties, int leaseMs, int timeoutMs = 2000) =>
+        Send(new ServiceRequest { Op = ServiceOps.Fans, FanDuties = duties.ToDictionary(p => p.Key, p => p.Value), LeaseMs = leaseMs }, timeoutMs);
+
+    /// <summary>Вернуть все вентиляторы BIOS.</summary>
+    public ServiceResponse? ReleaseFans(int timeoutMs = 2000) =>
+        Send(new ServiceRequest { Op = ServiceOps.Fans, ReleaseFans = true }, timeoutMs);
+
     public void Write(ChangeDefinition change, ValueSnapshot value)
     {
         ServiceResponse response = Send(new ServiceRequest { Op = ServiceOps.Write, Change = change, Value = value }, 15000)

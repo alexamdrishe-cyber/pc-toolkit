@@ -97,6 +97,20 @@
                 </StackPanel>
             </Border>
 
+            <!-- Автозапуск -->
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                <StackPanel>
+                    <TextBlock Text="Автозапуск" FontSize="15" FontWeight="SemiBold" />
+                    <CheckBox IsChecked="{Binding StartWithWindows, Mode=TwoWay}" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Запускать вместе с Windows" />
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                       Text="Программа стартует свёрнутой в трей: вентиляторы сразу идут по выбранному режиму, профили игр и уведомления работают без открытия окна." />
+                        </StackPanel>
+                    </CheckBox>
+                </StackPanel>
+            </Border>
+
             <!-- Уведомления -->
             <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                 <StackPanel>
@@ -126,9 +140,7 @@
                 </StackPanel>
             </Border>
 
-            <TextBlock Text="Тема и автозапуск появятся здесь позже."
-                       Style="{StaticResource MutedCaption}"
-                       Margin="0,16,0,0" />
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

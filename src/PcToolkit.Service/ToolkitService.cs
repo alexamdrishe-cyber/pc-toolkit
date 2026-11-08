@@ -1,6 +1,7 @@
 using System.ServiceProcess;
 using PcToolkit.Core.Changes;
 using PcToolkit.Core.Disks;
+using PcToolkit.Core.Fans;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
 using PcToolkit.Core.Sensors;
@@ -56,6 +57,11 @@ public sealed class ServiceHost : IDisposable
     private PipeServer? _server;
     private volatile HardwareSnapshot? _latest;
 
+    // Вентиляторы: обороты действуют до этого момента (Environment.TickCount64), потом — обратно BIOS.
+    private readonly object _fansLock = new();
+    private long _fansLeaseUntil;
+    private Timer? _fansWatchdog;
+
     public void Start()
     {
         AppLog.Info($"Служба PC Toolkit запускается (протокол {ServiceProtocol.Version}, сборка {ServiceProtocol.BuildId}).");
@@ -74,10 +80,12 @@ public sealed class ServiceHost : IDisposable
 
         _server = new PipeServer(Handle);
         _server.Start();
+        _fansWatchdog = new Timer(_ => CheckFansLease(), null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
 
     public void Dispose()
     {
+        _fansWatchdog?.Dispose();
         _server?.Dispose();
         _frames.Dispose();
         _sensors.Dispose();
@@ -112,9 +120,64 @@ public sealed class ServiceHost : IDisposable
             case ServiceOps.Disks:
                 return Disks();
 
+            case ServiceOps.Fans:
+                return Fans(request);
+
             default:
                 return ServiceResponse.Fail($"Неизвестная команда «{request.Op}».");
         }
+    }
+
+    /// <summary>
+    /// Обороты от приложения. Принимаются только для вентиляторов материнской платы, контроллеров и видеокарт NVIDIA,
+    /// не ниже <see cref="FanSettings.AbsoluteMinDuty"/> %; при перегреве — 100 %, что бы ни просили.
+    /// </summary>
+    private ServiceResponse Fans(ServiceRequest request)
+    {
+        if (request.ReleaseFans)
+        {
+            lock (_fansLock)
+                _fansLeaseUntil = 0;
+            _sensors.ReleaseControls();
+            return new ServiceResponse { Ok = true };
+        }
+
+        if (request.FanDuties is null)
+            return ServiceResponse.Fail("Нет оборотов вентиляторов.");
+
+        HardwareSnapshot? latest = _latest;
+        var allowed = latest is null
+            ? new HashSet<string>()
+            : FanChannels.FromSnapshot(latest).Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        KeyMetrics? metrics = latest is null ? null : KeyMetrics.From(latest);
+        bool hot = metrics?.CpuTemperature?.Value >= FanController.OverheatOn || metrics?.GpuTemperature?.Value >= FanController.OverheatOn;
+
+        var duties = new Dictionary<string, double?>();
+        foreach ((string id, double? duty) in request.FanDuties)
+        {
+            if (!allowed.Contains(id))
+                continue;
+            duties[id] = duty is double value ? (hot ? 100 : Math.Clamp(value, FanSettings.AbsoluteMinDuty, 100)) : null;
+        }
+
+        _sensors.SetControls(duties);
+        lock (_fansLock)
+            _fansLeaseUntil = duties.Values.Any(d => d is not null) ? Environment.TickCount64 + Math.Clamp(request.LeaseMs ?? 5000, 2000, 30000) : 0;
+        return new ServiceResponse { Ok = true };
+    }
+
+    /// <summary>Приложение перестало продлевать обороты (закрыто, зависло, упало) — вентиляторы обратно BIOS.</summary>
+    private void CheckFansLease()
+    {
+        lock (_fansLock)
+        {
+            if (_fansLeaseUntil == 0 || Environment.TickCount64 < _fansLeaseUntil)
+                return;
+            _fansLeaseUntil = 0;
+        }
+
+        AppLog.Info("Приложение перестало управлять вентиляторами — возвращаю их BIOS.");
+        _sensors.ReleaseControls();
     }
 
     private readonly object _disksLock = new();

@@ -1,0 +1,270 @@
+<UserControl x:Class="PcToolkit.Desktop.Views.FansView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls">
+
+    <UserControl.Resources>
+        <!-- Карточка кривой: цветная точка, название, по какой температуре, сам график -->
+        <Style x:Key="CurveTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <StackPanel Margin="32,28,32,28">
+            <TextBlock Text="Вентиляторы" Style="{StaticResource PageTitle}" />
+            <TextBlock Style="{StaticResource PageSubtitle}" TextWrapping="Wrap"
+                       Text="Обороты по температуре: тише в простое, холоднее в играх. Программа управляет вентиляторами, пока она запущена — в том числе свёрнутой в трей. После выхода из программы ими снова управляют BIOS и драйвер видеокарты." />
+
+            <!-- Режим -->
+            <ItemsControl ItemsSource="{Binding Modes}" Margin="0,18,-10,0" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Rows="1" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <RadioButton Style="{StaticResource OptionCard}" GroupName="fan-mode" Margin="0,0,10,0"
+                                     IsChecked="{Binding IsSelected, Mode=TwoWay}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </RadioButton>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Температуры и защита -->
+            <Border Style="{StaticResource Card}" Margin="0,14,0,0" Padding="18,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding TemperaturesText}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Style="{StaticResource MutedCaption}" VerticalAlignment="Center"
+                               Text="Защита от перегрева: от 90 °C все вентиляторы на 100 %" />
+                </Grid>
+            </Border>
+
+            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,10,0,0"
+                    Background="{StaticResource CriticalSoftBrush}" BorderBrush="{StaticResource CriticalLineBrush}"
+                    Visibility="{Binding IsOverheat, Converter={StaticResource BoolToVis}}">
+                <TextBlock FontWeight="SemiBold" TextWrapping="Wrap"
+                           Text="Перегрев: все вентиляторы крутятся на 100 %, пока температура не опустится ниже 80 °C." />
+            </Border>
+
+            <!-- Автозапуск -->
+            <Border Padding="18,14" CornerRadius="12" BorderThickness="1" Margin="0,10,0,0"
+                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Visibility="{Binding IsAutostartEnabled, Converter={StaticResource InverseBoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="Режим работает, пока PC Toolkit запущен" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                   Text="Включите автозапуск — программа будет стартовать вместе с Windows свёрнутой в трей, и вентиляторы сразу пойдут по выбранному режиму." />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="Включить автозапуск" Command="{Binding EnableAutostartCommand}"
+                            Style="{StaticResource PrimaryButton}" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- Вентиляторы -->
+            <TextBlock Text="ВЕНТИЛЯТОРЫ" Style="{StaticResource SectionLabel}" Margin="0,22,0,8" />
+
+            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,0,0,10"
+                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                    Visibility="{Binding HasBoardProblem, Converter={StaticResource BoolToVis}}">
+                <TextBlock TextWrapping="Wrap">
+                    <Run Text="Материнская плата: " FontWeight="SemiBold" /><Run Text="{Binding BoardProblem, Mode=OneWay}" />
+                </TextBlock>
+            </Border>
+
+            <!-- Видеокарта AMD: кривая в драйвере -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="18,14"
+                    Visibility="{Binding HasAmdGpu, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Ellipse Width="8" Height="8" Fill="{Binding GpuCurve.AccentBrush}" VerticalAlignment="Top" Margin="0,7,0,0" HorizontalAlignment="Left" />
+                    <StackPanel Grid.Column="1" Margin="4,0,16,0">
+                        <TextBlock Text="Видеокарта" FontSize="14.5" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding AmdStatus}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="{Binding GpuFanText}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <ItemsControl ItemsSource="{Binding Fans}" Focusable="False">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="18,14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,16,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Name}" FontSize="14.5" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Device}" Style="{StaticResource MutedCaption}" Margin="10,0,0,0" VerticalAlignment="Bottom" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Status}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                    <TextBlock Text="{Binding ActionText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"
+                                               Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding RpmText}" FontSize="15" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource MutedCaption}" Margin="0,2,0,0">
+                                        <Run Text="задано: " /><Run Text="{Binding DutyText, Mode=OneWay}" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                    <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Right"
+                                            Visibility="{Binding CanChangeRole, Converter={StaticResource BoolToVis}}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Content="Процессор" GroupName="{Binding Id}" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding IsCpu, Mode=TwoWay}" ToolTip="Кулер процессора: по температуре процессора" />
+                                            <RadioButton Content="Корпус" GroupName="{Binding Id}" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding IsCase, Mode=TwoWay}" ToolTip="Корпусной: по температуре видеокарты" />
+                                            <RadioButton Content="Помпа" GroupName="{Binding Id}" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding IsPump, Mode=TwoWay}" ToolTip="Помпа водяного охлаждения: программа её не трогает" />
+                                            <RadioButton Content="Не трогать" GroupName="{Binding Id}" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding IsIgnored, Mode=TwoWay}" ToolTip="Оставить этот разъём BIOS" />
+                                        </StackPanel>
+                                    </Border>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                                        <Button Content="Определить" Command="{Binding IdentifyCommand}" Style="{StaticResource GhostButton}"
+                                                ToolTip="Раскрутить этот вентилятор на 100 % на 6 секунд, чтобы понять, какой это" />
+                                        <Button Content="Калибровать" Command="{Binding CalibrateCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                                ToolTip="Найти минимальные обороты, на которых вентилятор не останавливается (около 40 секунд)" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Кривые -->
+            <StackPanel Visibility="{Binding HasCurves, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="КРИВЫЕ" Style="{StaticResource SectionLabel}" Margin="0,14,0,8" />
+
+                <!-- Готовый режим: посмотреть и сделать свой -->
+                <Grid Margin="0,0,0,10" Visibility="{Binding IsPreset, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" VerticalAlignment="Center"
+                               Text="Кривые готового режима. Хотите по-своему — сделайте на их основе шаблон и подвиньте точки мышью." />
+                    <Button Grid.Column="1" Content="Сделать свой шаблон" Command="{Binding EditPresetCommand}" Style="{StaticResource GhostButton}" Margin="12,0,0,0" />
+                </Grid>
+
+                <!-- Ручной режим: шаблоны -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,10" Padding="14,10"
+                        Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ItemsControl ItemsSource="{Binding Templates}" Focusable="False" VerticalAlignment="Center">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <RadioButton Content="{Binding Name}" GroupName="fan-template" Style="{StaticResource TabRadio}" Margin="0,0,4,0"
+                                                 IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBox Text="{Binding TemplateName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" Style="{StaticResource SearchBox}"
+                                     Width="170" Tag="Название шаблона" ToolTip="Название шаблона (Enter или щелчок мимо — сохранить)" />
+                            <Button Content="Новый шаблон" Command="{Binding NewTemplateCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0" />
+                            <Button Content="Удалить" Command="{Binding DeleteTemplateCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <UniformGrid Rows="1" Margin="0,0,-10,0">
+                    <!-- Видеокарта -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,10,0" Padding="16,14"
+                            Visibility="{Binding GpuCurve.IsVisible, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="9" Height="9" Fill="{Binding GpuCurve.AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding GpuCurve.Title}" Style="{StaticResource CurveTitle}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding GpuCurve.Subtitle}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                            <controls:FanCurveEditor Height="210" Curve="{Binding GpuCurve.Curve, Mode=TwoWay}" IsEditable="{Binding GpuCurve.IsEditable}"
+                                                     CurrentTemperature="{Binding GpuCurve.CurrentTemperature}" Accent="{Binding GpuCurve.Accent}" />
+                            <CheckBox IsChecked="{Binding GpuZeroRpm, Mode=TwoWay}" Margin="0,10,0,0"
+                                      Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Останавливать вентиляторы, пока видеокарта холодная" TextWrapping="Wrap" />
+                            </CheckBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Процессор -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,10,0" Padding="16,14"
+                            Visibility="{Binding CpuCurve.IsVisible, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="9" Height="9" Fill="{Binding CpuCurve.AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding CpuCurve.Title}" Style="{StaticResource CurveTitle}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding CpuCurve.Subtitle}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                            <controls:FanCurveEditor Height="210" Curve="{Binding CpuCurve.Curve, Mode=TwoWay}" IsEditable="{Binding CpuCurve.IsEditable}"
+                                                     CurrentTemperature="{Binding CpuCurve.CurrentTemperature}" Accent="{Binding CpuCurve.Accent}" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Корпус -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,10,0" Padding="16,14"
+                            Visibility="{Binding CaseCurve.IsVisible, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="9" Height="9" Fill="{Binding CaseCurve.AccentBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding CaseCurve.Title}" Style="{StaticResource CurveTitle}" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <TextBlock Text="{Binding CaseCurve.Subtitle}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,8" />
+                            <controls:FanCurveEditor Height="210" Curve="{Binding CaseCurve.Curve, Mode=TwoWay}" IsEditable="{Binding CaseCurve.IsEditable}"
+                                                     CurrentTemperature="{Binding CaseCurve.CurrentTemperature}" Accent="{Binding CaseCurve.Accent}" />
+                            <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                                    Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Content="Видеокарта" GroupName="case-source" Style="{StaticResource SegmentRadio}" IsChecked="{Binding CaseFromGpu, Mode=TwoWay}" />
+                                    <RadioButton Content="Процессор" GroupName="case-source" Style="{StaticResource SegmentRadio}" IsChecked="{Binding CaseFromCpu, Mode=TwoWay}" />
+                                    <RadioButton Content="Горячее из двух" GroupName="case-source" Style="{StaticResource SegmentRadio}" IsChecked="{Binding CaseFromHottest, Mode=TwoWay}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,10,0,0"
+                           Visibility="{Binding IsManual, Converter={StaticResource BoolToVis}}"
+                           Text="Перетаскивайте точки мышью: изменения действуют сразу и сохраняются в выбранном шаблоне. Ниже минимума из калибровки вентилятор не опустится, а при перегреве всё равно уйдёт на 100 %." />
+            </StackPanel>
+
+            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,18,0,0"
+                       Text="Помпу водяного охлаждения программа не трогает — отметьте её кнопкой «Помпа». Если программа закроется или зависнет, через несколько секунд вентиляторами снова управляет BIOS." />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
