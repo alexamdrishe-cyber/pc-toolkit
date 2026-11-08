@@ -125,20 +125,29 @@ public sealed class ServiceClient : IPrivilegedWriter, IDisposable
 
     private void Reset()
     {
-        try
-        {
-            _reader?.Dispose();
-            _writer?.Dispose();
-            _pipe?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn("Ошибка при закрытии соединения со службой.", ex);
-        }
-
+        // Каждый по отдельности: если служба уже закрыла канал, StreamWriter при закрытии бросает «Pipe is broken»,
+        // и без этого сам канал остался бы открытым. Разрыв канала здесь ожидаем — служба перезапускалась или обновлялась.
+        Close(_reader);
+        Close(_writer);
+        Close(_pipe);
         _reader = null;
         _writer = null;
         _pipe = null;
+
+        static void Close(IDisposable? item)
+        {
+            try
+            {
+                item?.Dispose();
+            }
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+            {
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Ошибка при закрытии соединения со службой.", ex);
+            }
+        }
     }
 }
 
