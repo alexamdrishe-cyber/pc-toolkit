@@ -170,7 +170,7 @@ public static class NetworkCheck
             try
             {
                 // Время ответа — как у команды ping (целые миллисекунды): своё измерение добавило бы задержки потоков.
-                PingReply reply = await ping.SendPingAsync(address, TimeSpan.FromSeconds(1), payload, null, cancel);
+                PingReply reply = await ping.SendPingAsync(address, TimeSpan.FromSeconds(1), payload, null, cancel).ConfigureAwait(false);
                 times.Add(reply.Status == IPStatus.Success ? reply.RoundtripTime : null);
             }
             catch (PingException)
@@ -187,7 +187,7 @@ public static class NetworkCheck
             progress?.Invoke(i + 1);
             TimeSpan rest = interval - started.Elapsed;
             if (rest > TimeSpan.Zero)
-                await Task.Delay(rest, cancel);
+                await Task.Delay(rest, cancel).ConfigureAwait(false);
         }
 
         return PingStats.Compute(name, address.ToString(), times);
@@ -313,7 +313,8 @@ public static class NetworkCheck
             foreach ((string _, IPAddress address, bool _) in servers)
             {
                 cancel.ThrowIfCancellationRequested();
-                double? ms = await QueryAsync(address, name, id++, TimeSpan.FromSeconds(2), cancel);
+                // Без возврата в поток интерфейса: иначе в замер попала бы задержка очереди окна.
+                double? ms = await QueryAsync(address, name, id++, TimeSpan.FromSeconds(2), cancel).ConfigureAwait(false);
                 if (ms is double value)
                     times[address].Add(value);
                 progress?.Invoke(++done, total);
@@ -352,10 +353,10 @@ public static class NetworkCheck
             using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancel);
             limit.CancelAfter(timeout);
             var watch = Stopwatch.StartNew();
-            await udp.SendAsync(query, limit.Token);
+            await udp.SendAsync(query, limit.Token).ConfigureAwait(false);
             while (true)
             {
-                UdpReceiveResult result = await udp.ReceiveAsync(limit.Token);
+                UdpReceiveResult result = await udp.ReceiveAsync(limit.Token).ConfigureAwait(false);
                 if (IsAnswerTo(result.Buffer, id))
                     return watch.Elapsed.TotalMilliseconds;
             }
