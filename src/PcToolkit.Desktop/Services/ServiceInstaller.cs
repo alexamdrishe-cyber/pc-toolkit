@@ -172,6 +172,29 @@ public static class ServiceInstaller
         }
     }
 
+    /// <summary>
+    /// Перезапускает службу, если она установлена: например, после переустановки драйвера PawnIO,
+    /// чтобы датчики открылись уже с ним. Вызывается в копии приложения с правами администратора.
+    /// </summary>
+    public static void RestartIfInstalled()
+    {
+        try
+        {
+            using ServiceController? service = Find();
+            if (service is null)
+                return;
+
+            Stop(service);
+            service.Start();
+            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+            AppLog.Info("Служба PC Toolkit перезапущена.");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось перезапустить службу PC Toolkit.", ex);
+        }
+    }
+
     private static ServiceController? Find() =>
         ServiceController.GetServices().FirstOrDefault(s =>
             string.Equals(s.ServiceName, ServiceProtocol.ServiceName, StringComparison.OrdinalIgnoreCase));

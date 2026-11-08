@@ -11,8 +11,14 @@ namespace PcToolkit.Desktop.ViewModels;
 /// <summary>Строка экрана «Драйверы».</summary>
 public sealed class DriverItemViewModel
 {
-    public DriverItemViewModel(DriverItem item)
+    public DriverItemViewModel(DriverItem item, ICommand? reinstallPawnIoCommand = null)
     {
+        if (item.Action == DriverActions.ReinstallPawnIo && reinstallPawnIoCommand is not null)
+        {
+            ActionTitle = "Переустановить PawnIO";
+            ActionCommand = reinstallPawnIoCommand;
+        }
+
         Category = item.Category;
         Title = item.Title;
         Details = item.Details;
@@ -40,6 +46,11 @@ public sealed class DriverItemViewModel
     public string? LinkTitle { get; }
 
     public ICommand OpenLinkCommand { get; }
+
+    /// <summary>Что приложение может сделать само («Переустановить PawnIO»); null — только совет.</summary>
+    public string? ActionTitle { get; }
+
+    public ICommand? ActionCommand { get; }
 }
 
 /// <summary>
@@ -56,9 +67,11 @@ public sealed class DriversViewModel : ObservableObject
     private string? _error;
     private HealthLevel _level = HealthLevel.Good;
     private DriverReport? _report;
+    private readonly ICommand? _reinstallPawnIoCommand;
 
-    public DriversViewModel()
+    public DriversViewModel(ICommand? reinstallPawnIoCommand = null)
     {
+        _reinstallPawnIoCommand = reinstallPawnIoCommand;
         RefreshCommand = new RelayCommand(() => _ = RefreshAsync(), () => !IsLoading);
         OpenDeviceManagerCommand = new RelayCommand(() => ShellService.OpenSystemTool("devmgmt.msc"));
     }
@@ -133,7 +146,7 @@ public sealed class DriversViewModel : ObservableObject
 
             Problems.Clear();
             foreach (DriverItem item in report.Problems)
-                Problems.Add(new DriverItemViewModel(item));
+                Problems.Add(new DriverItemViewModel(item, _reinstallPawnIoCommand));
             Drivers.Clear();
             foreach (DriverItem item in report.Drivers)
                 Drivers.Add(new DriverItemViewModel(item));

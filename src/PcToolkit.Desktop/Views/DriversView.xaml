@@ -21,8 +21,12 @@
                         <TextBlock Text="{Binding AdviceText}" TextWrapping="Wrap" LineHeight="19" FontWeight="SemiBold" Margin="0,6,0,0"
                                    Visibility="{Binding AdviceText, Converter={StaticResource NullToCollapsed}}" />
                     </StackPanel>
-                    <Button Grid.Column="2" Content="{Binding LinkTitle}" Command="{Binding OpenLinkCommand}" Style="{StaticResource GhostButton}"
-                            VerticalAlignment="Top" Visibility="{Binding LinkTitle, Converter={StaticResource NullToCollapsed}}" />
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Top">
+                        <Button Content="{Binding ActionTitle}" Command="{Binding ActionCommand}" Style="{StaticResource PrimaryButton}"
+                                Visibility="{Binding ActionTitle, Converter={StaticResource NullToCollapsed}}" />
+                        <Button Content="{Binding LinkTitle}" Command="{Binding OpenLinkCommand}" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                Visibility="{Binding LinkTitle, Converter={StaticResource NullToCollapsed}}" />
+                    </StackPanel>
                 </Grid>
             </Border>
             <DataTemplate.Triggers>

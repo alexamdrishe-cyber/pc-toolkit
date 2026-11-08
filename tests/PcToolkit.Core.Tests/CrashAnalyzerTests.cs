@@ -201,4 +201,42 @@ public sealed class CrashAnalyzerTests
         Assert.Equal(HealthLevel.Bad, report.Level);
         Assert.Contains("коде самой программы", report.Groups[1].Occurrences[0].Text);
     }
+    [Fact]
+    public void BurstsOfDiskErrorsCountAsOneCase()
+    {
+        var events = new List<RawEvent>();
+        for (int i = 0; i < 398; i++)
+            events.Add(Event("disk", 51, Now.AddDays(-10).AddSeconds(-i / 4.0), level: 3, data: new[] { @"\Device\Harddisk1\DR1" }));
+        events.Add(Event("disk", 51, Now.AddDays(-2), level: 3, data: new[] { @"\Device\Harddisk1\DR1" }));
+
+        CrashReport report = CrashAnalyzer.Analyze(events, From, Now, diskNames: new Dictionary<int, string> { [1] = "MSI M480 PRO 1TB" });
+
+        CrashGroup paging = Assert.Single(report.Groups);
+        Assert.Equal(2, paging.Count);
+        Assert.Equal(2, report.DiskErrors);
+        Assert.EndsWith("— 2 раза (399 записей в журнале)", paging.Title);
+        Assert.Equal("Ошибка при страничном обмене (диск 1 · MSI M480 PRO 1TB)", paging.Occurrences[0].Text);
+        Assert.Equal("Ошибка при страничном обмене (диск 1 · MSI M480 PRO 1TB) — 398 записей за 2 мин", paging.Occurrences[1].Text);
+        Assert.Contains("2 ошибки дисков", report.Summary);
+    }
+
+    [Fact]
+    public void UnknownModuleAndGameEngineAreWordedPlainly()
+    {
+        RawEvent[] events =
+        {
+            Event("Application Error", 1000, Now.AddDays(-1), data: new[] { "PcToolkit.exe", "", "", "unknown", "", "", "c0000005" }),
+            Event("Application Error", 1000, Now.AddDays(-2), data: new[] { "KSP_x64.exe", "", "", "UnityPlayer.dll", "", "", "c0000005" }),
+        };
+
+        CrashReport report = CrashAnalyzer.Analyze(events, From, Now);
+
+        CrashGroup toolkit = report.Groups.Single(g => g.Key == "app:PcToolkit.exe");
+        Assert.Equal("Программа аварийно закрывалась.", toolkit.What);
+        Assert.Equal("Вылет, код 0xc0000005 (обращение к недопустимой памяти)", toolkit.Occurrences[0].Text);
+
+        CrashGroup game = report.Groups.Single(g => g.Key == "app:KSP_x64.exe");
+        Assert.Contains("в своём движке (UnityPlayer.dll)", game.What);
+        Assert.StartsWith("Вылет в движке игры (UnityPlayer.dll)", game.Occurrences[0].Text);
+    }
 }

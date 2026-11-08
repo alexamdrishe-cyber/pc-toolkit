@@ -96,7 +96,16 @@ public static class HealthFindings
             yield return new Finding(FindingSeverity.Critical, item.Title, item.Details) { Area = FindingAreas.Drivers };
         }
 
-        List<DriverItem> broken = report.Problems.Where(p => p.Level == HealthLevel.Warning).ToList();
+        foreach (DriverItem item in report.Problems.Where(p => p.Action == DriverActions.ReinstallPawnIo))
+        {
+            yield return new Finding(FindingSeverity.Warning, "Драйвер датчиков PawnIO не работает",
+                "Поэтому температура, частоты и мощность процессора недоступны. Переустановить его можно на экране «Драйверы».")
+            {
+                Area = FindingAreas.Drivers,
+            };
+        }
+
+        List<DriverItem> broken = report.Problems.Where(p => p.Level == HealthLevel.Warning && p.Action is null).ToList();
         if (broken.Count > 0)
         {
             string names = string.Join(", ", broken.Take(3).Select(p => p.Title.Split(':')[0]));

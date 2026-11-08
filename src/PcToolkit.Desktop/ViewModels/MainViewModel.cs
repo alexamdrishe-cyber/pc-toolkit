@@ -65,6 +65,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
 
         RestartAsAdminCommand = new RelayCommand(RestartAsAdmin);
         InstallDriverCommand = new RelayCommand(InstallDriver, () => !_installingDriver);
+        ReinstallDriverCommand = new RelayCommand(ReinstallDriver, () => !_installingDriver);
         OpenLogsCommand = new RelayCommand(() => ShellService.OpenFolder(AppLog.LogDirectory));
 
         Settings = new SettingsViewModel(serviceInfo, _envStatus.IsElevated, _envStatus.ServiceConnected);
@@ -100,8 +101,10 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             DiskHealthHistory.Load(), Settings.InstallCommand, RestartAsAdminCommand);
         Disks = new DisksViewModel(diskHealth, new DiskTestViewModel(_gate, benchmarkHistory),
                                    new DiskAnalyzerViewModel(_envStatus.IsElevated, RestartAsAdminCommand));
-        Crashes = new CrashesViewModel();
-        Drivers = new DriversViewModel();
+        Crashes = new CrashesViewModel(() => Disks.Health.Reports
+            .GroupBy(r => r.Disk.Number)
+            .ToDictionary(g => g.Key, g => g.First().Title));
+        Drivers = new DriversViewModel(ReinstallDriverCommand);
 
         // Кадры других программ Windows сообщает только администратору: напрямую или через службу.
         IFrameSource frames = _envStatus.IsElevated
@@ -362,6 +365,9 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
 
     public ICommand InstallDriverCommand { get; }
 
+    /// <summary>Переустановить PawnIO, когда он числится установленным, но не работает.</summary>
+    public ICommand ReinstallDriverCommand { get; }
+
     public ICommand OpenLogsCommand { get; }
 
     public string VersionText =>
@@ -448,13 +454,15 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     /// Запускает датчики. Если приложение перезапущено с правами администратора ради установки драйвера,
     /// сначала ставит драйвер: тогда LibreHardwareMonitor сразу откроется уже с ним.
     /// </summary>
-    public async Task StartAsync(bool installDriverFirst)
+    public async Task StartAsync(bool installDriverFirst, bool repairDriverFirst = false)
     {
         AppLog.Info($"Права администратора: {_envStatus.IsElevated}; PawnIO: {_envStatus.PawnIoVersion?.ToString() ?? "не установлен"}.");
 
         try
         {
-            if (installDriverFirst && _envStatus.IsElevated && NeedsDriver)
+            if (repairDriverFirst && _envStatus.IsElevated)
+                await RepairDriverAsync();
+            else if (installDriverFirst && _envStatus.IsElevated && NeedsDriver)
                 await InstallDriverAsync();
         }
         catch (Exception ex)
@@ -478,7 +486,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             _ = Task.Run(() => AppLog.Info("Самопроверка: " + PawnIoInstaller.Verify().Message));
 #endif
 
-        if (!installDriverFirst)
+        if (!installDriverFirst && !repairDriverFirst)
             OfferDriverOnce();
     }
 
@@ -639,6 +647,66 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         catch (Exception ex)
         {
             AppLog.Error("Ошибка при установке драйвера.", ex);
+        }
+    }
+
+    private async void ReinstallDriver()
+    {
+        try
+        {
+            if (_installingDriver)
+                return;
+
+            if (!_envStatus.IsElevated)
+            {
+                // Один запрос UAC: копия с правами администратора переустановит драйвер и сразу запустит датчики.
+                if (ShellService.RestartAsAdministrator(LaunchArguments.RepairDriver))
+                    App.Quit();
+                return;
+            }
+
+            if (await RepairDriverAsync() && ShellService.RestartApplication())
+                App.Quit();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Ошибка при переустановке драйвера.", ex);
+        }
+    }
+
+    /// <summary>Удалить и заново поставить PawnIO, затем перезапустить службу, чтобы её датчики открылись с драйвером.</summary>
+    private async Task<bool> RepairDriverAsync()
+    {
+        if (_installingDriver)
+            return false;
+
+        _installingDriver = true;
+        RelayCommand.Refresh();
+        StatusText = "Переустанавливаю драйвер PawnIO…";
+
+        try
+        {
+            PawnIoInstallResult result = await Task.Run(PawnIoInstaller.Repair);
+            if (result.Success)
+                await Task.Run(ServiceInstaller.RestartIfInstalled);
+
+            UpdateEnvironment(EnvironmentStatus.Detect() with { ServiceConnected = _envStatus.ServiceConnected });
+            if (result.Success)
+            {
+                AppLog.Info($"Драйвер PawnIO {_envStatus.PawnIoVersion} переустановлен.");
+                StatusText = "Драйвер PawnIO переустановлен";
+                return true;
+            }
+
+            AppLog.Warn("Драйвер PawnIO не переустановлен: " + result.Message);
+            StatusText = "Драйвер PawnIO не переустановлен";
+            ShowMessage($"{result.Message}\n\nПодробности в журнале приложения.", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+        finally
+        {
+            _installingDriver = false;
+            RelayCommand.Refresh();
         }
     }
 

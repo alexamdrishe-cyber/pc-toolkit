@@ -89,7 +89,9 @@ public static partial class CrashAnalyzer
     /// <summary>Сколько программ с вылетами показывать отдельно.</summary>
     private const int MaxApps = 8;
 
-    public static CrashReport Analyze(IEnumerable<RawEvent> events, DateTime from, DateTime to, string? readError = null)
+    /// <param name="diskNames">Номер диска в Windows → модель: чтобы писать «диск 1 · Samsung 980», а не просто «диск 1».</param>
+    public static CrashReport Analyze(IEnumerable<RawEvent> events, DateTime from, DateTime to, string? readError = null,
+                                      IReadOnlyDictionary<int, string>? diskNames = null)
     {
         List<RawEvent> list = events.Where(e => e.Time >= from && e.Time <= to).OrderByDescending(e => e.Time).ToList();
         var groups = new Dictionary<string, Builder>();
@@ -214,7 +216,7 @@ public static partial class CrashAnalyzer
         // ---- Ошибки дисков.
         foreach (RawEvent e in list)
         {
-            string? diskName = DiskName(e);
+            string? diskName = DiskName(e, diskNames);
             string where = diskName is null ? "" : $" ({diskName})";
             switch (e.Provider, e.Id)
             {
@@ -301,6 +303,9 @@ public static partial class CrashAnalyzer
             }
 
             string module = e.NamedOr("ModuleName", 3);
+            // Windows пишет «unknown», когда не смогла определить модуль.
+            if (module.Equals("unknown", StringComparison.OrdinalIgnoreCase))
+                module = "";
             string exception = NormalizeException(e.NamedOr("ExceptionCode", 6));
             stats.Crashes++;
             stats.Modules[module] = stats.Modules.GetValueOrDefault(module) + 1;
@@ -472,6 +477,7 @@ public static partial class CrashAnalyzer
                 ModuleKind.System => $"Программа аварийно закрывалась в системной библиотеке ({mainModule}) — обычно это ошибка самой программы.",
                 ModuleKind.Self => "Программа аварийно закрывалась из-за ошибки в собственном коде.",
                 ModuleKind.DotNet => "Программа на .NET аварийно закрывалась из-за необработанной ошибки.",
+                ModuleKind.GameEngine => $"Игра аварийно закрывалась в своём движке ({mainModule}) — обычно это ошибка самой игры, модов или её файлов.",
                 _ => mainModule is { Length: > 0 }
                     ? $"Программа аварийно закрывалась в модуле {mainModule}."
                     : "Программа аварийно закрывалась.",
@@ -480,7 +486,7 @@ public static partial class CrashAnalyzer
         {
             ModuleKind.GpuDriver or ModuleKind.DirectX =>
                 "Сбойный или устаревший драйвер видеокарты, разгон или андервольт видеокарты, перегрев.",
-            ModuleKind.System or ModuleKind.Self or ModuleKind.DotNet =>
+            ModuleKind.System or ModuleKind.Self or ModuleKind.DotNet or ModuleKind.GameEngine =>
                 "Ошибка в самой программе, повреждённые файлы игры, моды и оверлеи. Если вылетают сразу многие программы — нестабильная память или разгон.",
             _ => "Ошибка в программе, повреждённые файлы, оверлеи и сторонние модули, нестабильный разгон.",
         };
@@ -512,6 +518,7 @@ public static partial class CrashAnalyzer
         System,
         Self,
         DotNet,
+        GameEngine,
     }
 
     private static ModuleKind ClassifyModule(string module, string app)
@@ -529,6 +536,8 @@ public static partial class CrashAnalyzer
             return ModuleKind.System;
         if (m is "clr.dll" or "coreclr.dll" or "clrjit.dll" || m.StartsWith("mscorlib") || m.StartsWith("system.private.corelib"))
             return ModuleKind.DotNet;
+        if (m is "unityplayer.dll" or "gameassembly.dll" or "mono-2.0-bdwgc.dll" or "mono.dll" || m.StartsWith("cry") && m.EndsWith(".dll"))
+            return ModuleKind.GameEngine;
         if (string.Equals(m, app, StringComparison.OrdinalIgnoreCase))
             return ModuleKind.Self;
         return ModuleKind.Unknown;
@@ -541,6 +550,7 @@ public static partial class CrashAnalyzer
             ModuleKind.GpuDriver => $"в драйвере видеокарты ({module})",
             ModuleKind.DirectX => $"в DirectX ({module})",
             ModuleKind.Self => "в коде самой программы",
+            ModuleKind.GameEngine => $"в движке игры ({module})",
             _ => $"в модуле {module}",
         };
         string? reason = ExceptionText(exception);
@@ -632,6 +642,9 @@ public static partial class CrashAnalyzer
 
     // ---------------------------------------------------------------- вспомогательное
 
+    /// <summary>Записи, между которыми меньше 10 минут, — один случай.</summary>
+    private static readonly TimeSpan BurstGap = TimeSpan.FromMinutes(10);
+
     private sealed class Builder
     {
         private readonly List<CrashOccurrence> _occurrences = new();
@@ -645,13 +658,57 @@ public static partial class CrashAnalyzer
         public CrashGroup Build()
         {
             List<CrashOccurrence> sorted = _occurrences.OrderByDescending(o => o.Time).ToList();
+            int records = sorted.Count;
+
+            // Ошибки дисков и исправленные аппаратные ошибки приходят пачками: сотни записей за минуту — это один случай.
+            if (_template.Kind is CrashKind.DiskError or CrashKind.HardwareError)
+                sorted = Cluster(sorted, BurstGap);
+
             // Синих экранов три и больше — уже не случайность.
             HealthLevel level = _template.Kind == CrashKind.BlueScreen && sorted.Count >= 3 ? HealthLevel.Bad : _template.Level;
-            string title = _template.Kind is CrashKind.AppCrash or CrashKind.MemoryTest || sorted.Count <= 1
+            string title = _template.Kind is CrashKind.AppCrash or CrashKind.MemoryTest || (sorted.Count <= 1 && records <= 1)
                 ? _template.Title
-                : $"{_template.Title} — {sorted.Count} {Formatting.Plural(sorted.Count, "раз", "раза", "раз")}";
+                : $"{_template.Title} — {sorted.Count} {Formatting.Plural(sorted.Count, "раз", "раза", "раз")}" +
+                  (records > sorted.Count ? $" ({Formatting.Number(records)} {Formatting.Plural(records, "запись", "записи", "записей")} в журнале)" : "");
             return _template with { Title = title, Level = level, Occurrences = sorted };
         }
+
+        /// <summary>
+        /// Склеивает однотипные записи, идущие подряд с промежутком не больше <paramref name="gap"/>, в один случай
+        /// («… — 398 записей за 2 мин»). На входе и выходе — от новых к старым.
+        /// </summary>
+        private static List<CrashOccurrence> Cluster(List<CrashOccurrence> newestFirst, TimeSpan gap)
+        {
+            var result = new List<CrashOccurrence>();
+            foreach (IGrouping<string, CrashOccurrence> sameText in newestFirst.GroupBy(o => o.Text))
+            {
+                List<CrashOccurrence> items = sameText.ToList();
+                int i = 0;
+                while (i < items.Count)
+                {
+                    int j = i + 1;
+                    while (j < items.Count && items[j - 1].Time - items[j].Time <= gap)
+                        j++;
+
+                    int count = j - i;
+                    CrashOccurrence latest = items[i];
+                    TimeSpan span = latest.Time - items[j - 1].Time;
+                    result.Add(count == 1
+                        ? latest
+                        : latest with { Text = $"{latest.Text} — {Formatting.Number(count)} {Formatting.Plural(count, "запись", "записи", "записей")} за {SpanText(span)}" });
+                    i = j;
+                }
+            }
+
+            return result.OrderByDescending(o => o.Time).ToList();
+        }
+
+        private static string SpanText(TimeSpan span) => span.TotalMinutes switch
+        {
+            < 1 => "меньше минуты",
+            < 60 => $"{(int)Math.Ceiling(span.TotalMinutes)} мин",
+            _ => $"{span.TotalHours:0.#} ч",
+        };
     }
 
     private static Builder SuddenGroup() => new(CrashKind.SuddenShutdown, "sudden", "Внезапные выключения и перезагрузки", HealthLevel.Warning,
@@ -683,13 +740,18 @@ public static partial class CrashAnalyzer
         return p.Contains("stor") || p.Contains("nvme") || p.Contains("ahci") || p.Contains("iastor") || p.Contains("raid");
     }
 
-    private static string? DiskName(RawEvent e)
+    private static string? DiskName(RawEvent e, IReadOnlyDictionary<int, string>? diskNames)
     {
         foreach (string value in e.Data.Append(e.Message ?? ""))
         {
             Match match = HarddiskRegex().Match(value);
-            if (match.Success)
-                return "диск " + match.Groups[1].Value;
+            if (!match.Success)
+                continue;
+
+            int number = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+            return diskNames is not null && diskNames.TryGetValue(number, out string? model)
+                ? $"диск {number} · {model}"
+                : $"диск {number}";
         }
 
         return null;

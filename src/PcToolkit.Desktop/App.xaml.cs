@@ -83,6 +83,7 @@ public partial class App : Application
 
         bool restarted = LaunchArguments.Has(e.Args, LaunchArguments.Restarted);
         bool installDriver = LaunchArguments.Has(e.Args, LaunchArguments.InstallDriver);
+        bool repairDriver = LaunchArguments.Has(e.Args, LaunchArguments.RepairDriver);
         _instance = SingleInstance.Acquire(restarted ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!_instance.IsFirstInstance)
         {
@@ -135,7 +136,7 @@ public partial class App : Application
         else
             window.Show();
 
-        _ = _main.StartAsync(installDriver);
+        _ = _main.StartAsync(installDriver, repairDriver);
         _started = true;
     }
 

@@ -86,8 +86,12 @@ public sealed class CrashesViewModel : ObservableObject
     private IReadOnlyList<string> _hints = Array.Empty<string>();
     private CrashReport? _report;
 
-    public CrashesViewModel()
+    private readonly Func<IReadOnlyDictionary<int, string>>? _diskNames;
+
+    /// <param name="diskNames">Номер диска → модель (из проверки дисков): «диск 1 · MSI M480 PRO 1TB».</param>
+    public CrashesViewModel(Func<IReadOnlyDictionary<int, string>>? diskNames = null)
     {
+        _diskNames = diskNames;
         Periods = new[]
         {
             new ChoiceViewModel("crash-period", "7 дней", 7, false),
@@ -195,7 +199,8 @@ public sealed class CrashesViewModel : ObservableObject
             StatusText = "Читаю журнал Windows…";
             int days = Days;
             DateTime now = DateTime.Now;
-            CrashReport report = await Task.Run(() => Read(days, now));
+            IReadOnlyDictionary<int, string>? names = _diskNames?.Invoke();
+            CrashReport report = await Task.Run(() => Read(days, now, names));
 
             Groups.Clear();
             foreach (CrashGroup group in report.Groups)
@@ -225,11 +230,11 @@ public sealed class CrashesViewModel : ObservableObject
     }
 
     /// <summary>Читает и разбирает журнал за <paramref name="days"/> дней (в фоновом потоке).</summary>
-    public static CrashReport Read(int days, DateTime now)
+    public static CrashReport Read(int days, DateTime now, IReadOnlyDictionary<int, string>? diskNames = null)
     {
         DateTime from = now.AddDays(-days);
         List<RawEvent> events = CrashEventReader.Read(from, out string? error);
-        CrashReport report = CrashAnalyzer.Analyze(events, from, now, error);
+        CrashReport report = CrashAnalyzer.Analyze(events, from, now, error, diskNames);
         AppLog.Info($"Журнал сбоев за {days} дн.: событий {events.Count}. {report.Summary}");
         return report;
     }

@@ -15,7 +15,18 @@ public sealed record SignedDriverRaw(string DeviceName, string DeviceClass, stri
 /// <summary>Строка экрана «Драйверы»: проблемное устройство или важный драйвер.</summary>
 /// <param name="Advice">Что делать — для проблем.</param>
 public sealed record DriverItem(string Category, string Title, string Details, HealthLevel Level, string? Advice = null,
-                                string? LinkTitle = null, string? LinkUrl = null);
+                                string? LinkTitle = null, string? LinkUrl = null)
+{
+    /// <summary>Что приложение может сделать само: <see cref="DriverActions"/>. null — только совет.</summary>
+    public string? Action { get; init; }
+}
+
+/// <summary>Действия, которые приложение умеет выполнить по пункту экрана «Драйверы».</summary>
+public static class DriverActions
+{
+    /// <summary>Переустановить драйвер датчиков PawnIO (встроенным установщиком).</summary>
+    public const string ReinstallPawnIo = "pawnio";
+}
 
 public sealed record DriverReport
 {
@@ -130,6 +141,8 @@ public static class DriverAnalyzer
 
     private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
 
+    private static readonly DateTime InboxDriverDate = new(2006, 6, 21);
+
     public static DriverReport Analyze(IReadOnlyList<PnpDeviceRaw> problemDevices, IReadOnlyList<PnpDeviceRaw> displays,
                                        IReadOnlyList<SignedDriverRaw> drivers, DateTime now, string? error = null)
     {
@@ -154,6 +167,27 @@ public static class DriverAnalyzer
                 continue;
 
             (string title, string explanation, string advice, HealthLevel deviceLevel) = ErrorCode(device.ErrorCode);
+
+            // PawnIO — драйвер, через который читаются датчики процессора и материнской платы (его ставит сам PC Toolkit).
+            // Удалять его запись из «Диспетчера устройств» бесполезно: Windows не создаст её заново. Помогает переустановка.
+            if (device.DeviceId.StartsWith(@"ROOT\PAWNIO", StringComparison.OrdinalIgnoreCase)
+                || device.Name.Equals("PawnIO", StringComparison.OrdinalIgnoreCase))
+            {
+                if (device.ErrorCode == 22)
+                    continue;
+
+                problems.Add(new DriverItem("Датчики", "Драйвер датчиков PawnIO не работает",
+                    "Через PawnIO PC Toolkit читает температуру, частоты и мощность процессора и датчики материнской платы. " +
+                    $"Сейчас Windows не может его запустить ({title}, код {device.ErrorCode}), поэтому этих данных нет.",
+                    HealthLevel.Warning,
+                    "Переустановите PawnIO кнопкой справа (Windows попросит разрешение администратора). " +
+                    "Если температура процессора после этого не появится — перезагрузите компьютер.")
+                {
+                    Action = DriverActions.ReinstallPawnIo,
+                });
+                continue;
+            }
+
             string name = device.Name.Length > 0 ? device.Name : "Неизвестное устройство";
             (string vendor, string? url) = device.PnpClass.Equals("Display", StringComparison.OrdinalIgnoreCase)
                 ? GpuVendor(device.DeviceId, device.Manufacturer)
@@ -177,12 +211,19 @@ public static class DriverAnalyzer
         if (level < HealthLevel.Good)
             level = HealthLevel.Good;
 
-        int serious = problems.Count(p => p.Level >= HealthLevel.Warning);
-        string summary = problems.Count == 0
+        bool pawnIoBroken = problems.Any(p => p.Action == DriverActions.ReinstallPawnIo);
+        List<DriverItem> devices = problems.Where(p => p.Action != DriverActions.ReinstallPawnIo).ToList();
+        int serious = devices.Count(p => p.Level >= HealthLevel.Warning);
+        string summary = devices.Count == 0
             ? "Все устройства работают с драйверами: проблемных устройств в «Диспетчере устройств» нет."
             : serious == 0
-                ? $"{problems.Count} {Formatting.Plural(problems.Count, "устройство отключено", "устройства отключены", "устройств отключено")}, остальные работают с драйверами."
+                ? $"{devices.Count} {Formatting.Plural(devices.Count, "устройство отключено", "устройства отключены", "устройств отключено")}, остальные работают с драйверами."
                 : $"{serious} {Formatting.Plural(serious, "устройство", "устройства", "устройств")} без драйвера или с ошибкой.";
+        if (pawnIoBroken)
+        {
+            summary = "Драйвер датчиков PawnIO не работает: температура и частоты процессора недоступны. " +
+                      (devices.Count == 0 ? "Остальные устройства работают с драйверами." : summary);
+        }
         if (items.Any(i => i.Category == "Видеокарта" && i.Level == HealthLevel.Notice))
             summary += " Драйвер видеокарты давно не обновлялся.";
 
@@ -290,7 +331,8 @@ public static class DriverAnalyzer
         14 => ("нужна перезагрузка", "Устройство заработает после перезагрузки компьютера.", "Перезагрузите компьютер.", HealthLevel.Notice),
         18 => ("нужно переустановить драйвер", "Драйвер устройства нужно установить заново.", "Переустановите драйвер устройства.", HealthLevel.Warning),
         19 => ("повреждены настройки в реестре", "Сведения об устройстве в реестре повреждены или неполны.",
-               "Удалите устройство в «Диспетчере устройств» и обновите конфигурацию оборудования — Windows установит его заново.", HealthLevel.Warning),
+               "Переустановите драйвер устройства с сайта производителя. Если не поможет — удалите устройство в «Диспетчере устройств» " +
+               "и выберите «Действие» → «Обновить конфигурацию оборудования».", HealthLevel.Warning),
         21 => ("удаляется", "Windows удаляет это устройство.", "Перезагрузите компьютер.", HealthLevel.Notice),
         22 => ("отключено", "Устройство отключено вручную — вами или какой-то программой.",
                "Если устройство нужно — включите его в «Диспетчере устройств» (правой кнопкой → «Включить устройство»).", HealthLevel.Notice),
@@ -360,6 +402,7 @@ public static class DriverAnalyzer
         "bluetooth" => "Bluetooth",
         "hdc" or "scsiadapter" => "Контроллер дисков",
         "system" => "Системное устройство",
+        "softwaredevice" or "softwarecomponent" => "Программное устройство",
         "camera" or "image" => "Камера",
         "hidclass" or "keyboard" or "mouse" => "Устройство ввода",
         "biometric" => "Сканер отпечатков",
@@ -382,6 +425,10 @@ public static class DriverAnalyzer
     {
         if (date is not { } d)
             return "";
+
+        // У встроенных драйверов Windows дата условная — 21 июня 2006 года: возраст по ней ничего не значит.
+        if (d == InboxDriverDate)
+            return " · стандартный драйвер Windows";
 
         int days = (int)(now - d).TotalDays;
         string age = days switch

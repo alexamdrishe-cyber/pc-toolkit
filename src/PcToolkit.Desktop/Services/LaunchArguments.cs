@@ -9,6 +9,9 @@ public static class LaunchArguments
     /// <summary>Сразу после запуска (уже с правами администратора) установить драйвер PawnIO.</summary>
     public const string InstallDriver = "--install-pawnio";
 
+    /// <summary>Сразу после запуска (уже с правами администратора) переустановить драйвер PawnIO: удалить и поставить заново.</summary>
+    public const string RepairDriver = "--repair-pawnio";
+
     /// <summary>Установить или обновить службу PC Toolkit и выйти (запускается с правами администратора).</summary>
     public const string InstallService = "--install-service";
 

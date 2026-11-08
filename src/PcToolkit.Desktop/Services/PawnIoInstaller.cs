@@ -27,12 +27,18 @@ public static class PawnIoInstaller
     public static PawnIoInstallResult Install() => Run(execute: true);
 
     /// <summary>
+    /// Переустановка: сначала удалить прежнюю установку, потом поставить заново.
+    /// Помогает, когда драйвер числится установленным, но Windows не может его запустить (ошибка в «Диспетчере устройств»).
+    /// </summary>
+    public static PawnIoInstallResult Repair() => Run(execute: true, repair: true);
+
+    /// <summary>
     /// Распаковывает установщик и проверяет хэш и подпись, ничего не устанавливая.
     /// Используется для самопроверки в отладочной сборке.
     /// </summary>
     public static PawnIoInstallResult Verify() => Run(execute: false);
 
-    private static PawnIoInstallResult Run(bool execute)
+    private static PawnIoInstallResult Run(bool execute, bool repair = false)
     {
         string folder = Path.Combine(Path.GetTempPath(), "PcToolkit", Guid.NewGuid().ToString("N"));
         string setupPath = Path.Combine(folder, "PawnIO_setup.exe");
@@ -63,24 +69,25 @@ public static class PawnIoInstaller
             if (!execute)
                 return new PawnIoInstallResult(true, $"Встроенный установщик PawnIO {BundledVersion}: контрольная сумма и подпись в порядке.");
 
-            AppLog.Info($"Запускаю установщик PawnIO {BundledVersion}.");
-            using Process? process = Process.Start(new ProcessStartInfo(setupPath, "-install -silent")
+            if (repair)
             {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = folder,
-            });
+                // Ошибку удаления не считаем провалом: если удалять было нечего, установка всё равно поможет.
+                AppLog.Info($"Переустановка PawnIO {BundledVersion}: удаляю прежнюю установку.");
+                int? removed = RunSetup(setupPath, folder, "-uninstall -silent");
+                AppLog.Info(removed is null
+                    ? "Удаление PawnIO не завершилось вовремя или не запустилось."
+                    : $"Удаление PawnIO завершилось с кодом {removed}.");
+            }
 
-            if (process is null)
-                return Fail("Не удалось запустить установщик PawnIO.");
+            AppLog.Info($"Запускаю установщик PawnIO {BundledVersion}.");
+            int? exitCode = RunSetup(setupPath, folder, "-install -silent");
+            if (exitCode is null)
+                return Fail("Установщик PawnIO не запустился или не завершился за 2 минуты.");
 
-            if (!process.WaitForExit(InstallTimeout))
-                return Fail("Установщик PawnIO не завершился за 2 минуты.");
-
-            AppLog.Info($"Установщик PawnIO завершился с кодом {process.ExitCode}.");
-            return process.ExitCode == 0
-                ? new PawnIoInstallResult(true, "Драйвер PawnIO установлен.")
-                : Fail($"Установщик PawnIO завершился с ошибкой (код {process.ExitCode}).");
+            AppLog.Info($"Установщик PawnIO завершился с кодом {exitCode}.");
+            return exitCode == 0
+                ? new PawnIoInstallResult(true, repair ? "Драйвер PawnIO переустановлен." : "Драйвер PawnIO установлен.")
+                : Fail($"Установщик PawnIO завершился с ошибкой (код {exitCode}).");
         }
         catch (Exception ex)
         {
@@ -91,6 +98,25 @@ public static class PawnIoInstaller
         {
             TryDelete(folder);
         }
+    }
+
+    /// <summary>Код завершения установщика или null, если он не запустился или не уложился во время.</summary>
+    private static int? RunSetup(string setupPath, string folder, string arguments)
+    {
+        using Process? process = Process.Start(new ProcessStartInfo(setupPath, arguments)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = folder,
+        });
+
+        if (process is null)
+            return null;
+
+        if (!process.WaitForExit(InstallTimeout))
+            return null;
+
+        return process.ExitCode;
     }
 
     private static PawnIoInstallResult Fail(string message)

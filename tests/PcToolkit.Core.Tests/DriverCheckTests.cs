@@ -118,4 +118,36 @@ public sealed class DriverCheckTests
         Assert.Equal(new[] { "Realtek PCIe GbE Family Controller", "Realtek High Definition Audio" }, report.Drivers.Select(d => d.Title));
         Assert.All(report.Drivers, d => Assert.Equal(HealthLevel.Fact, d.Level));
     }
+    [Fact]
+    public void BrokenPawnIoGetsItsOwnExplanationAndAction()
+    {
+        PnpDeviceRaw[] devices = { new("PawnIO", "SoftwareDevice", 19, @"ROOT\PAWNIO\0000", "", "PawnIO") };
+
+        DriverReport report = DriverAnalyzer.Analyze(devices, Array.Empty<PnpDeviceRaw>(), Array.Empty<SignedDriverRaw>(), Now);
+
+        DriverItem pawnIo = Assert.Single(report.Problems);
+        Assert.Equal("Драйвер датчиков PawnIO не работает", pawnIo.Title);
+        Assert.Equal(DriverActions.ReinstallPawnIo, pawnIo.Action);
+        Assert.Contains("код 19", pawnIo.Details);
+        Assert.DoesNotContain("Удалите", pawnIo.Advice);
+        Assert.StartsWith("Драйвер датчиков PawnIO не работает", report.Summary);
+        Assert.EndsWith("Остальные устройства работают с драйверами.", report.Summary);
+
+        Finding finding = Assert.Single(HealthFindings.FromDrivers(report));
+        Assert.Equal("Драйвер датчиков PawnIO не работает", finding.Title);
+        Assert.Equal(FindingAreas.Drivers, finding.Area);
+    }
+
+    [Fact]
+    public void InboxDriverDateIsNotShownAsAge()
+    {
+        SignedDriverRaw[] drivers =
+        {
+            new("Standard NVM Express Controller", "SCSIADAPTER", @"PCI\VEN_1987&DEV_5012\4&1", "Microsoft", "Standard NVM Express Controller", "10.0.19041.4355", new DateTime(2006, 6, 21)),
+        };
+
+        DriverReport report = DriverAnalyzer.Analyze(Array.Empty<PnpDeviceRaw>(), Array.Empty<PnpDeviceRaw>(), drivers, Now);
+
+        Assert.Equal("Драйвер 10.0.19041.4355 · стандартный драйвер Windows · Microsoft", report.Drivers[0].Details);
+    }
 }
