@@ -544,7 +544,7 @@ public static class OrphanScanner
                     continue;
 
                 result.Add(new Orphan(name, new Leftover(LeftoverKind.Folder, folder, default, 0,
-                    !elevated && LeftoverScanner.NeedsAdminPath(folder), $"пустая папка в {place}")));
+                    !elevated && LeftoverScanner.NeedsAdminPath(folder), $"пустая папка в {place}", MustBeEmpty: true)));
             }
         }
 

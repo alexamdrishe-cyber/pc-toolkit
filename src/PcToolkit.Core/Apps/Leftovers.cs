@@ -24,9 +24,10 @@ public enum LeftoverKind
 /// <summary>
 /// Найденный след программы. Для реестра <see cref="Path"/> — «HKCU\Software\…» или «HKLM\SOFTWARE\…»,
 /// <see cref="View"/> — какая часть реестра (64 или 32 бита), <see cref="ValueName"/> — имя значения (для автозапуска).
+/// <see cref="MustBeEmpty"/> — папка найдена как пустая: если в ней с тех пор что-то появилось, её не трогаем.
 /// </summary>
 public sealed record Leftover(LeftoverKind Kind, string Path, RegistryView View, long SizeBytes, bool NeedsAdmin, string Reason,
-                              string? ValueName = null);
+                              string? ValueName = null, bool MustBeEmpty = false);
 
 public sealed record LeftoverResult(Leftover Item, bool Removed, string? Error);
 
@@ -494,6 +495,8 @@ public static class LeftoverRemover
                     return "папки уже нет";
                 if (CleanupPaths.IsReparsePoint(item.Path))
                     return "это ссылка на другую папку";
+                if (item.MustBeEmpty && !OrphanScanner.IsEmptyTree(item.Path))
+                    return "в папке появились файлы";
                 return IsAllowedLocation(item.Path, shortcut: false) ? null : "папка в системном или личном месте";
 
             case LeftoverKind.Shortcut:
