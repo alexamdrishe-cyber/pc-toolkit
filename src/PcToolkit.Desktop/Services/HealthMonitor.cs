@@ -35,6 +35,8 @@ public sealed class HealthMonitor : IDisposable
     private readonly OperationGate _gate;
     private readonly DispatcherTimer _timer;
     private readonly HashSet<string> _lowSpaceNotified = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ThermalHistory _thermal = ThermalHistory.Load();
+    private DateTime _lastThermalSample = DateTime.MinValue;
     private DispatcherTimer? _firstRun;
     private DateTime _lastDiskCheck = DateTime.MinValue;
     private DateTime? _cpuHotSince;
@@ -92,6 +94,15 @@ public sealed class HealthMonitor : IDisposable
         }
 
         KeyMetrics metrics = KeyMetrics.From(snapshot);
+
+        // История «температура под нагрузкой» для подсказки про пыль и термопасту: один замер в секунду.
+        if (snapshot.Timestamp - _lastThermalSample >= TimeSpan.FromSeconds(1))
+        {
+            _lastThermalSample = snapshot.Timestamp;
+            _thermal.Add(snapshot.Timestamp, metrics.CpuLoad?.Value, metrics.CpuTemperature?.Value,
+                         metrics.GpuLoad?.Value, metrics.GpuTemperature?.Value);
+        }
+
         CheckHeat(metrics.CpuTemperature?.Value, CpuHeatLimit, ref _cpuHotSince, snapshot.Timestamp,
             "Процессор перегревается", "Проверьте кулер процессора, термопасту и пыль в радиаторе.");
         CheckHeat(metrics.GpuTemperature?.Value, GpuHeatLimit, ref _gpuHotSince, snapshot.Timestamp,
@@ -102,6 +113,7 @@ public sealed class HealthMonitor : IDisposable
     {
         _firstRun?.Stop();
         _timer.Stop();
+        _thermal.Save();
     }
 
     private async Task RunAsync(bool startup)
@@ -124,6 +136,10 @@ public sealed class HealthMonitor : IDisposable
             AppSettings.Update(s => s.LastCrashCheck = now);
 
             CheckDiskSpace();
+
+            await Task.Run(_thermal.Save);
+            Finding? warmer = _thermal.CheckTrend(DateOnly.FromDateTime(now));
+            _home.SetFindings("thermal", warmer is null ? Array.Empty<Finding>() : new[] { warmer });
 
             if (startup || now - _lastDiskCheck >= DiskInterval)
             {
