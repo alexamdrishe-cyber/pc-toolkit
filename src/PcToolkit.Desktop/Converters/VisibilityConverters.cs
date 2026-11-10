@@ -29,7 +29,7 @@ public sealed class NullToVisibilityConverter : IValueConverter
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        bool visible = value is not null;
+        bool visible = value is not null and not string { Length: 0 };
         if (Invert)
             visible = !visible;
 

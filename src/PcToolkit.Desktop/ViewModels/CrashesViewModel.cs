@@ -89,9 +89,13 @@ public sealed class CrashesViewModel : ObservableObject
     private readonly Func<IReadOnlyDictionary<int, string>>? _diskNames;
 
     /// <param name="diskNames">Номер диска → модель (из проверки дисков): «диск 1 · MSI M480 PRO 1TB».</param>
+    /// <summary>«Восстановление Windows»: DISM и sfc одной кнопкой.</summary>
+    public WindowsRepairViewModel Repair { get; }
+
     public CrashesViewModel(Func<IReadOnlyDictionary<int, string>>? diskNames = null)
     {
         _diskNames = diskNames;
+        Repair = new WindowsRepairViewModel(System.Windows.Threading.Dispatcher.CurrentDispatcher);
         Periods = new[]
         {
             new ChoiceViewModel("crash-period", "7 дней", 7, false),

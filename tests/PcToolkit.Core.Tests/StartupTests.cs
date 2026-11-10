@@ -49,3 +49,27 @@ public sealed class StartupTests
         Assert.True(entry with { Location = StartupLocation.MachineRun32 } is { NeedsAdmin: true });
     }
 }
+
+public sealed class WindowsRepairTests
+{
+    [Theory]
+    [InlineData("Windows Resource Protection did not find any integrity violations.", PcToolkit.Core.Repair.SfcVerdict.Clean)]
+    [InlineData("Защита ресурсов Windows не обнаружила нарушений целостности.", PcToolkit.Core.Repair.SfcVerdict.Clean)]
+    [InlineData("Windows Resource Protection found corrupt files and successfully repaired them.", PcToolkit.Core.Repair.SfcVerdict.Repaired)]
+    [InlineData("Программа защиты ресурсов Windows обнаружила поврежденные файлы и успешно их восстановила.", PcToolkit.Core.Repair.SfcVerdict.Repaired)]
+    [InlineData("Windows Resource Protection found corrupt files but was unable to fix some of them.", PcToolkit.Core.Repair.SfcVerdict.Partial)]
+    [InlineData("Защита ресурсов Windows не может выполнить запрошенную операцию.", PcToolkit.Core.Repair.SfcVerdict.Failed)]
+    [InlineData("", PcToolkit.Core.Repair.SfcVerdict.Unknown)]
+    public void SfcVerdictFromItsLastMessage(string output, PcToolkit.Core.Repair.SfcVerdict expected) =>
+        Assert.Equal(expected, PcToolkit.Core.Repair.WindowsRepair.ParseSfc(output));
+
+    [Theory]
+    [InlineData("[==========                 18.6%                          ]", 18.6)]
+    [InlineData("Verification 45% complete.", 45)]
+    [InlineData("Проверка 7% завершена.", 7)]
+    public void ProgressPercent(string line, double expected) =>
+        Assert.Equal(expected, PcToolkit.Core.Repair.WindowsRepair.Percent(line));
+
+    [Fact]
+    public void NoPercentInPlainLines() => Assert.Null(PcToolkit.Core.Repair.WindowsRepair.Percent("Deployment Image Servicing and Management tool"));
+}

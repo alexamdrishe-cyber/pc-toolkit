@@ -27,6 +27,9 @@ public static class LaunchArguments
     /// <summary>Для проверки: читать датчики в самом приложении, даже если служба установлена (как на компьютере без службы).</summary>
     public const string NoService = "--no-service";
 
+    /// <summary>Восстановление Windows (DISM и sfc) с правами администратора; дальше — путь к файлу хода.</summary>
+    public const string RepairWindows = "--repair-windows";
+
     /// <summary>Закрыть уже запущенную копию (как просьба установщика) и выйти — для скриптов разработки.</summary>
     public const string Exit = "--exit";
 

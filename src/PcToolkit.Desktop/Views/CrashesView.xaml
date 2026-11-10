@@ -117,6 +117,58 @@
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
             <StackPanel Margin="0,0,0,8">
+                <!-- Восстановление Windows -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14" DataContext="{Binding Repair}">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="Восстановление Windows" FontSize="15" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                           Text="Проверяет системные файлы и восстанавливает повреждённые — помогает при синих экранах, вылетах и странных ошибках Windows. Это встроенные средства Windows (DISM и sfc): нужен интернет, 10–30 минут, Windows спросит разрешение." />
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Проверить и восстановить" Command="{Binding StartCommand}" Style="{StaticResource PrimaryButton}" VerticalAlignment="Top" />
+                        </Grid>
+                        <StackPanel Margin="0,12,0,0" Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="{Binding StageText}" FontWeight="SemiBold" />
+                            <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Style="{StaticResource ThinProgress}" Margin="0,8,0,0" />
+                        </StackPanel>
+                        <Border Margin="0,12,0,0" Padding="14,10" CornerRadius="8" BorderThickness="1"
+                                Visibility="{Binding Message, Converter={StaticResource NullToCollapsed}}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ResultKind}" Value="good">
+                                            <Setter Property="Background" Value="{DynamicResource GoodSoftBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource GoodLineBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ResultKind}" Value="warning">
+                                            <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ResultKind}" Value="bad">
+                                            <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                            <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel>
+                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0" Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding LastRunText}" Style="{StaticResource MutedCaption}" VerticalAlignment="Center" />
+                                    <Button Content="Журнал CBS" Command="{Binding OpenLogCommand}" Style="{StaticResource GhostButton}" Margin="12,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
                 <!-- Итог -->
                 <Border x:Name="SummaryCard" Padding="18,14" CornerRadius="8" BorderThickness="1" Margin="0,0,0,14">
                     <Border.Style>

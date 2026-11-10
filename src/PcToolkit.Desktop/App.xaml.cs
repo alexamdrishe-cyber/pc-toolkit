@@ -81,6 +81,12 @@ public partial class App : Application
             return;
         }
 
+        if (LaunchArguments.ValueAfter(e.Args, LaunchArguments.RepairWindows) is { } repairStatus)
+        {
+            Shutdown(PcToolkit.Core.Repair.WindowsRepair.Run(repairStatus));
+            return;
+        }
+
         if (LaunchArguments.Has(e.Args, LaunchArguments.Exit))
         {
             Shutdown(SingleInstance.RequestExit() ? 0 : 1);
