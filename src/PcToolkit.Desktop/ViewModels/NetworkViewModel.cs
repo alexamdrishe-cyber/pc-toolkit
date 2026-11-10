@@ -138,11 +138,18 @@ public sealed class NetworkViewModel : ObservableObject
 
     public bool HasDns => _dnsAdvice.Length > 0;
 
+    /// <summary>Проверка скорости интернета: ближайший и далёкий сервер.</summary>
+    public SpeedTestViewModel Speed { get; } = new();
+
+    /// <summary>Трассировка маршрута с потерями по узлам.</summary>
+    public TracerouteViewModel Trace { get; } = new();
+
     public void EnsureLoaded()
     {
         if (_loaded)
             return;
 
+        _ = Speed.LoadServersAsync();
         _loaded = true;
         _ = RefreshConnectionAsync();
     }
