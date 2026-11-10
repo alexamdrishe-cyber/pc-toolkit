@@ -81,6 +81,12 @@ public partial class App : Application
             return;
         }
 
+        if (LaunchArguments.Has(e.Args, LaunchArguments.Exit))
+        {
+            Shutdown(SingleInstance.RequestExit() ? 0 : 1);
+            return;
+        }
+
         bool restarted = LaunchArguments.Has(e.Args, LaunchArguments.Restarted);
         bool installDriver = LaunchArguments.Has(e.Args, LaunchArguments.InstallDriver);
         bool repairDriver = LaunchArguments.Has(e.Args, LaunchArguments.RepairDriver);

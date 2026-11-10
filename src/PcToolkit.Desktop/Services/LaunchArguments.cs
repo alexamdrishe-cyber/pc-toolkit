@@ -27,6 +27,9 @@ public static class LaunchArguments
     /// <summary>Для проверки: читать датчики в самом приложении, даже если служба установлена (как на компьютере без службы).</summary>
     public const string NoService = "--no-service";
 
+    /// <summary>Закрыть уже запущенную копию (как просьба установщика) и выйти — для скриптов разработки.</summary>
+    public const string Exit = "--exit";
+
     /// <summary>Значение после аргумента: «--remove-leftovers путь».</summary>
     public static string? ValueAfter(IReadOnlyList<string> args, string argument)
     {

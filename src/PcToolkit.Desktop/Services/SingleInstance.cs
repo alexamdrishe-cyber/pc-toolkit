@@ -97,6 +97,23 @@ public sealed class SingleInstance : IDisposable
         }
     }
 
+    /// <summary>Просит запущенную копию закрыться (тот же сигнал, что у установщика). true — сигнал подан.</summary>
+    public static bool RequestExit()
+    {
+        try
+        {
+            if (!EventWaitHandle.TryOpenExisting(ExitEventName, out EventWaitHandle? signal))
+                return false;
+            using (signal)
+                signal.Set();
+            return true;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.IO.IOException or WaitHandleCannotBeOpenedException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>Показывает окно уже запущенной копии.</summary>
     public static void ActivateExisting()
     {
