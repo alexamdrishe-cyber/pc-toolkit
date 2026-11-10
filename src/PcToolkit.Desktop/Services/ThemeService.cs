@@ -118,11 +118,15 @@ public static class ThemeService
         {
             Source = new Uri($"pack://application:,,,/Themes/Colors.{(light ? "Light" : "Dark")}.xaml", UriKind.Absolute),
         };
+        // Палитра — первый словарь (App.xaml: «Themes/Colors.Dark.xaml»); прежнюю убираем, чтобы поиск ключей не находил её.
         var merged = app.Resources.MergedDictionaries;
-        if (merged.Count > 0 && merged[0].Source?.OriginalString.Contains("/Themes/Colors.", StringComparison.Ordinal) == true)
-            merged[0] = palette;
-        else
-            merged.Insert(0, palette);
+        for (int i = merged.Count - 1; i >= 0; i--)
+        {
+            if (merged[i].Source?.OriginalString.Contains("Colors.", StringComparison.Ordinal) == true)
+                merged.RemoveAt(i);
+        }
+
+        merged.Insert(0, palette);
 
         IsLight = light;
         _applied = true;

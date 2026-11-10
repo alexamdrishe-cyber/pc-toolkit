@@ -56,6 +56,9 @@
         <DataTemplate DataType="{x:Type vm:CrashesViewModel}">
             <views:CrashesView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StartupViewModel}">
+            <views:StartupView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:DriversViewModel}">
             <views:DriversView />
         </DataTemplate>

@@ -112,6 +112,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             .GroupBy(r => r.Disk.Number)
             .ToDictionary(g => g.Key, g => g.First().Title));
         Drivers = new DriversViewModel(ReinstallDriverCommand);
+        Startup = new StartupViewModel(() => _envStatus.ServiceConnected ? _service : null, _envStatus.IsElevated);
         Network = new NetworkViewModel();
         _fanService = new FanService(FanSettings.Load(), _envStatus.ServiceConnected ? _service : null, source as LhmSensorSource, _envStatus.IsElevated);
         Fans = new FansViewModel(_fanService, dispatcher);
@@ -160,6 +161,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             new NavGroupViewModel("Обслуживание", new[]
             {
                 new NavItemViewModel("Оптимизация", Icons.Optimize, Optimization, "настройки Windows, твики, конфиденциальность, питание"),
+                new NavItemViewModel("Автозагрузка", Icons.Startup, Startup, "что запускается вместе с Windows, медленное включение компьютера"),
                 new NavItemViewModel("Очистка", Icons.Cleanup, Cleanup, "временные файлы, кэш браузеров, кэш шейдеров, корзина"),
                 new NavItemViewModel("Приложения", Icons.Apps, Apps, "удалить программу, следы, приложения Microsoft Store"),
                 new NavItemViewModel("Драйверы", Icons.Driver, Drivers,
@@ -210,6 +212,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     public CrashesViewModel Crashes { get; }
 
     public DriversViewModel Drivers { get; }
+
+    public StartupViewModel Startup { get; }
 
     public NetworkViewModel Network { get; }
 
@@ -449,6 +453,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                     fans.OnShown();
                 else if (value.Page is AppsViewModel apps)
                     apps.EnsureLoaded();
+                else if (value.Page is StartupViewModel startup)
+                    startup.OnShown();
             }
         }
     }

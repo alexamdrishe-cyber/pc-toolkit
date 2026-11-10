@@ -610,6 +610,38 @@
         </Setter>
     </Style>
 
+    <!-- ===== Переключатель «вкл/выкл» (CheckBox) ===== -->
+    <Style x:Key="Switch" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Background="Transparent">
+                        <Border x:Name="Track" Width="40" Height="22" CornerRadius="11" BorderThickness="1"
+                                Background="{DynamicResource ControlBrush}" BorderBrush="{DynamicResource ControlLineBrush}" />
+                        <Ellipse x:Name="Knob" Width="14" Height="14" HorizontalAlignment="Left" Margin="4,0,0,0"
+                                 Fill="{DynamicResource TextSecondaryBrush}" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Knob" Property="Fill" Value="White" />
+                            <Setter TargetName="Knob" Property="Margin" Value="22,0,0,0" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.85" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===== Метка (бейдж) ===== -->
     <Style x:Key="Badge" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource BadgeBrush}" />

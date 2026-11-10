@@ -62,6 +62,12 @@ public static class ServiceOps
     /// приложение закрылось или зависло — служба возвращает вентиляторы BIOS.
     /// </summary>
     public const string Fans = "fans";
+
+    /// <summary>
+    /// Включить или выключить программу в автозагрузке для всех пользователей (HKLM\...\StartupApproved):
+    /// только этот раздел и только состояние «включено/выключено», как в «Диспетчере задач».
+    /// </summary>
+    public const string Startup = "startup";
 }
 
 public sealed class ServiceRequest
@@ -92,6 +98,15 @@ public sealed class ServiceRequest
 
     /// <summary>Для <see cref="ServiceOps.Fans"/>: вернуть BIOS все вентиляторы.</summary>
     public bool ReleaseFans { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Startup"/>: Run, Run32 или StartupFolder.</summary>
+    public string? StartupKey { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Startup"/>: имя записи (значение в Run или имя файла в папке).</summary>
+    public string? StartupName { get; set; }
+
+    /// <summary>Для <see cref="ServiceOps.Startup"/>: включить (true) или выключить.</summary>
+    public bool StartupEnabled { get; set; }
 }
 
 public sealed class ServiceResponse

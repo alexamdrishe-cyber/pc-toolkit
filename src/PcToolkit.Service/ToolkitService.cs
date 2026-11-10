@@ -123,6 +123,9 @@ public sealed class ServiceHost : IDisposable
             case ServiceOps.Fans:
                 return Fans(request);
 
+            case ServiceOps.Startup:
+                return Startup(request);
+
             default:
                 return ServiceResponse.Fail($"Неизвестная команда «{request.Op}».");
         }
@@ -132,6 +135,25 @@ public sealed class ServiceHost : IDisposable
     /// Обороты от приложения. Принимаются только для вентиляторов материнской платы, контроллеров и видеокарт NVIDIA,
     /// не ниже <see cref="FanSettings.AbsoluteMinDuty"/> %; при перегреве — 100 %, что бы ни просили.
     /// </summary>
+    /// <summary>Только раздел StartupApproved в HKLM и только состояние записи — ничего другого эта команда не пишет.</summary>
+    private static ServiceResponse Startup(ServiceRequest request)
+    {
+        if (request.StartupKey is not { } key || !PcToolkit.Core.Startup.StartupApproved.IsValidSubKey(key))
+            return ServiceResponse.Fail("Неизвестный раздел автозагрузки.");
+        if (string.IsNullOrWhiteSpace(request.StartupName))
+            return ServiceResponse.Fail("Не указано имя записи автозагрузки.");
+
+        try
+        {
+            PcToolkit.Core.Startup.StartupApproved.Write(Microsoft.Win32.RegistryHive.LocalMachine, key, request.StartupName, request.StartupEnabled);
+            return new ServiceResponse { Ok = true, Version = ServiceProtocol.Version };
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            return ServiceResponse.Fail(ex.Message);
+        }
+    }
+
     private ServiceResponse Fans(ServiceRequest request)
     {
         if (request.ReleaseFans)

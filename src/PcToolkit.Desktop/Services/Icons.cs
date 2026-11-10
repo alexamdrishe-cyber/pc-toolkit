@@ -31,6 +31,8 @@ public static class Icons
     public static Geometry Crash { get; } = Parse("M3 4.5h18v12H3z M8.5 20h7 M12 16.5V20 M12 7.5v4.5 M12 14.2v.01");
     public static Geometry Fan { get; } = Parse("M12 10.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6z M12 10.2C11 6.5 12.5 3.5 15.5 3.8c2.6.3 2.4 4.1-1.7 7 M13.8 12.3c3.7-1 6.7.5 6.4 3.5-.3 2.6-4.1 2.4-7-1.7 M11.2 13.6c-2.7 2.7-6 3-7.2.3-1-2.4 2.3-4.2 6.9-2.6");
     public static Geometry Network { get; } = Parse("M2.5 9a14 14 0 0 1 19 0 M5.5 12.5a9.5 9.5 0 0 1 13 0 M8.5 16a5 5 0 0 1 7 0 M12 19.5v.01");
+    public static Geometry Startup { get; } = Parse("M12 3v8 M7.1 6.6a7 7 0 1 0 9.8 0");
+
     public static Geometry Driver { get; } = Parse("M9 3v5 M15 3v5 M6 8h12v3.5a6 6 0 0 1-12 0z M12 17.5V21");
 
     private static Geometry Parse(string data)

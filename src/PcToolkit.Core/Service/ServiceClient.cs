@@ -41,6 +41,10 @@ public sealed class ServiceClient : IPrivilegedWriter, IDisposable
         Send(new ServiceRequest { Op = ServiceOps.Disks }, timeoutMs);
 
     /// <summary>Обороты вентиляторов на <paramref name="leaseMs"/> мс. null — службы нет; Ok = false — служба старая или отказала.</summary>
+    /// <summary>Включить или выключить запись автозагрузки для всех пользователей (HKLM).</summary>
+    public ServiceResponse? SetStartup(string subKey, string name, bool enabled, int timeoutMs = 3000) =>
+        Send(new ServiceRequest { Op = ServiceOps.Startup, StartupKey = subKey, StartupName = name, StartupEnabled = enabled }, timeoutMs);
+
     public ServiceResponse? SetFans(IReadOnlyDictionary<string, double?> duties, int leaseMs, int timeoutMs = 2000) =>
         Send(new ServiceRequest { Op = ServiceOps.Fans, FanDuties = duties.ToDictionary(p => p.Key, p => p.Value), LeaseMs = leaseMs }, timeoutMs);
 
