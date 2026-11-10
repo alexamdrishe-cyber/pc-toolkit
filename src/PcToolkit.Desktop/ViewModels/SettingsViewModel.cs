@@ -74,6 +74,21 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    // Тема: снятие отметки с соседней кнопки игнорируем.
+    public bool IsDarkTheme { get => Services.ThemeService.Choice == Services.AppTheme.Dark; set { if (value) SetTheme(Services.AppTheme.Dark); } }
+
+    public bool IsLightTheme { get => Services.ThemeService.Choice == Services.AppTheme.Light; set { if (value) SetTheme(Services.AppTheme.Light); } }
+
+    public bool IsSystemTheme { get => Services.ThemeService.Choice == Services.AppTheme.System; set { if (value) SetTheme(Services.AppTheme.System); } }
+
+    private void SetTheme(Services.AppTheme theme)
+    {
+        Services.ThemeService.Set(theme);
+        OnPropertyChanged(nameof(IsDarkTheme));
+        OnPropertyChanged(nameof(IsLightTheme));
+        OnPropertyChanged(nameof(IsSystemTheme));
+    }
+
     /// <summary>Запуск вместе с Windows, свёрнутой в трей (для вентиляторов, профилей игр и уведомлений).</summary>
     public bool StartWithWindows
     {

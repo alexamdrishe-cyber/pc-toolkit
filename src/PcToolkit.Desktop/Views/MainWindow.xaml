@@ -9,8 +9,8 @@
         Width="1360" Height="860"
         MinWidth="1100" MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource WindowBrush}"
-        Foreground="{StaticResource TextBrush}"
+        Background="{DynamicResource WindowBrush}"
+        Foreground="{DynamicResource TextBrush}"
         FontFamily="{StaticResource UiFont}"
         FontSize="13"
         UseLayoutRounding="True"
@@ -93,7 +93,7 @@
                             Margin="-10,9,0,9"
                             HorizontalAlignment="Left"
                             CornerRadius="2"
-                            Background="{StaticResource AccentBrush}"
+                            Background="{DynamicResource AccentBrush}"
                             Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}" />
                     <StackPanel Orientation="Horizontal">
                         <controls:IconView Icon="{Binding Icon}" Width="16" Height="16" StrokeThickness="1.7" />
@@ -118,7 +118,7 @@
                             Margin="-12,9,0,9"
                             HorizontalAlignment="Left"
                             CornerRadius="2"
-                            Background="{StaticResource AccentBrush}"
+                            Background="{DynamicResource AccentBrush}"
                             Visibility="{Binding IsSelected, Converter={StaticResource BoolToVis}}" />
                     <controls:IconView Icon="{Binding Icon}" Width="18" Height="18" StrokeThickness="1.7" Margin="11,0" />
                 </Grid>
@@ -129,16 +129,16 @@
         <Style x:Key="SourceDot" TargetType="Ellipse">
             <Setter Property="Width" Value="7" />
             <Setter Property="Height" Value="7" />
-            <Setter Property="Fill" Value="{StaticResource WarningBrush}" />
+            <Setter Property="Fill" Value="{DynamicResource WarningBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding SourceState}" Value="Running">
-                    <Setter Property="Fill" Value="{StaticResource GoodBrush}" />
+                    <Setter Property="Fill" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding SourceState}" Value="Failed">
-                    <Setter Property="Fill" Value="{StaticResource CriticalBrush}" />
+                    <Setter Property="Fill" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding SourceState}" Value="Stopped">
-                    <Setter Property="Fill" Value="{StaticResource TextMutedBrush}" />
+                    <Setter Property="Fill" Value="{DynamicResource TextMutedBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -152,8 +152,8 @@
 
         <!-- ===== Развёрнутое меню ===== -->
         <Border Width="232"
-                Background="{StaticResource SidebarBrush}"
-                BorderBrush="{StaticResource LineBrush}"
+                Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,0,1,0"
                 Visibility="{Binding IsSidebarExpanded, Converter={StaticResource BoolToVis}}">
             <DockPanel Margin="12,16,12,12">
@@ -163,7 +163,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource AccentBrush}">
+                    <Border Width="32" Height="32" CornerRadius="9" Background="{DynamicResource AccentBrush}">
                         <controls:IconView Icon="{x:Static services:Icons.Logo}" Width="18" Height="18" StrokeThickness="2.2" Foreground="White" />
                     </Border>
                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
@@ -187,17 +187,17 @@
                         ToolTip="Найти раздел, настройку или датчик">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bd" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="10,0">
+                            <Border x:Name="Bd" Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="8" Padding="10,0">
                                 <ContentPresenter VerticalAlignment="Center" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#34405A" />
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource SearchHoverLineBrush}" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Button.Template>
-                    <Grid TextElement.Foreground="{StaticResource TextSecondaryBrush}">
+                    <Grid TextElement.Foreground="{DynamicResource TextSecondaryBrush}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -205,7 +205,7 @@
                         </Grid.ColumnDefinitions>
                         <controls:IconView Icon="{x:Static services:Icons.Search}" Width="15" Height="15" />
                         <TextBlock Grid.Column="1" Text="Поиск по программе" FontSize="12.5" Margin="8,0,0,0" VerticalAlignment="Center" />
-                        <Border Grid.Column="2" BorderBrush="#2A3240" BorderThickness="1" CornerRadius="4" Padding="5,1" Width="Auto">
+                        <Border Grid.Column="2" BorderBrush="{DynamicResource KeyCapLineBrush}" BorderThickness="1" CornerRadius="4" Padding="5,1" Width="Auto">
                             <TextBlock Text="Ctrl K" Style="{StaticResource SmallLabel}" FontSize="11" />
                         </Border>
                     </Grid>
@@ -216,8 +216,8 @@
                         Margin="0,12,0,0"
                         Padding="12,9,6,9"
                         CornerRadius="9"
-                        Background="{StaticResource CardBrush}"
-                        BorderBrush="{StaticResource CardLineBrush}"
+                        Background="{DynamicResource CardBrush}"
+                        BorderBrush="{DynamicResource CardLineBrush}"
                         BorderThickness="1"
                         ToolTip="{Binding StatusTooltip}">
                     <Grid>
@@ -228,7 +228,7 @@
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Style="{StaticResource SourceDot}" VerticalAlignment="Center" />
-                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="{StaticResource TextRowBrush}" Margin="7,0,0,0" />
+                                <TextBlock Text="{Binding ServiceStatusText}" FontSize="12" Foreground="{DynamicResource TextRowBrush}" Margin="7,0,0,0" />
                             </StackPanel>
                             <TextBlock Text="{Binding StatusText}" Style="{StaticResource SmallLabel}" FontSize="11" TextWrapping="Wrap" Margin="0,3,0,0" />
                         </StackPanel>
@@ -268,13 +268,13 @@
 
         <!-- ===== Свёрнутое меню: полоска со значками ===== -->
         <Border Width="64"
-                Background="{StaticResource SidebarBrush}"
-                BorderBrush="{StaticResource LineBrush}"
+                Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,0,1,0"
                 Visibility="{Binding IsSidebarCollapsed, Converter={StaticResource BoolToVis}}">
             <DockPanel Margin="0,16,0,12">
                 <StackPanel DockPanel.Dock="Top" HorizontalAlignment="Center">
-                    <Border Width="32" Height="32" CornerRadius="9" Background="{StaticResource AccentBrush}" ToolTip="PC Toolkit">
+                    <Border Width="32" Height="32" CornerRadius="9" Background="{DynamicResource AccentBrush}" ToolTip="PC Toolkit">
                         <controls:IconView Icon="{x:Static services:Icons.Logo}" Width="18" Height="18" StrokeThickness="2.2" Foreground="White" />
                     </Border>
                     <Button Style="{StaticResource IconButton}"
@@ -311,7 +311,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Margin="0,0,0,8">
-                                    <Border Height="1" Width="40" Background="{StaticResource LineBrush}" Margin="0,0,0,8" />
+                                    <Border Height="1" Width="40" Background="{DynamicResource LineBrush}" Margin="0,0,0,8" />
                                     <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource NavIconTemplate}" Focusable="False" />
                                 </StackPanel>
                             </DataTemplate>
@@ -329,7 +329,7 @@
         <Grid Grid.ColumnSpan="2"
               Panel.ZIndex="10"
               Visibility="{Binding Preview, Converter={StaticResource NullToCollapsed}}">
-            <Border Background="{StaticResource OverlayBrush}" />
+            <Border Background="{DynamicResource OverlayBrush}" />
             <ContentControl Content="{Binding Preview}" Focusable="False" />
         </Grid>
 
@@ -337,21 +337,21 @@
         <Grid Grid.ColumnSpan="2"
               Panel.ZIndex="20"
               Visibility="{Binding IsSearchOpen, Converter={StaticResource BoolToVis}}">
-            <Border Background="#B30A0C10" MouseLeftButtonDown="OnSearchBackdropClick" />
+            <Border Background="{DynamicResource OverlayBrush}" MouseLeftButtonDown="OnSearchBackdropClick" />
             <Border Width="580"
                     VerticalAlignment="Top"
                     Margin="0,90,0,0"
-                    Background="{StaticResource CardBrush}"
-                    BorderBrush="{StaticResource LineBrush}"
+                    Background="{DynamicResource CardBrush}"
+                    BorderBrush="{DynamicResource LineBrush}"
                     BorderThickness="1"
-                    CornerRadius="12">
+                    CornerRadius="8">
                 <StackPanel>
                     <Grid Margin="16,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <controls:IconView Icon="{x:Static services:Icons.Search}" Width="17" Height="17" Foreground="{StaticResource TextMutedBrush}" />
+                        <controls:IconView Icon="{x:Static services:Icons.Search}" Width="17" Height="17" Foreground="{DynamicResource TextMutedBrush}" />
                         <TextBox x:Name="SearchBox"
                                  Grid.Column="1"
                                  Margin="10,0,0,0"
@@ -363,7 +363,7 @@
                                  Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                                  PreviewKeyDown="OnSearchKeyDown" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource LineBrush}" />
+                    <Border Height="1" Background="{DynamicResource LineBrush}" />
                     <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto" Focusable="False">
                         <ItemsControl ItemsSource="{Binding SearchResults}" Margin="6" Focusable="False">
                             <ItemsControl.ItemTemplate>
@@ -372,7 +372,7 @@
                                             CommandParameter="{Binding}"
                                             Cursor="Hand"
                                             Focusable="False"
-                                            Foreground="{StaticResource TextBrush}"
+                                            Foreground="{DynamicResource TextBrush}"
                                             HorizontalContentAlignment="Stretch">
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
@@ -381,10 +381,10 @@
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                                     </Trigger>
                                                     <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
-                                                        <Setter TargetName="Bd" Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                                        <Setter TargetName="Bd" Property="Background" Value="{DynamicResource NavSelectedBrush}" />
                                                     </DataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
@@ -394,7 +394,7 @@
                                                 <ColumnDefinition Width="Auto" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
-                                            <controls:IconView Icon="{Binding Icon}" Width="18" Height="18" Foreground="{StaticResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
+                                            <controls:IconView Icon="{Binding Icon}" Width="18" Height="18" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Top" Margin="0,1,0,0" />
                                             <StackPanel Grid.Column="1" Margin="12,0,0,0">
                                                 <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold" />
                                                 <TextBlock Text="{Binding Detail}" Style="{StaticResource SmallLabel}" FontSize="11.5" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
@@ -405,7 +405,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                    <Border Height="1" Background="{StaticResource LineBrush}" />
+                    <Border Height="1" Background="{DynamicResource LineBrush}" />
                     <TextBlock Text="↑ ↓ — выбрать · Enter — открыть · Esc — закрыть"
                                Style="{StaticResource SmallLabel}"
                                Margin="16,8,16,10" />

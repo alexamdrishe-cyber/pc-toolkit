@@ -9,7 +9,7 @@
             <StackPanel>
                 <TextBlock Text="{Binding Stage}"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource AccentBrush}" />
+                           Foreground="{DynamicResource AccentBrush}" />
                 <TextBlock Text="{Binding Description}"
                            TextWrapping="Wrap"
                            Margin="0,8,0,0"

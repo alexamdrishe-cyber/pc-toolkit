@@ -7,16 +7,16 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding StatusKind}" Value="good">
-                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding StatusKind}" Value="warning">
-                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding StatusKind}" Value="critical">
-                    <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding StatusKind}" Value="info">
-                    <Setter Property="Foreground" Value="{StaticResource InfoBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource InfoBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -41,7 +41,7 @@
                 <ItemsControl ItemsSource="{Binding Apps}" Focusable="False">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
+                            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
@@ -109,7 +109,7 @@
                     <ItemsControl ItemsSource="{Binding Leftovers}" Focusable="False">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
+                                <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="30" />
@@ -117,9 +117,9 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" VerticalAlignment="Top" Margin="0,2,0,0" />
-                                        <Border Grid.Column="1" Background="{StaticResource ControlBrush}" CornerRadius="6" Padding="6,1"
+                                        <Border Grid.Column="1" Background="{DynamicResource ControlBrush}" CornerRadius="6" Padding="6,1"
                                                 HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,1,0,0">
-                                            <TextBlock Text="{Binding KindText}" FontSize="11.5" Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding KindText}" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}" />
                                         </Border>
                                         <StackPanel Grid.Column="2">
                                             <TextBlock Text="{Binding Path}" TextWrapping="Wrap" FontSize="12.5" />

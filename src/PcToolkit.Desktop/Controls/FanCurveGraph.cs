@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Media;
 using PcToolkit.Core.Overclock;
 
+using PcToolkit.Desktop.Services;
+
 namespace PcToolkit.Desktop.Controls;
 
 /// <summary>Кривая вентилятора: температура (°C) по горизонтали, скорость (%) по вертикали, с сеткой и подписями.</summary>
@@ -12,10 +14,10 @@ public sealed class FanCurveGraph : FrameworkElement
         nameof(Points), typeof(IReadOnlyList<FanPoint>), typeof(FanCurveGraph),
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
-    private static readonly Brush GridBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x26, 0x2C, 0x38)));
-    private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x6A, 0x72, 0x84)));
-    private static readonly Brush LineBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x4C, 0x8D, 0xFF)));
-    private static readonly Brush AreaBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x30, 0x4C, 0x8D, 0xFF)));
+    private static Brush GridBrush => ThemeService.Brush("ChartGridBrush", Color.FromRgb(0x35, 0x37, 0x3C));
+    private static Brush LabelBrush => ThemeService.Brush("TextMutedBrush", Color.FromRgb(0x8F, 0x93, 0x9A));
+    private static Brush LineBrush => ThemeService.Brush("AccentBrush", Color.FromRgb(0x4C, 0x8D, 0xFF));
+    private static Brush AreaBrush => ThemeService.Brush("AccentSoftBrush", Color.FromArgb(0x30, 0x4C, 0x8D, 0xFF));
     private static readonly Typeface Font = new("Segoe UI");
 
     public IReadOnlyList<FanPoint>? Points

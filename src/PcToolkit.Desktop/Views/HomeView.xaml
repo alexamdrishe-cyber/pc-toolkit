@@ -8,7 +8,7 @@
         <!-- Плитка устройства как кнопка: щелчок открывает мониторинг -->
         <Style x:Key="TileButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
@@ -16,7 +16,7 @@
                     <ControlTemplate TargetType="Button">
                         <Grid>
                             <ContentPresenter />
-                            <Border x:Name="Hover" CornerRadius="12" Background="White" Opacity="0" IsHitTestVisible="False" />
+                            <Border x:Name="Hover" CornerRadius="8" Background="{DynamicResource TextBrush}" Opacity="0" IsHitTestVisible="False" />
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -32,18 +32,18 @@
         <Style x:Key="ActionButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" CornerRadius="10" Padding="12,10" BorderThickness="1"
-                                BorderBrush="{StaticResource LineBrush}" Background="Transparent">
+                                BorderBrush="{DynamicResource LineBrush}" Background="Transparent">
                             <ContentPresenter />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -56,13 +56,13 @@
             <Setter Property="Padding" Value="10,0" />
             <Setter Property="CornerRadius" Value="13" />
             <Setter Property="Margin" Value="6,0,0,0" />
-            <Setter Property="Background" Value="{StaticResource GoodChipBrush}" />
+            <Setter Property="Background" Value="{DynamicResource GoodChipBrush}" />
         </Style>
 
         <Style x:Key="LinkButton" TargetType="Button">
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Foreground" Value="#8FB5FF" />
+            <Setter Property="Foreground" Value="{DynamicResource LinkBrush}" />
             <Setter Property="FontSize" Value="12.5" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -73,7 +73,7 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Foreground" Value="#B9D0FF" />
+                    <Setter Property="Foreground" Value="{DynamicResource LinkHoverBrush}" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -87,7 +87,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
-                         Fill="{StaticResource WarningBrush}" />
+                         Fill="{DynamicResource WarningBrush}" />
                 <StackPanel Grid.Column="1" Margin="0,0,12,0">
                     <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
@@ -101,10 +101,10 @@
             </Grid>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Severity}" Value="Critical">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Severity}" Value="Info">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource InfoBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource InfoBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -134,7 +134,7 @@
 
             <!-- ===== Нет прав администратора ===== -->
             <Border Margin="0,16,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
-                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
                     Visibility="{Binding ShowAdminBanner, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -142,7 +142,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource InfoBrush}"
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{DynamicResource InfoBrush}"
                                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
                     <StackPanel Grid.Column="1" Margin="0,0,16,0">
                         <TextBlock Text="Приложение запущено без прав администратора" FontWeight="SemiBold" />
@@ -159,7 +159,7 @@
 
             <!-- ===== Нет драйвера PawnIO ===== -->
             <Border Margin="0,12,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
-                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                    Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}"
                     Visibility="{Binding ShowPawnIoBanner, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -167,7 +167,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource WarningBrush}"
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{DynamicResource WarningBrush}"
                                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
                     <StackPanel Grid.Column="1" Margin="0,0,16,0">
                         <TextBlock Text="{Binding PawnIoBannerTitle}" FontWeight="SemiBold" />
@@ -180,7 +180,7 @@
 
             <!-- ===== Остались настройки из прежнего «Разгона» ===== -->
             <Border Margin="0,12,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
-                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
                     Visibility="{Binding ShowGpuTuningNotice, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -188,7 +188,7 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{StaticResource InfoBrush}"
+                    <controls:IconView Icon="{x:Static services:Icons.Warning}" Width="18" Height="18" Foreground="{DynamicResource InfoBrush}"
                                        VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
                     <StackPanel Grid.Column="1" Margin="0,0,16,0">
                         <TextBlock Text="В видеокарте остались настройки из прежнего «Разгона»" FontWeight="SemiBold" />
@@ -201,19 +201,19 @@
             </Border>
 
             <!-- ===== Итог проверки ===== -->
-            <Border Margin="0,16,0,0" Padding="18,14" CornerRadius="12" BorderThickness="1">
+            <Border Margin="0,16,0,0" Padding="18,14" CornerRadius="8" BorderThickness="1">
                 <Border.Style>
                     <Style TargetType="Border">
-                        <Setter Property="Background" Value="{StaticResource GoodSoftBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource GoodLineBrush}" />
+                        <Setter Property="Background" Value="{DynamicResource GoodSoftBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource GoodLineBrush}" />
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
-                                <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                             </DataTrigger>
                             <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
-                                <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                                <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -228,13 +228,13 @@
                         <Border Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center">
                             <Border.Style>
                                 <Style TargetType="Border">
-                                    <Setter Property="Background" Value="{StaticResource GoodChipBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource GoodChipBrush}" />
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
-                                            <Setter Property="Background" Value="#2A2414" />
+                                            <Setter Property="Background" Value="{DynamicResource WarningChipBrush}" />
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
-                                            <Setter Property="Background" Value="#2E1A1A" />
+                                            <Setter Property="Background" Value="{DynamicResource CriticalChipBrush}" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -243,15 +243,15 @@
                                 <controls:IconView.Style>
                                     <Style TargetType="controls:IconView">
                                         <Setter Property="Icon" Value="{x:Static services:Icons.Check}" />
-                                        <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                        <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding StatusSeverity}" Value="Warning">
                                                 <Setter Property="Icon" Value="{x:Static services:Icons.Warning}" />
-                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusSeverity}" Value="Critical">
                                                 <Setter Property="Icon" Value="{x:Static services:Icons.Warning}" />
-                                                <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -260,14 +260,14 @@
                         </Border>
                         <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding StatusTitle}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                            <TextBlock Text="{Binding StatusDetail}" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12.5" Margin="0,2,0,0" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding StatusDetail}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12.5" Margin="0,2,0,0" TextWrapping="Wrap" />
                         </StackPanel>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Border Style="{StaticResource StatusChip}">
-                                <TextBlock Text="{Binding AccessChip}" FontSize="12" Foreground="{StaticResource GoodTextBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding AccessChip}" FontSize="12" Foreground="{DynamicResource GoodTextBrush}" VerticalAlignment="Center" />
                             </Border>
                             <Border Style="{StaticResource StatusChip}">
-                                <TextBlock Text="{Binding PawnIoChip}" FontSize="12" Foreground="{StaticResource GoodTextBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PawnIoChip}" FontSize="12" Foreground="{DynamicResource GoodTextBrush}" VerticalAlignment="Center" />
                             </Border>
                         </StackPanel>
                     </Grid>
@@ -319,21 +319,21 @@
                         </DockPanel>
 
                         <!-- Запущенная игра -->
-                        <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="10" Background="{StaticResource InputBrush}"
-                                BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+                        <Border Margin="0,12,0,0" Padding="12,10" CornerRadius="10" Background="{DynamicResource InputBrush}"
+                                BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border Width="34" Height="34" CornerRadius="8" Background="#3A2618">
-                                    <controls:IconView Icon="{x:Static services:Icons.Games}" Width="18" Height="18" Foreground="#F6A574" />
+                                <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource GameTileBrush}">
+                                    <controls:IconView Icon="{x:Static services:Icons.Games}" Width="18" Height="18" Foreground="{DynamicResource GameTileTextBrush}" />
                                 </Border>
                                 <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
                                     <StackPanel Visibility="{Binding HasRunningGame, Converter={StaticResource BoolToVis}}">
                                         <StackPanel Orientation="Horizontal">
-                                            <Ellipse Width="7" Height="7" Fill="{StaticResource GoodBrush}" VerticalAlignment="Center" />
+                                            <Ellipse Width="7" Height="7" Fill="{DynamicResource GoodBrush}" VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding GameTitle}" FontWeight="SemiBold" FontSize="13" Margin="7,0,0,0" TextTrimming="CharacterEllipsis" />
                                         </StackPanel>
                                         <TextBlock Text="{Binding GameDetail}" Style="{StaticResource SmallLabel}" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"
@@ -348,7 +348,7 @@
                                 <Button Grid.Column="2" Style="{StaticResource ButtonBase}" Height="32" Padding="12,0" VerticalAlignment="Center"
                                         Command="{Binding RecordFpsCommand}" ToolTip="То же самое — Ctrl+Shift+F11 прямо в игре">
                                     <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="8" Height="8" Fill="{StaticResource CriticalBrush}" VerticalAlignment="Center" />
+                                        <Ellipse Width="8" Height="8" Fill="{DynamicResource CriticalBrush}" VerticalAlignment="Center" />
                                         <TextBlock Margin="8,0,0,0" FontSize="12.5" VerticalAlignment="Center">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -384,7 +384,7 @@
                         <ItemsControl ItemsSource="{Binding Recordings}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Height="30" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0">
+                                    <Border Height="30" BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
@@ -393,21 +393,21 @@
                                                 <ColumnDefinition Width="64" />
                                                 <ColumnDefinition Width="104" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Game}" FontSize="12.5" Foreground="{StaticResource TextRowBrush}" VerticalAlignment="Center"
+                                            <TextBlock Text="{Binding Game}" FontSize="12.5" Foreground="{DynamicResource TextRowBrush}" VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis" ToolTip="{Binding Game}" />
                                             <TextBlock Grid.Column="1" Text="{Binding When}" Style="{StaticResource SmallLabel}" FontSize="12" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="2" Text="{Binding Average}" FontSize="12.5" FontWeight="SemiBold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="3" Text="{Binding Low}" FontSize="12.5" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Low}" FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                                             <Border x:Name="Chip" Grid.Column="4" Height="20" Padding="8,0" CornerRadius="10" HorizontalAlignment="Right"
-                                                    Background="{StaticResource ControlBrush}">
-                                                <TextBlock x:Name="ChipText" Text="{Binding Profile}" FontSize="11" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                    Background="{DynamicResource ControlBrush}">
+                                                <TextBlock x:Name="ChipText" Text="{Binding Profile}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                                             </Border>
                                         </Grid>
                                     </Border>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding WithProfile}" Value="True">
-                                            <Setter TargetName="Chip" Property="Background" Value="{StaticResource GoodChipBrush}" />
-                                            <Setter TargetName="ChipText" Property="Foreground" Value="{StaticResource GoodTextBrush}" />
+                                            <Setter TargetName="Chip" Property="Background" Value="{DynamicResource GoodChipBrush}" />
+                                            <Setter TargetName="ChipText" Property="Foreground" Value="{DynamicResource GoodTextBrush}" />
                                         </DataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
@@ -446,7 +446,7 @@
                                                 <TextBlock Text="{Binding Text}" Style="{StaticResource SmallLabel}" FontSize="11.5" TextWrapping="Wrap" Margin="0,1,0,0" />
                                             </StackPanel>
                                             <controls:IconView Grid.Column="2" Icon="{x:Static services:Icons.Chevron}" Width="14" Height="14"
-                                                               Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center" />
+                                                               Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                                         </Grid>
                                     </Button>
                                 </DataTemplate>
@@ -457,14 +457,14 @@
                         <ItemsControl ItemsSource="{Binding Tests}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Height="30" BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0">
+                                    <Border Height="30" BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="96" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding What}" FontSize="12.5" Foreground="{StaticResource TextRowBrush}" VerticalAlignment="Center"
+                                            <TextBlock Text="{Binding What}" FontSize="12.5" Foreground="{DynamicResource TextRowBrush}" VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="1" Text="{Binding Result}" FontSize="12.5" FontWeight="SemiBold" VerticalAlignment="Center"
                                                        TextTrimming="CharacterEllipsis" ToolTip="{Binding Result}" />

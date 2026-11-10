@@ -16,7 +16,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Ellipse x:Name="Dot" Width="9" Height="9" Margin="0,6,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
-                                 Fill="{StaticResource InfoBrush}" />
+                                 Fill="{DynamicResource InfoBrush}" />
                         <StackPanel Grid.Column="1" Margin="0,0,16,0">
                             <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding LastText}" Style="{StaticResource MutedCaption}" Margin="0,2,0,0" />
@@ -36,7 +36,7 @@
                             <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
+                                        <Border BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="150" />
@@ -57,15 +57,15 @@
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="Good">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource GoodBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource WarningBrush}" />
-                    <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource WarningBrush}" />
+                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Bad">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
-                    <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource CriticalBrush}" />
+                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -118,23 +118,23 @@
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
             <StackPanel Margin="0,0,0,8">
                 <!-- Итог -->
-                <Border x:Name="SummaryCard" Padding="18,14" CornerRadius="12" BorderThickness="1" Margin="0,0,0,14">
+                <Border x:Name="SummaryCard" Padding="18,14" CornerRadius="8" BorderThickness="1" Margin="0,0,0,14">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource GoodSoftBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource GoodLineBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource GoodSoftBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource GoodLineBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Level}" Value="Notice">
-                                    <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource InfoLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                                    <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding Level}" Value="Bad">
-                                    <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

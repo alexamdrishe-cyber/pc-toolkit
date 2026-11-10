@@ -40,6 +40,9 @@ public sealed class AppSettings
     /// <summary>Когда журнал сбоев проверялся в прошлый раз: уведомления только о том, что случилось после.</summary>
     public DateTime? LastCrashCheck { get; set; }
 
+    /// <summary>Тема оформления: dark, light или system (как в Windows).</summary>
+    public string Theme { get; set; } = "dark";
+
     /// <summary>Боковое меню свёрнуто в полоску со значками (Ctrl+B).</summary>
     public bool SidebarCollapsed { get; set; }
 

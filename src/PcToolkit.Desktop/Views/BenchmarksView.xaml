@@ -107,10 +107,10 @@
                                     <TextBlock x:Name="Errors" Text="{Binding ErrorsText}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Right">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                        <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -149,7 +149,7 @@
                             </Grid>
 
                             <TextBlock Text="Температура процессора недоступна: защита от перегрева не сработает. Установите службу в «Настройках»."
-                                       Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
+                                       Foreground="{DynamicResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
                                        Visibility="{Binding ShowTemperatureWarning, Converter={StaticResource BoolToVis}}" />
 
                             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
@@ -172,13 +172,13 @@
                         <StackPanel>
                             <TextBlock Text="ТЕМПЕРАТУРА ЗА ВРЕМЯ ТЕСТА" Style="{StaticResource SectionLabel}" />
                             <controls:Sparkline Height="160" Margin="0,10,0,0" Values="{Binding TemperatureHistory}" Capacity="0"
-                                                MinimumRange="10" Unit="°C" Stroke="{StaticResource WarningBrush}"
+                                                MinimumRange="10" Unit="°C" Stroke="{DynamicResource WarningBrush}"
                                                 EmptyText="Появится после запуска стресс-теста" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="ЧАСТОТА ЗА ВРЕМЯ ТЕСТА" Style="{StaticResource SectionLabel}" />
                             <controls:Sparkline Height="160" Margin="0,10,0,0" Values="{Binding ClockHistory}" Capacity="0"
-                                                MinimumRange="200" Unit="МГц" Stroke="{StaticResource AccentBrush}"
+                                                MinimumRange="200" Unit="МГц" Stroke="{DynamicResource AccentBrush}"
                                                 EmptyText="Появится после запуска стресс-теста" />
                         </StackPanel>
                     </Grid>
@@ -189,16 +189,16 @@
                         Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource InfoLineBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="warning">
-                                    <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="critical">
-                                    <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -223,14 +223,14 @@
                                 <ColumnDefinition Width="16" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="1 ПОТОК" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding ScoreSingleText}" FontSize="32" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding ScoreSingleDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="2" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="2" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ВСЕ ПОТОКИ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding ScoreMultiText}" FontSize="32" FontWeight="SemiBold" />
@@ -259,7 +259,7 @@
                         <ItemsControl ItemsSource="{Binding BenchmarkRows}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
+                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
@@ -325,12 +325,12 @@
                         <ItemsControl ItemsSource="{Binding ComparisonRows}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,8" CornerRadius="6">
+                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,8" CornerRadius="6">
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
+                                                        <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -364,17 +364,17 @@
                                                     <ColumnDefinition Width="{Binding BarLength}" />
                                                     <ColumnDefinition Width="{Binding RestLength}" />
                                                 </Grid.ColumnDefinitions>
-                                                <Border Grid.ColumnSpan="2" Background="{StaticResource LineBrush}" CornerRadius="5" />
+                                                <Border Grid.ColumnSpan="2" Background="{DynamicResource LineBrush}" CornerRadius="5" />
                                                 <Border CornerRadius="5">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
-                                                            <Setter Property="Background" Value="{StaticResource TextMutedBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource TextMutedBrush}" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsEstimate}" Value="True">
                                                                     <Setter Property="Opacity" Value="0.55" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                                    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                                    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
@@ -471,10 +471,10 @@
                                     <TextBlock Text="{Binding ErrorsText}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Right">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                        <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -536,13 +536,13 @@
                                         <Border Width="22" Height="22" CornerRadius="11" Margin="0,0,10,0">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="{StaticResource LineBrush}" />
+                                                    <Setter Property="Background" Value="{DynamicResource LineBrush}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsDone}" Value="True">
-                                                            <Setter Property="Background" Value="{StaticResource GoodBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource GoodBrush}" />
                                                         </DataTrigger>
                                                         <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -552,10 +552,10 @@
                                         <TextBlock Text="{Binding Title}" VerticalAlignment="Center">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                             <Setter Property="FontWeight" Value="SemiBold" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -574,16 +574,16 @@
                         Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource InfoLineBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="warning">
-                                    <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="critical">
-                                    <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -619,7 +619,7 @@
                         <ItemsControl ItemsSource="{Binding ErrorRows}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
+                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="80" />
@@ -633,7 +633,7 @@
                                             <TextBlock Grid.Column="1" Text="{Binding Pattern}" TextTrimming="CharacterEllipsis" />
                                             <TextBlock Grid.Column="2" Text="{Binding Address}" />
                                             <TextBlock Grid.Column="3" Text="{Binding Expected}" FontFamily="Consolas" />
-                                            <TextBlock Grid.Column="4" Text="{Binding Actual}" FontFamily="Consolas" Foreground="{StaticResource CriticalBrush}" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Actual}" FontFamily="Consolas" Foreground="{DynamicResource CriticalBrush}" />
                                             <TextBlock Grid.Column="5" Text="{Binding Bits}" />
                                         </Grid>
                                     </Border>
@@ -658,28 +658,28 @@
                                 <ColumnDefinition Width="12" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ЧТЕНИЕ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding ReadText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <TextBlock Text="{Binding ReadDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="2" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="2" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ЗАПИСЬ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding WriteText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <TextBlock Text="{Binding WriteDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="4" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="4" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="КОПИРОВАНИЕ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding CopyText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <TextBlock Text="{Binding CopyDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="6" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="6" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ЗАДЕРЖКА" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding LatencyText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
@@ -695,7 +695,7 @@
 
                 <!-- Подсказка про XMP -->
                 <Border Margin="0,16,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
-                        Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                        Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}"
                         Visibility="{Binding HasXmpHint, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding XmpHint}" TextWrapping="Wrap" />
                 </Border>
@@ -787,10 +787,10 @@
                                     <TextBlock Text="{Binding ErrorsText}" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Right">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasErrors}" Value="True">
-                                                        <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                                        <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -840,7 +840,7 @@
                             </Grid>
 
                             <TextBlock Text="Температура видеокарты недоступна: защита от перегрева не сработает."
-                                       Foreground="{StaticResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
+                                       Foreground="{DynamicResource WarningBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0"
                                        Visibility="{Binding ShowTemperatureWarning, Converter={StaticResource BoolToVis}}" />
 
                             <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
@@ -863,13 +863,13 @@
                         <StackPanel>
                             <TextBlock Text="ТЕМПЕРАТУРА ЗА ВРЕМЯ ТЕСТА" Style="{StaticResource SectionLabel}" />
                             <controls:Sparkline Height="160" Margin="0,10,0,0" Values="{Binding TemperatureHistory}" Capacity="0"
-                                                MinimumRange="10" Unit="°C" Stroke="{StaticResource WarningBrush}"
+                                                MinimumRange="10" Unit="°C" Stroke="{DynamicResource WarningBrush}"
                                                 EmptyText="Появится после запуска стресс-теста" />
                         </StackPanel>
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="ЧАСТОТА ЯДРА ЗА ВРЕМЯ ТЕСТА" Style="{StaticResource SectionLabel}" />
                             <controls:Sparkline Height="160" Margin="0,10,0,0" Values="{Binding ClockHistory}" Capacity="0"
-                                                MinimumRange="200" Unit="МГц" Stroke="{StaticResource AccentBrush}"
+                                                MinimumRange="200" Unit="МГц" Stroke="{DynamicResource AccentBrush}"
                                                 EmptyText="Появится после запуска стресс-теста" />
                         </StackPanel>
                     </Grid>
@@ -880,16 +880,16 @@
                         Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource InfoLineBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="warning">
-                                    <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding ResultKind}" Value="critical">
-                                    <Setter Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                                    <Setter Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
+                                    <Setter Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -916,28 +916,28 @@
                                 <ColumnDefinition Width="12" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <Border Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ИТОГ, БАЛЛЫ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding ScoreText}" FontSize="32" FontWeight="SemiBold" />
                                     <TextBlock Text="{Binding ScoreDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="2" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="2" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="3D-СЦЕНА 4K" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding FillText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <TextBlock Text="{Binding FillDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="4" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="4" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="ВЫЧИСЛЕНИЯ FP32" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding GflopsText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
                                     <TextBlock Text="{Binding GflopsDelta}" Style="{StaticResource Caption}" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="6" Background="{StaticResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
+                            <Border Grid.Column="6" Background="{DynamicResource InfoSoftBrush}" CornerRadius="10" Padding="16,12">
                                 <StackPanel>
                                     <TextBlock Text="СКОРОСТЬ ВИДЕОПАМЯТИ" Style="{StaticResource SectionLabel}" />
                                     <TextBlock Text="{Binding BandwidthText}" FontSize="22" FontWeight="SemiBold" Margin="0,6,0,0" />
@@ -978,12 +978,12 @@
                         <ItemsControl ItemsSource="{Binding RatingRows}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,8" CornerRadius="6">
+                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="8,8" CornerRadius="6">
                                         <Border.Style>
                                             <Style TargetType="Border">
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                        <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
+                                                        <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -1015,17 +1015,17 @@
                                                     <ColumnDefinition Width="{Binding BarLength}" />
                                                     <ColumnDefinition Width="{Binding RestLength}" />
                                                 </Grid.ColumnDefinitions>
-                                                <Border Grid.ColumnSpan="2" Background="{StaticResource LineBrush}" CornerRadius="5" />
+                                                <Border Grid.ColumnSpan="2" Background="{DynamicResource LineBrush}" CornerRadius="5" />
                                                 <Border CornerRadius="5">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
-                                                            <Setter Property="Background" Value="{StaticResource TextMutedBrush}" />
+                                                            <Setter Property="Background" Value="{DynamicResource TextMutedBrush}" />
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsEstimate}" Value="True">
                                                                     <Setter Property="Opacity" Value="0.55" />
                                                                 </DataTrigger>
                                                                 <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-                                                                    <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                                                                    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>

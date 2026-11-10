@@ -30,8 +30,8 @@
                 Margin="0,16,0,0"
                 Padding="16,12"
                 CornerRadius="10"
-                Background="{StaticResource InfoSoftBrush}"
-                BorderBrush="{StaticResource InfoLineBrush}"
+                Background="{DynamicResource InfoSoftBrush}"
+                BorderBrush="{DynamicResource InfoLineBrush}"
                 BorderThickness="1"
                 Visibility="{Binding ShowAdminBanner, Converter={StaticResource BoolToVis}}">
             <Grid>
@@ -91,13 +91,13 @@
                                                                Margin="0,4,0,0" />
                                                     <TextBlock Text="{Binding Note}"
                                                                FontSize="12"
-                                                               Foreground="{StaticResource WarningBrush}"
+                                                               Foreground="{DynamicResource WarningBrush}"
                                                                TextWrapping="Wrap"
                                                                Margin="0,6,0,0"
                                                                Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}" />
                                                     <TextBlock Text="{Binding WarningText}"
                                                                FontSize="12"
-                                                               Foreground="{StaticResource InfoBrush}"
+                                                               Foreground="{DynamicResource InfoBrush}"
                                                                TextWrapping="Wrap"
                                                                Margin="0,6,0,0"
                                                                Visibility="{Binding HasWarning, Converter={StaticResource BoolToVis}}" />
@@ -137,8 +137,8 @@
         <Border Grid.Row="4"
                 Margin="-32,0,-32,0"
                 Padding="32,12"
-                Background="{StaticResource SidebarBrush}"
-                BorderBrush="{StaticResource LineBrush}"
+                Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,1,0,0">
             <Grid>
                 <TextBlock Text="{Binding SelectedText}" Style="{StaticResource Caption}" VerticalAlignment="Center" />

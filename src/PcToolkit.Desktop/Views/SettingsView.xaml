@@ -5,7 +5,29 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
         <StackPanel Margin="32,28,32,24" MaxWidth="980" HorizontalAlignment="Left">
             <TextBlock Text="Настройки" Style="{StaticResource PageTitle}" />
-            <TextBlock Text="Служба PC Toolkit и параметры приложения." Style="{StaticResource PageSubtitle}" />
+            <TextBlock Text="Оформление, служба PC Toolkit и параметры приложения." Style="{StaticResource PageSubtitle}" />
+
+            <!-- Оформление -->
+            <Border Style="{StaticResource Card}" Margin="0,20,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="Тема" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                   Text="Меняется сразу. «Как в Windows» следует за настройкой «Режим приложений» в параметрах Windows." />
+                    </StackPanel>
+                    <Border Grid.Column="1" Style="{StaticResource SegmentBox}" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton Content="Тёмная" GroupName="app-theme" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsDarkTheme, Mode=TwoWay}" />
+                            <RadioButton Content="Светлая" GroupName="app-theme" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsLightTheme, Mode=TwoWay}" />
+                            <RadioButton Content="Как в Windows" GroupName="app-theme" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsSystemTheme, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
 
             <!-- Служба -->
             <Border Style="{StaticResource Card}" Margin="0,20,0,0">
@@ -17,7 +39,7 @@
                                 <Style TargetType="Border" BasedOn="{StaticResource Badge}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding StatusKind}" Value="warning">
-                                            <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
+                                            <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -27,13 +49,13 @@
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource BadgeText}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding StatusKind}" Value="good">
-                                                <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusKind}" Value="warning">
-                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding StatusKind}" Value="info">
-                                                <Setter Property="Foreground" Value="{StaticResource InfoBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource InfoBrush}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -59,7 +81,7 @@
                                Margin="0,10,0,0"
                                Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}" />
 
-                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,14,0,0">
+                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,14,0,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

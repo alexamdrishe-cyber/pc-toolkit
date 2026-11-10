@@ -30,8 +30,8 @@
                 Margin="0,16,0,0"
                 Padding="16,12"
                 CornerRadius="10"
-                Background="{StaticResource InfoSoftBrush}"
-                BorderBrush="{StaticResource InfoLineBrush}"
+                Background="{DynamicResource InfoSoftBrush}"
+                BorderBrush="{DynamicResource InfoLineBrush}"
                 BorderThickness="1"
                 Visibility="{Binding ShowAdminBanner, Converter={StaticResource BoolToVis}}">
             <Grid>
@@ -122,7 +122,7 @@
                 <Border Margin="0,0,0,16"
                         Padding="14,10"
                         CornerRadius="8"
-                        Background="{StaticResource AccentSoftBrush}"
+                        Background="{DynamicResource AccentSoftBrush}"
                         Visibility="{Binding HasRecommendation, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding RecommendationText}" TextWrapping="Wrap" />
                 </Border>
@@ -176,7 +176,7 @@
                                                         <TextBlock x:Name="StateText"
                                                                    Text="{Binding StateText}"
                                                                    FontSize="12"
-                                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                                    HorizontalAlignment="Right"
                                                                    TextAlignment="Right"
                                                                    TextWrapping="Wrap"
@@ -193,23 +193,23 @@
                                             </Border>
                                             <DataTemplate.Triggers>
                                                 <DataTrigger Binding="{Binding IsMediumRisk}" Value="True">
-                                                    <Setter TargetName="RiskBadge" Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                                                    <Setter TargetName="RiskText" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                    <Setter TargetName="RiskBadge" Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                                                    <Setter TargetName="RiskText" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding State}" Value="Applied">
-                                                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                    <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource GoodBrush}" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding State}" Value="AppliedOutside">
-                                                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource GoodBrush}" />
+                                                    <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource GoodBrush}" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding State}" Value="Partial">
-                                                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                                                    <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding State}" Value="NotApplicable">
-                                                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+                                                    <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding State}" Value="Unknown">
-                                                    <Setter TargetName="StateText" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                                                    <Setter TargetName="StateText" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                                                 </DataTrigger>
                                             </DataTemplate.Triggers>
                                         </DataTemplate>
@@ -226,8 +226,8 @@
         <Border Grid.Row="4"
                 Margin="-32,0,-32,0"
                 Padding="32,12"
-                Background="{StaticResource SidebarBrush}"
-                BorderBrush="{StaticResource LineBrush}"
+                Background="{DynamicResource SidebarBrush}"
+                BorderBrush="{DynamicResource LineBrush}"
                 BorderThickness="0,1,0,0">
             <Grid>
                 <TextBlock Text="{Binding SelectedText}" Style="{StaticResource Caption}" VerticalAlignment="Center" />

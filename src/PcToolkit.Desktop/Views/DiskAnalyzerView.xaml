@@ -1,11 +1,12 @@
 <UserControl x:Class="PcToolkit.Desktop.Views.DiskAnalyzerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls">
 
     <UserControl.Resources>
         <!-- Строка папки или файла: название, полоска доли, размер, процент, кнопки. -->
         <DataTemplate x:Key="SizeRowTemplate">
-            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,9">
+            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Padding="4,9">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -21,10 +22,10 @@
                     </StackPanel>
 
                     <Border Grid.Column="1" Width="220" Height="8" CornerRadius="4"
-                            Background="{StaticResource ControlBrush}"
+                            Background="{DynamicResource ControlBrush}"
                             HorizontalAlignment="Left" VerticalAlignment="Center">
                         <Border Width="{Binding BarWidth}" CornerRadius="4"
-                                Background="{StaticResource AccentBrush}"
+                                Background="{DynamicResource AccentBrush}"
                                 HorizontalAlignment="Left" />
                     </Border>
 
@@ -92,16 +93,16 @@
                             <StackPanel>
                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                 <Border Width="200" Height="6" CornerRadius="3" Margin="0,8,0,6"
-                                        Background="{StaticResource ControlBrush}" HorizontalAlignment="Left">
+                                        Background="{DynamicResource ControlBrush}" HorizontalAlignment="Left">
                                     <Border x:Name="Used" Width="{Binding UsedBarWidth}" CornerRadius="3"
-                                            Background="{StaticResource AccentBrush}" HorizontalAlignment="Left" />
+                                            Background="{DynamicResource AccentBrush}" HorizontalAlignment="Left" />
                                 </Border>
                                 <TextBlock Text="{Binding Details}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
                             </StackPanel>
                         </RadioButton>
                         <DataTemplate.Triggers>
                             <DataTrigger Binding="{Binding IsAlmostFull}" Value="True">
-                                <Setter TargetName="Used" Property="Background" Value="{StaticResource WarningBrush}" />
+                                <Setter TargetName="Used" Property="Background" Value="{DynamicResource WarningBrush}" />
                             </DataTrigger>
                         </DataTemplate.Triggers>
                     </DataTemplate>
@@ -147,7 +148,7 @@
         </StackPanel>
 
         <!-- Папки -->
-        <Grid Grid.Row="3" Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="3" controls:PageScroll.FillHeight="20" Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
             <Grid Visibility="{Binding IsFoldersMode, Converter={StaticResource BoolToVis}}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />

@@ -5,13 +5,13 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using PcToolkit.Core.Logging;
+using PcToolkit.Desktop.Services;
 using PcToolkit.Desktop.ViewModels;
 
 namespace PcToolkit.Desktop.Views;
 
 public partial class MainWindow : Window
 {
-    private const int DwmwaUseImmersiveDarkMode = 20;
 
     private readonly Dictionary<object, FrameworkElement> _pages = new();
 
@@ -41,17 +41,8 @@ public partial class MainWindow : Window
     {
         base.OnSourceInitialized(e);
 
-        // Тёмный заголовок окна, чтобы он не выбивался из темы приложения.
-        try
-        {
-            IntPtr handle = new WindowInteropHelper(this).Handle;
-            int enabled = 1;
-            DwmSetWindowAttribute(handle, DwmwaUseImmersiveDarkMode, ref enabled, sizeof(int));
-        }
-        catch
-        {
-            // Старые сборки Windows не поддерживают этот атрибут: остаётся обычный заголовок.
-        }
+        // Заголовок окна в цвет темы приложения.
+        ThemeService.StyleTitleBar(this);
     }
 
     /// <summary>
@@ -63,8 +54,18 @@ public partial class MainWindow : Window
         if (!_pages.TryGetValue(page, out FrameworkElement? view))
         {
             var template = (DataTemplate)FindResource(new DataTemplateKey(page.GetType()));
-            view = (FrameworkElement)template.LoadContent();
-            view.DataContext = page;
+            var content = (FrameworkElement)template.LoadContent();
+            content.DataContext = page;
+            // Страница прокручивается целиком — с заголовком и вкладками (см. PageScroll).
+            var scroller = new System.Windows.Controls.ScrollViewer
+            {
+                Content = content,
+                VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                HorizontalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Disabled,
+                Focusable = false,
+            };
+            Controls.PageScroll.SetIsPage(scroller, true);
+            view = scroller;
             _pages[page] = view;
         }
 
@@ -148,6 +149,4 @@ public partial class MainWindow : Window
             vm.IsSearchOpen = false;
     }
 
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 }

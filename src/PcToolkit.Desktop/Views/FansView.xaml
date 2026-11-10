@@ -51,16 +51,16 @@
                 </Grid>
             </Border>
 
-            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,10,0,0"
-                    Background="{StaticResource CriticalSoftBrush}" BorderBrush="{StaticResource CriticalLineBrush}"
+            <Border Padding="18,12" CornerRadius="8" BorderThickness="1" Margin="0,10,0,0"
+                    Background="{DynamicResource CriticalSoftBrush}" BorderBrush="{DynamicResource CriticalLineBrush}"
                     Visibility="{Binding IsOverheat, Converter={StaticResource BoolToVis}}">
                 <TextBlock FontWeight="SemiBold" TextWrapping="Wrap"
                            Text="Перегрев: все вентиляторы крутятся на 100 %, пока температура не опустится ниже 80 °C." />
             </Border>
 
             <!-- Автозапуск -->
-            <Border Padding="18,14" CornerRadius="12" BorderThickness="1" Margin="0,10,0,0"
-                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+            <Border Padding="18,14" CornerRadius="8" BorderThickness="1" Margin="0,10,0,0"
+                    Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
                     Visibility="{Binding IsAutostartEnabled, Converter={StaticResource InverseBoolToVis}}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -80,8 +80,8 @@
             <!-- Вентиляторы -->
             <TextBlock Text="ВЕНТИЛЯТОРЫ" Style="{StaticResource SectionLabel}" Margin="0,22,0,8" />
 
-            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,0,0,10"
-                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+            <Border Padding="18,12" CornerRadius="8" BorderThickness="1" Margin="0,0,0,10"
+                    Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}"
                     Visibility="{Binding HasBoardProblem, Converter={StaticResource BoolToVis}}">
                 <TextBlock TextWrapping="Wrap">
                     <Run Text="Материнская плата: " FontWeight="SemiBold" /><Run Text="{Binding BoardProblem, Mode=OneWay}" />
@@ -89,8 +89,8 @@
             </Border>
 
             <!-- Другая программа управления вентиляторами -->
-            <Border Padding="18,12" CornerRadius="12" BorderThickness="1" Margin="0,0,0,10"
-                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+            <Border Padding="18,12" CornerRadius="8" BorderThickness="1" Margin="0,0,0,10"
+                    Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}"
                     Visibility="{Binding HasConflict, Converter={StaticResource BoolToVis}}">
                 <TextBlock TextWrapping="Wrap">
                     <Run Text="Две программы на одни вентиляторы. " FontWeight="SemiBold" /><Run Text="{Binding ConflictText, Mode=OneWay}" />
@@ -131,7 +131,7 @@
                                         <TextBlock Text="{Binding Device}" Style="{StaticResource MutedCaption}" Margin="10,0,0,0" VerticalAlignment="Bottom" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding Status}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,4,0,0" />
-                                    <TextBlock Text="{Binding ActionText}" Foreground="{StaticResource AccentBrush}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"
+                                    <TextBlock Text="{Binding ActionText}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"
                                                Visibility="{Binding HasAction, Converter={StaticResource BoolToVis}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
@@ -237,7 +237,7 @@
                                                      CurrentTemperature="{Binding GpuCurve.CurrentTemperature}" Accent="{Binding GpuCurve.Accent}"
                                                      Visibility="{Binding GpuOwnCurve, Converter={StaticResource BoolToVis}}" />
                             <!-- Автоматика драйвера: кривой нет — объясняем, почему так тише -->
-                            <Border Height="210" CornerRadius="10" BorderThickness="1" BorderBrush="{StaticResource ChartGridBrush}" Background="#10F59E4A"
+                            <Border Height="210" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource ChartGridBrush}" Background="#10F59E4A"
                                     Visibility="{Binding GpuByDriver, Converter={StaticResource BoolToVis}}">
                                 <StackPanel VerticalAlignment="Center" Margin="20,0">
                                     <controls:IconView Icon="{x:Static services:Icons.Fan}" Width="30" Height="30" StrokeThickness="1.6"

@@ -4,6 +4,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using PcToolkit.Core.Fans;
 
+using PcToolkit.Desktop.Services;
+
 namespace PcToolkit.Desktop.Controls;
 
 /// <summary>
@@ -34,11 +36,12 @@ public sealed class FanCurveEditor : FrameworkElement
     private const double Bottom = 24;
     private const double HitRadius = 11;
 
-    private static readonly Brush GridBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x23, 0x29, 0x34)));
-    private static readonly Brush GridStrongBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x2C, 0x33, 0x40)));
-    private static readonly Brush LabelBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x7A, 0x83, 0x96)));
-    private static readonly Brush TextBrush = Freeze(new SolidColorBrush(Color.FromRgb(0xE8, 0xEB, 0xF1)));
-    private static readonly Brush BubbleBrush = Freeze(new SolidColorBrush(Color.FromRgb(0x1C, 0x22, 0x2C)));
+    // Цвета берутся из текущей темы при каждой отрисовке.
+    private static Brush GridBrush => ThemeService.Brush("ChartMinorGridBrush", Color.FromRgb(0x2A, 0x2C, 0x30));
+    private static Brush GridStrongBrush => ThemeService.Brush("ChartGridBrush", Color.FromRgb(0x35, 0x37, 0x3C));
+    private static Brush LabelBrush => ThemeService.Brush("TextMutedBrush", Color.FromRgb(0x8F, 0x93, 0x9A));
+    private static Brush TextBrush => ThemeService.Brush("TextBrush", Color.FromRgb(0xEC, 0xED, 0xEF));
+    private static Brush BubbleBrush => ThemeService.Brush("CardHoverBrush", Color.FromRgb(0x2D, 0x2F, 0x34));
     private static readonly Typeface Font = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
     private static readonly Typeface BoldFont = new(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.SemiBold, FontStretches.Normal);
 
@@ -169,7 +172,7 @@ public sealed class FanCurveEditor : FrameworkElement
             Bubble(dc, $"{current:0}° → {duty:0} %", new Point(at.X, plot.Top), dpi, accent, above: false);
         }
 
-        var dotStroke = new Pen(new SolidColorBrush(Color.FromRgb(0x0B, 0x0D, 0x11)), 2);
+        var dotStroke = new Pen(ThemeService.Brush("CardBrush", Color.FromRgb(0x25, 0x27, 0x2B)), 2);
         dotStroke.Freeze();
         var dotFill = new SolidColorBrush(accent);
         dotFill.Freeze();

@@ -7,7 +7,7 @@
     <UserControl.Resources>
         <!-- Показатель: цветная точка, название, что это, чем грозит и что делать; справа значение. -->
         <DataTemplate x:Key="HealthItemTemplate">
-            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,10">
+            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,10">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="18" />
@@ -15,7 +15,7 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Ellipse x:Name="Dot" Width="8" Height="8" Margin="0,6,0,0" VerticalAlignment="Top" HorizontalAlignment="Left"
-                             Fill="{StaticResource TextMutedBrush}" />
+                             Fill="{DynamicResource TextMutedBrush}" />
                     <StackPanel Grid.Column="1" Margin="0,0,16,0">
                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13.5" TextWrapping="Wrap" />
                         <TextBlock Text="{Binding What}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,2,0,0" />
@@ -30,26 +30,26 @@
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="Good">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource GoodBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Notice">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource InfoBrush}" />
-                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource InfoBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource InfoBrush}" />
+                    <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource InfoBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource WarningBrush}" />
-                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource WarningBrush}" />
+                    <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Bad">
-                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource CriticalBrush}" />
-                    <Setter TargetName="Value" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource CriticalBrush}" />
+                    <Setter TargetName="Value" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
         <!-- Строка таблицы SMART диска SATA: номер, название, текущее, худшее, порог, «сырое» значение. -->
         <DataTemplate x:Key="AtaRowTemplate">
-            <Border BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,5">
+            <Border BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="44" />
@@ -63,29 +63,29 @@
                     <TextBlock x:Name="Name" Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" />
                     <TextBlock Grid.Column="2" Text="{Binding Current}" HorizontalAlignment="Right" />
                     <TextBlock Grid.Column="3" Text="{Binding Worst}" HorizontalAlignment="Right" />
-                    <TextBlock Grid.Column="4" Text="{Binding Threshold}" HorizontalAlignment="Right" Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="4" Text="{Binding Threshold}" HorizontalAlignment="Right" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock x:Name="Raw" Grid.Column="5" Text="{Binding Raw}" HorizontalAlignment="Right" FontWeight="SemiBold" />
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="Notice">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource InfoBrush}" />
-                    <Setter TargetName="Raw" Property="Foreground" Value="{StaticResource InfoBrush}" />
+                    <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource InfoBrush}" />
+                    <Setter TargetName="Raw" Property="Foreground" Value="{DynamicResource InfoBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource WarningBrush}" />
-                    <Setter TargetName="Raw" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                    <Setter TargetName="Raw" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Bad">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource CriticalBrush}" />
-                    <Setter TargetName="Raw" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
+                    <Setter TargetName="Raw" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
 
         <!-- Строка журнала здоровья NVMe: название и значение. -->
         <DataTemplate x:Key="NvmeRowTemplate">
-            <Border BorderBrush="{StaticResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,5">
+            <Border BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="0,5">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -97,12 +97,12 @@
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Level}" Value="Warning">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource WarningBrush}" />
-                    <Setter TargetName="Raw" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                    <Setter TargetName="Raw" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Level}" Value="Bad">
-                    <Setter TargetName="Name" Property="Foreground" Value="{StaticResource CriticalBrush}" />
-                    <Setter TargetName="Raw" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter TargetName="Name" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
+                    <Setter TargetName="Raw" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -118,18 +118,18 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Border x:Name="IconCircle" Width="40" Height="40" CornerRadius="20" VerticalAlignment="Center"
-                                Background="{StaticResource ControlBrush}">
+                                Background="{DynamicResource ControlBrush}">
                             <controls:IconView x:Name="Icon" Width="20" Height="20" StrokeThickness="2"
-                                               Icon="{x:Static services:Icons.Disk}" Foreground="{StaticResource TextSecondaryBrush}" />
+                                               Icon="{x:Static services:Icons.Disk}" Foreground="{DynamicResource TextSecondaryBrush}" />
                         </Border>
                         <StackPanel Grid.Column="1" Margin="14,0,16,0" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Caption}" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                         <Border x:Name="Pill" Grid.Column="2" CornerRadius="10" Padding="10,4" VerticalAlignment="Center"
-                                Background="{StaticResource ControlBrush}">
+                                Background="{DynamicResource ControlBrush}">
                             <TextBlock x:Name="PillText" Text="{Binding VerdictText}" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
                         </Border>
                     </Grid>
 
@@ -142,7 +142,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border Background="{StaticResource ControlBrush}" CornerRadius="8" Padding="12,8" Margin="0,0,10,6" MinWidth="110">
+                                <Border Background="{DynamicResource ControlBrush}" CornerRadius="8" Padding="12,8" Margin="0,0,10,6" MinWidth="110">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Label}" Style="{StaticResource MutedCaption}" />
                                         <TextBlock Text="{Binding Value}" FontSize="18" FontWeight="SemiBold" />
@@ -197,27 +197,27 @@
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding Verdict}" Value="Good">
-                    <Setter TargetName="IconCircle" Property="Background" Value="{StaticResource GoodChipBrush}" />
+                    <Setter TargetName="IconCircle" Property="Background" Value="{DynamicResource GoodChipBrush}" />
                     <Setter TargetName="Icon" Property="Icon" Value="{x:Static services:Icons.Check}" />
-                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource GoodBrush}" />
-                    <Setter TargetName="Pill" Property="Background" Value="{StaticResource GoodChipBrush}" />
-                    <Setter TargetName="PillText" Property="Foreground" Value="{StaticResource GoodTextBrush}" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource GoodBrush}" />
+                    <Setter TargetName="Pill" Property="Background" Value="{DynamicResource GoodChipBrush}" />
+                    <Setter TargetName="PillText" Property="Foreground" Value="{DynamicResource GoodTextBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Verdict}" Value="Warning">
-                    <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
-                    <Setter TargetName="IconCircle" Property="Background" Value="#2A2414" />
+                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
+                    <Setter TargetName="IconCircle" Property="Background" Value="{DynamicResource WarningChipBrush}" />
                     <Setter TargetName="Icon" Property="Icon" Value="{x:Static services:Icons.Warning}" />
-                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource WarningBrush}" />
-                    <Setter TargetName="Pill" Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                    <Setter TargetName="PillText" Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                    <Setter TargetName="Pill" Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                    <Setter TargetName="PillText" Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Verdict}" Value="Bad">
-                    <Setter TargetName="Card" Property="BorderBrush" Value="{StaticResource CriticalLineBrush}" />
-                    <Setter TargetName="IconCircle" Property="Background" Value="#2E1A1A" />
+                    <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource CriticalLineBrush}" />
+                    <Setter TargetName="IconCircle" Property="Background" Value="{DynamicResource CriticalChipBrush}" />
                     <Setter TargetName="Icon" Property="Icon" Value="{x:Static services:Icons.Warning}" />
-                    <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource CriticalBrush}" />
-                    <Setter TargetName="Pill" Property="Background" Value="{StaticResource CriticalSoftBrush}" />
-                    <Setter TargetName="PillText" Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
+                    <Setter TargetName="Pill" Property="Background" Value="{DynamicResource CriticalSoftBrush}" />
+                    <Setter TargetName="PillText" Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -227,7 +227,7 @@
         <StackPanel Margin="0,0,0,8">
             <!-- Почему SMART прочитан не у всех дисков -->
             <Border Padding="16,12" CornerRadius="10" BorderThickness="1" Margin="0,0,0,14"
-                    Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningLineBrush}"
+                    Background="{DynamicResource WarningSoftBrush}" BorderBrush="{DynamicResource WarningLineBrush}"
                     Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}">
                 <Grid>
                     <Grid.ColumnDefinitions>

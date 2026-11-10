@@ -4,7 +4,6 @@
              xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls">
 
     <UserControl.Resources>
-        <SolidColorBrush x:Key="GoodSoftBrush" Color="#1A34D399" />
         <SolidColorBrush x:Key="SecondSeriesBrush" Color="#F5B544" />
 
         <!-- Список с выделением строки -->
@@ -18,20 +17,20 @@
                 <Setter.Value>
                     <Style TargetType="ListBoxItem">
                         <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-                        <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="Bd" Background="Transparent" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="14,8">
+                                    <Border x:Name="Bd" Background="Transparent" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="14,8">
                                         <ContentPresenter />
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentSoftBrush}" />
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -48,14 +47,14 @@
         </Style>
 
         <Style x:Key="DeltaText" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Kind}" Value="Better">
-                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Worse">
-                    <Setter Property="Foreground" Value="{StaticResource CriticalBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource CriticalBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -85,12 +84,12 @@
         <Border Grid.Row="2" Margin="0,12,0,12" Padding="14,9" CornerRadius="10" BorderThickness="1">
             <Border.Style>
                 <Style TargetType="Border">
-                    <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
-                    <Setter Property="BorderBrush" Value="{StaticResource InfoLineBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
+                    <Setter Property="BorderBrush" Value="{DynamicResource InfoLineBrush}" />
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding FrameSourceProblem}" Value="True">
-                            <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource WarningLineBrush}" />
+                            <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
+                            <Setter Property="BorderBrush" Value="{DynamicResource WarningLineBrush}" />
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -108,7 +107,7 @@
         </Border>
 
         <!-- ===================== Игры и профили ===================== -->
-        <Grid Grid.Row="3" Visibility="{Binding IsGamesTab, Converter={StaticResource BoolToVis}}">
+        <Grid Grid.Row="3" controls:PageScroll.FillHeight="20" Visibility="{Binding IsGamesTab, Converter={StaticResource BoolToVis}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="16" />
@@ -150,7 +149,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <Grid Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <Border CornerRadius="8" Background="{StaticResource ControlBrush}"
+                                        <Border CornerRadius="8" Background="{DynamicResource ControlBrush}"
                                                 Visibility="{Binding HasIcon, Converter={StaticResource InverseBoolToVis}}">
                                             <TextBlock Text="&#xE7FC;" Style="{StaticResource Icon}" FontSize="16"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -162,13 +161,13 @@
                                         <TextBlock Text="{Binding Source}" Style="{StaticResource MutedCaption}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Border Style="{StaticResource Badge}" Background="{StaticResource GoodSoftBrush}"
+                                        <Border Style="{StaticResource Badge}" Background="{DynamicResource GoodSoftBrush}"
                                                 Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="запущена" Style="{StaticResource BadgeText}" Foreground="{StaticResource GoodBrush}" />
+                                            <TextBlock Text="запущена" Style="{StaticResource BadgeText}" Foreground="{DynamicResource GoodBrush}" />
                                         </Border>
-                                        <Border Style="{StaticResource Badge}" Background="{StaticResource AccentSoftBrush}" Margin="0"
+                                        <Border Style="{StaticResource Badge}" Background="{DynamicResource AccentSoftBrush}" Margin="0"
                                                 Visibility="{Binding HasProfile, Converter={StaticResource BoolToVis}}">
-                                            <TextBlock Text="профиль" Style="{StaticResource BadgeText}" Foreground="{StaticResource AccentBrush}" />
+                                            <TextBlock Text="профиль" Style="{StaticResource BadgeText}" Foreground="{DynamicResource AccentBrush}" />
                                         </Border>
                                     </StackPanel>
                                 </Grid>
@@ -204,8 +203,8 @@
                             <TextBlock Text="{Binding Source}" Style="{StaticResource MutedCaption}" Margin="0,2,0,0" />
                             <TextBlock Text="{Binding InstallDir}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,0" />
 
-                            <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="8" Background="{StaticResource InputBrush}"
-                                    BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+                            <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="8" Background="{DynamicResource InputBrush}"
+                                    BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
                                 <CheckBox IsChecked="{Binding ProfileEnabled, Mode=TwoWay}">
                                     <StackPanel>
                                         <TextBlock Text="Профиль включён" FontWeight="SemiBold" />
@@ -308,7 +307,7 @@
                             </StackPanel>
 
                             <Border Margin="0,14,0,0" Padding="12,10" CornerRadius="8" BorderThickness="1"
-                                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                                    Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
                                     Visibility="{Binding HasStatus, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" LineHeight="19" />
                             </Border>
@@ -344,10 +343,10 @@
 
                             <TextBlock Text="ГОРЯЧИЕ КЛАВИШИ" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
                             <TextBlock Style="{StaticResource Caption}" FontSize="13" LineHeight="20">
-                                <Run Text="Ctrl+Shift+F10" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" /><Run Text=" — показать или скрыть оверлей" /><LineBreak />
-                                <Run Text="Ctrl+Shift+F11" FontWeight="SemiBold" Foreground="{StaticResource TextBrush}" /><Run Text=" — начать или остановить запись FPS" />
+                                <Run Text="Ctrl+Shift+F10" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" /><Run Text=" — показать или скрыть оверлей" /><LineBreak />
+                                <Run Text="Ctrl+Shift+F11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" /><Run Text=" — начать или остановить запись FPS" />
                             </TextBlock>
-                            <TextBlock Text="{Binding HotkeyWarning}" Foreground="{StaticResource WarningBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
+                            <TextBlock Text="{Binding HotkeyWarning}" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
                                        Visibility="{Binding HasHotkeyWarning, Converter={StaticResource BoolToVis}}" />
 
                             <TextBlock Text="ПОЛОЖЕНИЕ НА ЭКРАНЕ" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
@@ -398,7 +397,7 @@
                         <ItemsControl ItemsSource="{Binding Presenters}" Focusable="False">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
+                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
@@ -475,7 +474,7 @@
                             <ItemsControl ItemsSource="{Binding Recordings}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border x:Name="Row" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="14,8" Background="Transparent">
+                                        <Border x:Name="Row" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="14,8" Background="Transparent">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*" />
@@ -491,9 +490,9 @@
                                                 <StackPanel Margin="0,0,8,0">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="150" />
-                                                        <Border Style="{StaticResource Badge}" Margin="8,0,0,0" Background="{StaticResource AccentSoftBrush}"
+                                                        <Border Style="{StaticResource Badge}" Margin="8,0,0,0" Background="{DynamicResource AccentSoftBrush}"
                                                                 Visibility="{Binding ProfileActive, Converter={StaticResource BoolToVis}}">
-                                                            <TextBlock Text="профиль" Style="{StaticResource BadgeText}" Foreground="{StaticResource AccentBrush}" />
+                                                            <TextBlock Text="профиль" Style="{StaticResource BadgeText}" Foreground="{DynamicResource AccentBrush}" />
                                                         </Border>
                                                     </StackPanel>
                                                     <TextBlock Text="{Binding SummaryText}" Style="{StaticResource Caption}" />
@@ -507,7 +506,7 @@
                                         </Border>
                                         <DataTemplate.Triggers>
                                             <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Row" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                                <Setter TargetName="Row" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                             </Trigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -530,12 +529,12 @@
                                 <Grid>
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal">
-                                            <Rectangle Width="12" Height="3" Fill="{StaticResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <Rectangle Width="12" Height="3" Fill="{DynamicResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                             <TextBlock Text="{Binding TitleA}" FontWeight="SemiBold" TextWrapping="Wrap" />
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
                                                     Visibility="{Binding DataContext.HasComparison, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}">
-                                            <Rectangle Width="12" Height="3" Fill="{StaticResource SecondSeriesBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                            <Rectangle Width="12" Height="3" Fill="{DynamicResource SecondSeriesBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
                                             <TextBlock Text="{Binding TitleB}" FontWeight="SemiBold" TextWrapping="Wrap" />
                                         </StackPanel>
                                     </StackPanel>
@@ -545,9 +544,9 @@
 
                                 <TextBlock Text="{Binding TimelineCaption}" Style="{StaticResource SectionLabel}" Margin="0,14,0,4" />
                                 <controls:Sparkline Values="{Binding TimelineA}" Height="140" Unit="FPS" Capacity="0" SampleSeconds="1"
-                                                    Stroke="{StaticResource AccentBrush}" GridBrush="{StaticResource LineBrush}" EmptyText="нет данных" />
+                                                    Stroke="{DynamicResource AccentBrush}" GridBrush="{DynamicResource LineBrush}" EmptyText="нет данных" />
                                 <controls:Sparkline Values="{Binding TimelineB}" Height="140" Unit="FPS" Capacity="0" SampleSeconds="1" Margin="0,8,0,0"
-                                                    Stroke="{StaticResource SecondSeriesBrush}" GridBrush="{StaticResource LineBrush}" EmptyText="нет данных"
+                                                    Stroke="{DynamicResource SecondSeriesBrush}" GridBrush="{DynamicResource LineBrush}" EmptyText="нет данных"
                                                     Visibility="{Binding DataContext.HasComparison, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}" />
 
                                 <Grid Margin="0,16,0,6">
@@ -567,7 +566,7 @@
                                 <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
+                                            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*" />

@@ -1,39 +1,39 @@
 <UserControl x:Class="PcToolkit.Desktop.Views.AppsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PcToolkit.Desktop.Controls">
 
     <UserControl.Resources>
-        <SolidColorBrush x:Key="GoodSoftBrush" Color="#1A34D399" />
 
         <!-- Метка рекомендации: «Можно удалить», «Лучше оставить»… -->
         <Style x:Key="AdviceBadge" TargetType="Border">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="8,2" />
-            <Setter Property="Background" Value="{StaticResource LineBrush}" />
+            <Setter Property="Background" Value="{DynamicResource LineBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="good">
-                    <Setter Property="Background" Value="{StaticResource GoodSoftBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource GoodSoftBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="info">
-                    <Setter Property="Background" Value="{StaticResource InfoSoftBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource InfoSoftBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="warning">
-                    <Setter Property="Background" Value="{StaticResource WarningSoftBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
         <Style x:Key="AdviceText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="11.5" />
-            <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="good">
-                    <Setter Property="Foreground" Value="{StaticResource GoodBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource GoodBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="info">
-                    <Setter Property="Foreground" Value="{StaticResource InfoBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource InfoBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding AdviceKind}" Value="warning">
-                    <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -92,7 +92,7 @@
         <!-- Сообщения и удалённые приложения Store -->
         <StackPanel Grid.Row="3">
             <Border Margin="0,12,0,0" Padding="14,10" CornerRadius="10" BorderThickness="1"
-                    Background="{StaticResource InfoSoftBrush}" BorderBrush="{StaticResource InfoLineBrush}"
+                    Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
                     Visibility="{Binding HasMessage, Converter={StaticResource BoolToVis}}">
                 <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
             </Border>
@@ -124,7 +124,7 @@
         </StackPanel>
 
         <!-- Список -->
-        <Border Grid.Row="4" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="0">
+        <Border Grid.Row="4" Style="{StaticResource Card}" Margin="0,12,0,0" Padding="0" controls:PageScroll.FillHeight="32">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -168,7 +168,7 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border x:Name="Row" BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,9" Background="Transparent">
+                            <Border x:Name="Row" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="16,9" Background="Transparent">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="30" />
@@ -182,7 +182,7 @@
                                     <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsEnabled="{Binding CanUninstall}" VerticalAlignment="Center" />
 
                                     <Grid Grid.Column="1" Width="32" Height="32" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                        <Border CornerRadius="8" Background="{StaticResource ControlBrush}"
+                                        <Border CornerRadius="8" Background="{DynamicResource ControlBrush}"
                                                 Visibility="{Binding HasIcon, Converter={StaticResource InverseBoolToVis}}">
                                             <TextBlock Text="&#xECAA;" Style="{StaticResource Icon}" FontSize="16"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -197,7 +197,7 @@
                                                    ToolTip="{Binding AdviceNote}"
                                                    Visibility="{Binding HasAdvice, Converter={StaticResource BoolToVis}}" />
                                         <TextBlock Text="Деинсталлятор не найден — можно убрать запись и следы" FontSize="11.5"
-                                                   Foreground="{StaticResource WarningBrush}"
+                                                   Foreground="{DynamicResource WarningBrush}"
                                                    Visibility="{Binding UninstallerMissing, Converter={StaticResource BoolToVis}}" />
                                     </StackPanel>
 
@@ -216,7 +216,7 @@
                             </Border>
                             <DataTemplate.Triggers>
                                 <Trigger SourceName="Row" Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                    <Setter TargetName="Row" Property="Background" Value="{DynamicResource CardHoverBrush}" />
                                 </Trigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>

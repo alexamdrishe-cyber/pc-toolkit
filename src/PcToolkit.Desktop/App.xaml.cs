@@ -94,6 +94,7 @@ public partial class App : Application
         }
 
         AppLog.Info($"Запуск PC Toolkit {typeof(App).Assembly.GetName().Version}.");
+        ThemeService.Initialize(AppSettings.Load().Theme);
         BindingErrorListener.Install();
 #if DEBUG
         ClickDiagnostics.Install();

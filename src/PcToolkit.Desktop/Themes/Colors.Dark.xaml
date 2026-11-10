@@ -1,0 +1,76 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Тёмная тема: графит с нейтральными серыми, синий — только акцент. Ключи одинаковые в обеих темах; стили ссылаются на них через DynamicResource. -->
+    <Color x:Key="AccentColor">#4C8DFF</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="#4C8DFF" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#2E4C8DFF" />
+    <LinearGradientBrush x:Key="AccentAreaBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#404C8DFF" Offset="0" />
+        <GradientStop Color="#004C8DFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Фон окна (страницы) -->
+    <SolidColorBrush x:Key="WindowBrush" Color="#1C1D20" />
+    <!-- Боковое меню -->
+    <SolidColorBrush x:Key="SidebarBrush" Color="#161719" />
+    <!-- Карточка -->
+    <SolidColorBrush x:Key="CardBrush" Color="#25272B" />
+    <SolidColorBrush x:Key="CardHoverBrush" Color="#2D2F34" />
+    <!-- Рамка карточки: в тёмной почти не видна -->
+    <SolidColorBrush x:Key="CardLineBrush" Color="#2B2D31" />
+    <SolidColorBrush x:Key="InputBrush" Color="#1A1B1E" />
+    <!-- Разделители -->
+    <SolidColorBrush x:Key="LineBrush" Color="#35373C" />
+    <SolidColorBrush x:Key="ControlBrush" Color="#2F3136" />
+    <!-- Рамка флажков и переключателей -->
+    <SolidColorBrush x:Key="ControlLineBrush" Color="#55585F" />
+    <SolidColorBrush x:Key="TextBrush" Color="#ECEDEF" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B3B6BC" />
+    <!-- Подписи мелким шрифтом: контраст с карточкой не ниже 4.5:1 -->
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#8F939A" />
+    <SolidColorBrush x:Key="TextRowBrush" Color="#D3D5D9" />
+    <!-- Меню, вкладки, таблицы, графики -->
+    <SolidColorBrush x:Key="NavHoverBrush" Color="#222326" />
+    <SolidColorBrush x:Key="NavSelectedBrush" Color="#2B2D31" />
+    <SolidColorBrush x:Key="SegmentSelectedBrush" Color="#3B3D43" />
+    <SolidColorBrush x:Key="RowStripeBrush" Color="#292B2F" />
+    <SolidColorBrush x:Key="RowPinnedBrush" Color="#2A3142" />
+    <SolidColorBrush x:Key="RowLineBrush" Color="#2F3135" />
+    <SolidColorBrush x:Key="TableHeaderBrush" Color="#212225" />
+    <SolidColorBrush x:Key="ChartGridBrush" Color="#35373C" />
+    <SolidColorBrush x:Key="ChartMinorGridBrush" Color="#2A2C30" />
+    <SolidColorBrush x:Key="BarTrackBrush" Color="#36383D" />
+    <SolidColorBrush x:Key="ListHoverBrush" Color="#2A2C30" />
+    <SolidColorBrush x:Key="BadgeBrush" Color="#303237" />
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#46484E" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#5B5E65" />
+    <SolidColorBrush x:Key="ScrollThumbDragBrush" Color="#707379" />
+    <SolidColorBrush x:Key="SearchHoverLineBrush" Color="#4C4F56" />
+    <SolidColorBrush x:Key="KeyCapLineBrush" Color="#3C3E44" />
+    <SolidColorBrush x:Key="ChipSelectedBrush" Color="#2A3550" />
+    <SolidColorBrush x:Key="ChipSelectedLineBrush" Color="#3E4E70" />
+    <SolidColorBrush x:Key="ChipSelectedTextBrush" Color="#D3DEF6" />
+    <SolidColorBrush x:Key="LinkBrush" Color="#8FB5FF" />
+    <SolidColorBrush x:Key="LinkHoverBrush" Color="#B9D0FF" />
+    <SolidColorBrush x:Key="GameTileBrush" Color="#3A2A1E" />
+    <SolidColorBrush x:Key="GameTileTextBrush" Color="#F6A574" />
+    <!-- Состояния -->
+    <SolidColorBrush x:Key="GoodSoftBrush" Color="#1B2A23" />
+    <SolidColorBrush x:Key="GoodLineBrush" Color="#29473A" />
+    <SolidColorBrush x:Key="GoodChipBrush" Color="#1F3329" />
+    <SolidColorBrush x:Key="GoodTextBrush" Color="#9FE3C1" />
+    <SolidColorBrush x:Key="WarningChipBrush" Color="#352B1B" />
+    <SolidColorBrush x:Key="CriticalChipBrush" Color="#381F1F" />
+    <SolidColorBrush x:Key="GoodBrush" Color="#34D399" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#F5B544" />
+    <SolidColorBrush x:Key="CriticalBrush" Color="#F2645F" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#6CA8FF" />
+    <SolidColorBrush x:Key="InfoSoftBrush" Color="#186CA8FF" />
+    <SolidColorBrush x:Key="InfoLineBrush" Color="#406CA8FF" />
+    <SolidColorBrush x:Key="WarningSoftBrush" Color="#18F5B544" />
+    <SolidColorBrush x:Key="WarningLineBrush" Color="#45F5B544" />
+    <SolidColorBrush x:Key="CriticalSoftBrush" Color="#18F2645F" />
+    <SolidColorBrush x:Key="CriticalLineBrush" Color="#45F2645F" />
+    <!-- Затемнение под окнами поверх страницы -->
+    <SolidColorBrush x:Key="OverlayBrush" Color="#B8101113" />
+</ResourceDictionary>
