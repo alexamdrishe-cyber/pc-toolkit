@@ -370,6 +370,13 @@ public static partial class CrashAnalyzer
 
     private sealed record BugCheckInfo(string Name, string What, string Causes, string Advice);
 
+    /// <summary>Название ошибки синего экрана и что она значит (для разбора дампов).</summary>
+    public static (string Name, string What, string Advice) DescribeBugCheck(uint rawCode)
+    {
+        BugCheckInfo info = BugCheck(rawCode & 0x0FFFFFFF);
+        return (info.Name, info.What, info.Advice);
+    }
+
     private const string DriverAdvice = "Обновите драйверы видеокарты, чипсета и сети с сайтов производителей; вспомните, что устанавливали перед первым сбоем.";
     private const string MemoryAdvice = "Прогоните стресс-тест памяти (Тесты → Память), попробуйте без XMP/EXPO и разгона.";
     private const string DiskAdvice = "Откройте «Диски» → «Здоровье», проверьте диск и кабель; запустите проверку системных файлов (sfc /scannow).";

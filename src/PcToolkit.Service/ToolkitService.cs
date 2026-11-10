@@ -126,6 +126,9 @@ public sealed class ServiceHost : IDisposable
             case ServiceOps.Startup:
                 return Startup(request);
 
+            case ServiceOps.Dumps:
+                return new ServiceResponse { Ok = true, Version = ServiceProtocol.Version, Dumps = PcToolkit.Core.Diagnostics.KernelDumpReader.ReadAll() };
+
             default:
                 return ServiceResponse.Fail($"Неизвестная команда «{request.Op}».");
         }

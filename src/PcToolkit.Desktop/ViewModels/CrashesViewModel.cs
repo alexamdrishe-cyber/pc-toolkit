@@ -89,12 +89,17 @@ public sealed class CrashesViewModel : ObservableObject
     private readonly Func<IReadOnlyDictionary<int, string>>? _diskNames;
 
     /// <param name="diskNames">Номер диска → модель (из проверки дисков): «диск 1 · MSI M480 PRO 1TB».</param>
+    /// <summary>Разбор дампов синих экранов: драйвер-виновник.</summary>
+    public DumpAnalysisViewModel Dumps { get; }
+
     /// <summary>«Восстановление Windows»: DISM и sfc одной кнопкой.</summary>
     public WindowsRepairViewModel Repair { get; }
 
-    public CrashesViewModel(Func<IReadOnlyDictionary<int, string>>? diskNames = null)
+    public CrashesViewModel(Func<IReadOnlyDictionary<int, string>>? diskNames = null,
+                            Func<PcToolkit.Core.Service.ServiceClient?>? service = null, bool elevated = false)
     {
         _diskNames = diskNames;
+        Dumps = new DumpAnalysisViewModel(service ?? (() => null), elevated);
         Repair = new WindowsRepairViewModel(System.Windows.Threading.Dispatcher.CurrentDispatcher);
         Periods = new[]
         {
@@ -184,7 +189,10 @@ public sealed class CrashesViewModel : ObservableObject
     public void EnsureLoaded()
     {
         if (!_loaded && !_isLoading)
+        {
             _ = RefreshAsync();
+            _ = Dumps.LoadAsync();
+        }
     }
 
     public async Task RefreshAsync()

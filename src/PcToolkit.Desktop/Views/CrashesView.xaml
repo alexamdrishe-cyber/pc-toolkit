@@ -117,6 +117,44 @@
 
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
             <StackPanel Margin="0,0,0,8">
+                <!-- Разбор дампов синих экранов -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14" Padding="0" DataContext="{Binding Dumps}">
+                    <StackPanel>
+                        <StackPanel Margin="18,14,18,10">
+                            <TextBlock Text="Кто виноват в синих экранах" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                       Text="Разбор малых дампов из C:\Windows\Minidump: какая ошибка и какой драйвер работал в момент сбоя." />
+                            <TextBlock Text="{Binding Status}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                       Visibility="{Binding Status, Converter={StaticResource NullToCollapsed}}" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border BorderBrush="{DynamicResource RowLineBrush}" BorderThickness="0,1,0,0" Padding="18,12">
+                                        <StackPanel>
+                                            <TextBlock>
+                                                <Run Text="{Binding When, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="   " /><Run Text="{Binding Code, Mode=OneWay}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding What}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                            <TextBlock x:Name="Culprit" Text="{Binding Culprit}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                            <TextBlock Text="{Binding Reason}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap"
+                                                       Visibility="{Binding Reason, Converter={StaticResource NullToCollapsed}}" />
+                                            <TextBlock Text="{Binding Advice}" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                            <TextBlock Text="{Binding Stack}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,6,0,0"
+                                                       Visibility="{Binding Stack, Converter={StaticResource NullToCollapsed}}" />
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsThirdParty}" Value="True">
+                                            <Setter TargetName="Culprit" Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
                 <!-- Восстановление Windows -->
                 <Border Style="{StaticResource Card}" Margin="0,0,0,14" DataContext="{Binding Repair}">
                     <StackPanel>

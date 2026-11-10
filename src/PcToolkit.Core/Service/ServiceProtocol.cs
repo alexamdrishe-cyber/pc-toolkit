@@ -68,6 +68,9 @@ public static class ServiceOps
     /// только этот раздел и только состояние «включено/выключено», как в «Диспетчере задач».
     /// </summary>
     public const string Startup = "startup";
+
+    /// <summary>Разбор малых дампов синих экранов (папка Minidump доступна только администраторам). Только чтение.</summary>
+    public const string Dumps = "dumps";
 }
 
 public sealed class ServiceRequest
@@ -134,6 +137,8 @@ public sealed class ServiceResponse
     public long? Now { get; set; }
 
     public List<DiskHealthData>? Disks { get; set; }
+
+    public List<PcToolkit.Core.Diagnostics.KernelDumpInfo>? Dumps { get; set; }
 
     public static ServiceResponse Fail(string error) => new() { Ok = false, Error = error };
 }

@@ -110,7 +110,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         steps.Done("тесты и диски");
         Crashes = new CrashesViewModel(() => Disks.Health.Reports
             .GroupBy(r => r.Disk.Number)
-            .ToDictionary(g => g.Key, g => g.First().Title));
+            .ToDictionary(g => g.Key, g => g.First().Title),
+            () => _envStatus.ServiceConnected ? _service : null, _envStatus.IsElevated);
         Drivers = new DriversViewModel(ReinstallDriverCommand);
         Startup = new StartupViewModel(() => _envStatus.ServiceConnected ? _service : null, _envStatus.IsElevated);
         Network = new NetworkViewModel();

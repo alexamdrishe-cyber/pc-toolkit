@@ -41,6 +41,9 @@ public sealed class ServiceClient : IPrivilegedWriter, IDisposable
         Send(new ServiceRequest { Op = ServiceOps.Disks }, timeoutMs);
 
     /// <summary>Обороты вентиляторов на <paramref name="leaseMs"/> мс. null — службы нет; Ok = false — служба старая или отказала.</summary>
+    /// <summary>Разбор дампов синих экранов (служба читает папку Minidump). Разбор может занять несколько секунд.</summary>
+    public ServiceResponse? ReadDumps(int timeoutMs = 20000) => Send(new ServiceRequest { Op = ServiceOps.Dumps }, timeoutMs);
+
     /// <summary>Включить или выключить запись автозагрузки для всех пользователей (HKLM).</summary>
     public ServiceResponse? SetStartup(string subKey, string name, bool enabled, int timeoutMs = 3000) =>
         Send(new ServiceRequest { Op = ServiceOps.Startup, StartupKey = subKey, StartupName = name, StartupEnabled = enabled }, timeoutMs);
