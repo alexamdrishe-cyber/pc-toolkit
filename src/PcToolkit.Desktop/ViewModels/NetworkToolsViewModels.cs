@@ -180,7 +180,7 @@ public sealed class SpeedTestViewModel : ObservableObject
             });
             SpeedResult result = await test.RunAsync(server, progress, _cancel.Token);
             (far ? Far : Near).Set(result);
-            Stage = "";
+            Stage = Traceroute.ActiveTunnel() is { } tunnel ? $"Включён VPN «{tunnel}» — скорость измерена через него." : "";
         }
         catch (OperationCanceledException)
         {
@@ -347,7 +347,7 @@ public sealed class TracerouteViewModel : ObservableObject
                 await Task.Delay(400, _cancel.Token);
             }
 
-            TraceVerdict verdict = Traceroute.Judge(hops);
+            TraceVerdict verdict = Traceroute.Judge(hops, Traceroute.ActiveTunnel());
             _level = verdict.Level;
             VerdictTitle = verdict.Title;
             VerdictDetails = verdict.Details;

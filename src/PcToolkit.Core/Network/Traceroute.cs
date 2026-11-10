@@ -124,12 +124,44 @@ public static class Traceroute
         })).ConfigureAwait(false);
     }
 
+    /// <summary>Включённый VPN или туннель (TAP, Wintun, WireGuard, Outline…): через него маршрут не виден. null — нет.</summary>
+    public static string? ActiveTunnel()
+    {
+        try
+        {
+            foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up)
+                    continue;
+                string text = (nic.Name + " " + nic.Description).ToLowerInvariant();
+                if (text.Contains("tap", StringComparison.Ordinal) || text.Contains("wintun", StringComparison.Ordinal) ||
+                    text.Contains("wireguard", StringComparison.Ordinal) || text.Contains("vpn", StringComparison.Ordinal) ||
+                    text.Contains("outline", StringComparison.Ordinal) || text.Contains("tun0", StringComparison.Ordinal))
+                    return nic.Name;
+            }
+        }
+        catch (NetworkInformationException)
+        {
+            // не узнали — не страшно
+        }
+
+        return null;
+    }
+
     /// <summary>Где начинаются потери, которые доходят до конца маршрута, или резкий скачок задержки.</summary>
-    public static TraceVerdict Judge(IReadOnlyList<TraceHop> hops)
+    public static TraceVerdict Judge(IReadOnlyList<TraceHop> hops, string? tunnel = null)
     {
         List<TraceHop> answered = hops.Where(h => h.Address is not null && h.Sent > 0).ToList();
         if (answered.Count == 0)
             return new TraceVerdict(HealthLevel.Bad, "Маршрут не построился", "Ни один узел не ответил: нет интернета или ICMP закрыт брандмауэром.");
+
+        // Далёкий сервер «в одном шаге» с задержкой меньше миллисекунды — на пробы отвечает VPN на этом компьютере.
+        if (answered.Count == 1 && answered[0].Best is < 2 && answered[0].Address is { } only && !IsPrivate(only))
+        {
+            return new TraceVerdict(HealthLevel.Notice, "Маршрут скрыт VPN",
+                (tunnel is null ? "Похоже, включён VPN или туннель" : $"Включён VPN или туннель «{tunnel}»") +
+                ": он сам отвечает на проверку, и настоящий путь пакетов не виден. Выключите VPN и постройте маршрут ещё раз.");
+        }
 
         TraceHop last = answered[^1];
         if (last.LossPercent < 2)
@@ -166,6 +198,12 @@ public static class Traceroute
             : start.Number <= 3 ? "у провайдера (первые узлы после роутера)" : "дальше по пути — у магистральных операторов или у сервера";
         return new TraceVerdict(HealthLevel.Bad, $"Потери {last.LossPercent:0} % — начинаются на узле {start.Number}",
             $"Потери начинаются {where} и тянутся до цели. Узел {start.Number}: {Describe(start)}.");
+    }
+
+    private static bool IsPrivate(IPAddress address)
+    {
+        byte[] b = address.GetAddressBytes();
+        return b.Length == 4 && (b[0] == 10 || b[0] == 127 || (b[0] == 172 && b[1] is >= 16 and <= 31) || (b[0] == 192 && b[1] == 168));
     }
 
     private static string Describe(TraceHop hop) => hop.HostName.Length > 0 ? $"{hop.HostName} ({hop.Address})" : hop.Address?.ToString() ?? "*";

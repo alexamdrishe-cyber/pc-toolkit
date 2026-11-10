@@ -123,3 +123,37 @@ public sealed class StartupNameTests
         Assert.Equal("Steam", (edge with { Name = "Steam", Description = "Steam Client" }).DisplayName);
     }
 }
+
+public sealed class TracerouteVerdictTests
+{
+    private static PcToolkit.Core.Network.TraceHop Hop(int n, string ip, params double?[] times)
+    {
+        var hop = new PcToolkit.Core.Network.TraceHop(n) { Address = System.Net.IPAddress.Parse(ip) };
+        foreach (double? t in times)
+            typeof(PcToolkit.Core.Network.TraceHop).GetMethod("Record", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                .Invoke(hop, new object?[] { t });
+        return hop;
+    }
+
+    [Fact]
+    public void OneHopToPublicServerMeansVpn()
+    {
+        var verdict = PcToolkit.Core.Network.Traceroute.Judge(new[] { Hop(1, "8.8.8.8", 0.4, 0.3) }, "outline-tap0");
+        Assert.Equal("Маршрут скрыт VPN", verdict.Title);
+        Assert.Contains("outline-tap0", verdict.Details);
+    }
+
+    [Fact]
+    public void LossesThatReachTheTargetAreLocated()
+    {
+        var hops = new[]
+        {
+            Hop(1, "192.168.1.1", 1, 1, 1, 1),
+            Hop(2, "10.0.0.1", 5, null, 5, null),
+            Hop(3, "8.8.8.8", 20, null, 20, null),
+        };
+        var verdict = PcToolkit.Core.Network.Traceroute.Judge(hops);
+        Assert.Equal(PcToolkit.Core.Disks.HealthLevel.Bad, verdict.Level);
+        Assert.Contains("узле 2", verdict.Title);
+    }
+}
