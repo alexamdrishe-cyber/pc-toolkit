@@ -67,7 +67,7 @@
             </StackPanel>
             <StackPanel Grid.Column="2" VerticalAlignment="Center" MinWidth="220">
                 <TextBlock Text="{Binding ProgressText}" Style="{StaticResource MutedCaption}" HorizontalAlignment="Right" />
-                <ProgressBar Value="{Binding Progress}" Maximum="1" Height="4" Margin="0,4,0,0"
+                <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Height="4" Margin="0,4,0,0"
                              Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}" />
             </StackPanel>
         </Grid>

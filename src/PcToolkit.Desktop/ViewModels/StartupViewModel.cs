@@ -43,7 +43,7 @@ public sealed class StartupItemViewModel : ObservableObject
 
     public string ImpactText => Entry.Impact switch
     {
-        StartupImpact.High => "Сильно тормозит включение",
+        StartupImpact.High => "Сильно тормозит",
         StartupImpact.Medium => "Заметно тормозит",
         StartupImpact.Low => "Почти не влияет",
         _ => "",

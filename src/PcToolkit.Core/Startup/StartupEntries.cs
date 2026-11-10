@@ -58,9 +58,21 @@ public sealed record StartupEntry(
     /// <summary>Включить или выключить её можно только с правами администратора (служба или запуск от администратора).</summary>
     public bool NeedsAdmin => Location is StartupLocation.MachineRun or StartupLocation.MachineRun32 or StartupLocation.CommonFolder;
 
-    /// <summary>Понятное название: имя записи, а для ярлыков — без «.lnk».</summary>
-    public string DisplayName =>
-        Location is StartupLocation.UserFolder or StartupLocation.CommonFolder ? Path.GetFileNameWithoutExtension(Name) : Name;
+    /// <summary>
+    /// Понятное название: имя записи, для ярлыков — без «.lnk», а для записей с длинным кодом в имени
+    /// («MicrosoftEdgeAutoLaunch_7A0F…») — описание файла программы.
+    /// </summary>
+    public string DisplayName
+    {
+        get
+        {
+            if (Location is StartupLocation.UserFolder or StartupLocation.CommonFolder)
+                return Path.GetFileNameWithoutExtension(Name);
+            int underscore = Name.LastIndexOf('_');
+            bool coded = underscore > 0 && Name.Length - underscore - 1 >= 16 && Name[(underscore + 1)..].All(Uri.IsHexDigit);
+            return coded ? (Description.Length > 0 ? Description : Name[..underscore]) : Name;
+        }
+    }
 }
 
 /// <summary>

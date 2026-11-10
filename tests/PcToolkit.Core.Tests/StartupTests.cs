@@ -110,3 +110,16 @@ public sealed class UpdateManifestTests
         Assert.Null(PcToolkit.Core.Updates.UpdateChecker.FromManifest("""{"version":"бета","url":"https://example.com/x.exe"}"""));
     }
 }
+
+public sealed class StartupNameTests
+{
+    [Fact]
+    public void CodedRunNamesShowTheProgramDescription()
+    {
+        var edge = new PcToolkit.Core.Startup.StartupEntry("MicrosoftEdgeAutoLaunch_7A0F6FD0DBBB9EB7B8CD8C27457ED04E", "", "",
+            PcToolkit.Core.Startup.StartupLocation.UserRun, true, "Microsoft Corporation", "Microsoft Edge", true,
+            PcToolkit.Core.Startup.StartupImpact.Medium, PcToolkit.Core.Startup.StartupAdvice.CanDisable, "");
+        Assert.Equal("Microsoft Edge", edge.DisplayName);
+        Assert.Equal("Steam", (edge with { Name = "Steam", Description = "Steam Client" }).DisplayName);
+    }
+}

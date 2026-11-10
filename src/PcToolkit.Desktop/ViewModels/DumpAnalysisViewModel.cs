@@ -114,7 +114,10 @@ public sealed class DumpAnalysisViewModel : ObservableObject
             Items.Clear();
             foreach (KernelDumpInfo dump in dumps)
                 Items.Add(new DumpItemViewModel(dump));
-            Status = Items.Count == 0 ? "Дампов синих экранов нет." : "";
+            Status = Items.Count == 0
+                ? "Дампов синих экранов нет. Если синие экраны были, а дампов нет — Windows их не сохраняет: включите «Малый дамп памяти» " +
+                  "(Win+R → sysdm.cpl → «Дополнительно» → «Загрузка и восстановление»), и после следующего сбоя здесь появится виновник."
+                : "";
             AppLog.Info($"Дампы синих экранов: {dumps.Count}" +
                         (dumps.Count > 0 ? ", виновники: " + string.Join(", ", dumps.Select(d => d.Culprit ?? "?")) : "") + ".");
         }

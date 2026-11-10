@@ -12,8 +12,9 @@ public sealed class DeviceColors
         Secondary = secondary;
         AccentBrush = Freeze(new SolidColorBrush(accent));
         SecondaryBrush = Freeze(new SolidColorBrush(secondary));
-        TagBackground = Freeze(new SolidColorBrush(tagBackground));
-        TagForeground = Freeze(new SolidColorBrush(tagForeground));
+        // Метка — полупрозрачный оттенок цвета устройства: одинаково читается в тёмной и светлой теме.
+        TagBackground = Freeze(new SolidColorBrush(Color.FromArgb(0x30, accent.R, accent.G, accent.B)));
+        TagForeground = Freeze(new SolidColorBrush(accent));
     }
 
     public string Tag { get; }
