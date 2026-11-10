@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.3.1</Version>
+    <Version>0.4.0</Version>
     <Product>PC Toolkit</Product>
     <Company>PC Toolkit</Company>
     <Copyright>PC Toolkit contributors</Copyright>

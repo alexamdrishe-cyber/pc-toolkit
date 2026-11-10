@@ -12,6 +12,8 @@ installer.log
 get-inno-setup.log
 test.log
 bench-cpu.log
+install.log
+install-setup.log
 
 # Публикация
 publish/
