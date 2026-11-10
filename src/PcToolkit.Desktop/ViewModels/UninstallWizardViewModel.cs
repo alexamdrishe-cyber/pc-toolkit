@@ -57,7 +57,8 @@ public sealed class LeftoverItemViewModel : ObservableObject
     {
         AppName = appName;
         Item = item;
-        _isSelected = true;
+        // Папки и ярлыки отмечены сразу; реестр, автозапуск и задания — только если человек сам отметит.
+        _isSelected = item.Kind is LeftoverKind.Folder or LeftoverKind.Shortcut;
     }
 
     public string AppName { get; }
@@ -111,7 +112,8 @@ public sealed class UninstallWizardViewModel : ObservableObject
     private readonly Func<bool, Task> _close;
     private readonly CancellationTokenSource _cancel = new();
     private string _step = "confirm";
-    private bool _searchLeftovers = true;
+    /// <summary>null — человек ещё не выбрал, искать ли следы (ничего не выбрано заранее).</summary>
+    private bool? _searchLeftovers;
     private bool _userDone;
     private bool _stopAfterCurrent;
     private bool _changed;
@@ -141,7 +143,7 @@ public sealed class UninstallWizardViewModel : ObservableObject
         _orphans = orphans;
         Apps = apps.Select(a => new WizardAppViewModel(a)).ToList();
 
-        StartCommand = new RelayCommand(() => _ = RunAsync(), () => IsConfirm);
+        StartCommand = new RelayCommand(() => _ = RunAsync(), () => IsConfirm && (!HasDesktopApps || _searchLeftovers is not null));
         CancelCommand = new RelayCommand(() => _ = _close(false), () => IsConfirm);
         ContinueCommand = new RelayCommand(() => _userDone = true, () => IsWorking);
         StopAfterCurrentCommand = new RelayCommand(() =>
@@ -151,6 +153,11 @@ public sealed class UninstallWizardViewModel : ObservableObject
         }, () => IsWorking && !_stopAfterCurrent);
         RemoveLeftoversCommand = new RelayCommand(() => _ = RemoveLeftoversAsync(), () => IsLeftovers);
         SkipLeftoversCommand = new RelayCommand(() => Finish("Следы оставлены как есть."), () => IsLeftovers);
+        SelectAllLeftoversCommand = new RelayCommand(() =>
+        {
+            foreach (LeftoverItemViewModel item in Leftovers)
+                item.IsSelected = true;
+        }, () => IsLeftovers);
         DoneCommand = new RelayCommand(() => _ = _close(_changed), () => IsDone);
         OpenBackupCommand = new RelayCommand(() => ShellService.OpenFolder(_backupFolder), () => _backupFolder.Length > 0 && Directory.Exists(_backupFolder));
     }
@@ -163,10 +170,44 @@ public sealed class UninstallWizardViewModel : ObservableObject
 
     public bool HasStoreApps => Apps.Any(a => a.App.Kind == AppKind.Store);
 
-    public bool SearchLeftovers
+    /// <summary>Искать следы после деинсталлятора — только если человек выбрал это сам.</summary>
+    public bool SearchLeftovers => _searchLeftovers == true;
+
+    /// <summary>Вариант «только деинсталлятор программы».</summary>
+    public bool UninstallOnly
     {
-        get => _searchLeftovers;
-        set => SetProperty(ref _searchLeftovers, value);
+        get => _searchLeftovers == false;
+        set
+        {
+            if (value)
+                ChooseLeftovers(false);
+        }
+    }
+
+    /// <summary>Вариант «деинсталлятор, потом показать найденные следы».</summary>
+    public bool UninstallWithLeftovers
+    {
+        get => _searchLeftovers == true;
+        set
+        {
+            if (value)
+                ChooseLeftovers(true);
+        }
+    }
+
+    /// <summary>Подсказка под кнопкой, пока ничего не выбрано.</summary>
+    public bool NeedsChoice => HasDesktopApps && _searchLeftovers is null;
+
+    public ICommand SelectAllLeftoversCommand { get; }
+
+    private void ChooseLeftovers(bool search)
+    {
+        _searchLeftovers = search;
+        OnPropertyChanged(nameof(UninstallOnly));
+        OnPropertyChanged(nameof(UninstallWithLeftovers));
+        OnPropertyChanged(nameof(SearchLeftovers));
+        OnPropertyChanged(nameof(NeedsChoice));
+        RelayCommand.Refresh();
     }
 
     public bool IsConfirm => _step == "confirm";
@@ -218,7 +259,7 @@ public sealed class UninstallWizardViewModel : ObservableObject
                   "записи в списке программ без самой программы и пустые папки. "
                 : "";
             return intro + $"Найдено: {Leftovers.Count}" + (size > 0 ? $", папки занимают {Formatting.Bytes((ulong)size)}" : "") +
-                   ". Папки и ярлыки уйдут в Корзину, записи реестра и задания — после резервной копии. Снимите галочку с того, что хотите оставить.";
+                   ". Отмечены только папки и ярлыки — они уйдут в Корзину. Записи реестра, автозапуска и задания отметьте сами, если хотите их убрать: перед удалением сохраняется резервная копия.";
         }
     }
 

@@ -54,14 +54,26 @@
 
             <!-- 1. Подтверждение -->
             <StackPanel Visibility="{Binding IsConfirm, Converter={StaticResource BoolToVis}}">
-                <CheckBox IsChecked="{Binding SearchLeftovers, Mode=TwoWay}" Margin="0,14,0,0"
-                          Visibility="{Binding HasDesktopApps, Converter={StaticResource BoolToVis}}">
-                    <StackPanel>
-                        <TextBlock Text="После удаления найти следы" FontWeight="SemiBold" />
-                        <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap"
-                                   Text="Оставшиеся папки, ярлыки и записи реестра. Перед удалением вы увидите список и сами решите, что убрать." />
-                    </StackPanel>
-                </CheckBox>
+                <!-- Выбор без варианта по умолчанию: что чистить, решает человек -->
+                <StackPanel Margin="0,14,0,0" Visibility="{Binding HasDesktopApps, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Что сделать" FontWeight="SemiBold" />
+                    <RadioButton GroupName="uninstall-mode" Style="{StaticResource OptionCard}" Margin="0,8,0,0"
+                                 IsChecked="{Binding UninstallOnly, Mode=TwoWay}">
+                        <StackPanel>
+                            <TextBlock Text="Только удалить программу" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                       Text="Запустится её деинсталлятор, больше ничего не трогаем." />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton GroupName="uninstall-mode" Style="{StaticResource OptionCard}" Margin="0,8,0,0"
+                                 IsChecked="{Binding UninstallWithLeftovers, Mode=TwoWay}">
+                        <StackPanel>
+                            <TextBlock Text="Удалить и найти следы" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                       Text="После деинсталлятора покажу оставшиеся папки, ярлыки и записи реестра. Удалится только то, что вы отметите; записи реестра заранее не отмечены." />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
                 <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,12,0,0"
                            Visibility="{Binding HasDesktopApps, Converter={StaticResource BoolToVis}}"
                            Text="Для программ по очереди откроется их собственный деинсталлятор — пройдите его до конца. Если он предложит перезагрузку, выберите «позже»: перезагрузиться можно после всего." />
@@ -72,6 +84,9 @@
                     <Button Content="Отмена" Command="{Binding CancelCommand}" Style="{StaticResource GhostButton}" />
                     <Button Content="Удалить" Command="{Binding StartCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
                 </StackPanel>
+                <TextBlock Style="{StaticResource MutedCaption}" HorizontalAlignment="Right" Margin="0,6,0,0"
+                           Visibility="{Binding NeedsChoice, Converter={StaticResource BoolToVis}}"
+                           Text="Сначала выберите, что сделать" />
             </StackPanel>
 
             <!-- 2. Идёт удаление -->
@@ -121,6 +136,7 @@
                     </ItemsControl>
                 </ScrollViewer>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                    <Button Content="Отметить всё" Command="{Binding SelectAllLeftoversCommand}" Style="{StaticResource GhostButton}" Margin="0,0,8,0" />
                     <Button Content="Оставить всё" Command="{Binding SkipLeftoversCommand}" Style="{StaticResource GhostButton}" />
                     <Button Content="Удалить выбранное" Command="{Binding RemoveLeftoversCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
                 </StackPanel>
