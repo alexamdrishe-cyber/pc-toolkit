@@ -104,6 +104,8 @@ Filename: "{app}\PcToolkit.exe"; Parameters: "--install-service"; StatusMsg: "{c
 Filename: "{app}\PcToolkit.exe"; Parameters: "--install-service"; StatusMsg: "{cm:StatusService}"; Flags: runhidden waituntilterminated; Tasks: service
 ; Приложение запускается с обычными правами, а не с правами установщика.
 Filename: "{app}\PcToolkit.exe"; Description: "{cm:RunApp}"; Flags: nowait postinstall skipifsilent runasoriginaluser
+; Автообновление: программа запускает установщик тихо с /relaunch=1 — после установки она запускается снова.
+Filename: "{app}\PcToolkit.exe"; Flags: nowait runasoriginaluser; Check: RelaunchAfterUpdate
 
 [UninstallRun]
 ; Сначала остановить и удалить службу: её файлы лежат отдельно, в Program Files\PcToolkit\Service.
@@ -126,6 +128,11 @@ function WinSetEvent(Event: THandle): Integer;
   external 'SetEvent@kernel32.dll stdcall';
 function WinCloseHandle(Handle: THandle): Integer;
   external 'CloseHandle@kernel32.dll stdcall';
+
+function RelaunchAfterUpdate: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:relaunch|0}') = '1');
+end;
 
 function AppRunning: Boolean;
 begin

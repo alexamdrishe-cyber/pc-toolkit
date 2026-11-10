@@ -52,6 +52,12 @@ public sealed class AppSettings
     /// <summary>Когда журнал сбоев проверялся в прошлый раз: уведомления только о том, что случилось после.</summary>
     public DateTime? LastCrashCheck { get; set; }
 
+    /// <summary>Проверять обновления при запуске.</summary>
+    public bool AutoCheckUpdates { get; set; } = true;
+
+    /// <summary>Свой адрес обновлений (иначе — заданный при сборке).</summary>
+    public string? UpdateUrl { get; set; }
+
     /// <summary>Тема оформления: dark, light или system (как в Windows).</summary>
     public string Theme { get; set; } = "dark";
 

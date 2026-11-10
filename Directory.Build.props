@@ -17,5 +17,13 @@
       «Your Windows doesn't fully support CET» (в журнале событий — .NET Runtime 1023, код 0x80131506).
     -->
     <CETCompat>false</CETCompat>
+    <!--
+      Откуда программа узнаёт о новых версиях: файл update.json (version, url, sha256, notes) или
+      https://api.github.com/repos/ВЛАДЕЛЕЦ/РЕПОЗИТОРИЙ/releases/latest. Пусто — автообновление выключено.
+    -->
+    <UpdateUrl></UpdateUrl>
   </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="UpdateUrl" Value="$(UpdateUrl)" />
+  </ItemGroup>
 </Project>

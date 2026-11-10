@@ -71,6 +71,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         OpenLogsCommand = new RelayCommand(() => ShellService.OpenFolder(AppLog.LogDirectory));
 
         Settings = new SettingsViewModel(serviceInfo, _envStatus.IsElevated, _envStatus.ServiceConnected);
+        _ = Settings.Updates.CheckOnStartupAsync();
         Monitoring = new MonitoringViewModel { HasFullSensors = _envStatus.HasFullSensors };
         _source.Interval = Settings.SensorInterval;
         Monitoring.SetInterval(Settings.SensorInterval);

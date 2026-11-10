@@ -45,6 +45,9 @@ public sealed class SettingsViewModel : ObservableObject
 
     public ICommand CreateReportCommand { get; }
 
+    /// <summary>Проверка и установка обновлений.</summary>
+    public UpdatesViewModel Updates { get; } = new();
+
     public ICommand OpenLogsCommand { get; }
 
     public string ReportContentsText =>

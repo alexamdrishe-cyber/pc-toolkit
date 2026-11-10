@@ -94,3 +94,19 @@ public sealed class FpsLimitTests
         Assert.Equal(300, PcToolkit.Core.Games.RadeonPlan.Wanted(profile, state).ChillMaxFps);
     }
 }
+
+public sealed class UpdateManifestTests
+{
+    [Fact]
+    public void ManifestNeedsVersionAndHttpsUrl()
+    {
+        var info = PcToolkit.Core.Updates.UpdateChecker.FromManifest(
+            """{"version":"0.5.0","url":"https://example.com/PcToolkit-0.5.0-Setup.exe","sha256":"ab","notes":"Новое"}""");
+        Assert.NotNull(info);
+        Assert.Equal(new Version(0, 5, 0), info!.Version);
+        Assert.Equal("Новое", info.Notes);
+
+        Assert.Null(PcToolkit.Core.Updates.UpdateChecker.FromManifest("""{"version":"0.5.0","url":"http://example.com/x.exe"}"""));
+        Assert.Null(PcToolkit.Core.Updates.UpdateChecker.FromManifest("""{"version":"бета","url":"https://example.com/x.exe"}"""));
+    }
+}
