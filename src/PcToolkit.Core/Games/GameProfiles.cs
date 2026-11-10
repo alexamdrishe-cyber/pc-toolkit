@@ -42,6 +42,9 @@ public sealed class GameProfile
     /// <summary>Radeon Chill: частота кадров в движении.</summary>
     public int ChillMaxFps { get; set; } = 144;
 
+    /// <summary>Ограничение FPS (режим «limit»): держать не больше стольких кадров.</summary>
+    public int LimitFps { get; set; } = 141;
+
     /// <summary>Видеокарта AMD: Radeon Image Sharpening на время игры.</summary>
     public bool Sharpening { get; set; }
 
@@ -69,6 +72,8 @@ public sealed class GameProfile
                 parts.Add("Anti-Lag");
             else if (RadeonMode == RadeonModes.Chill)
                 parts.Add($"Chill {ChillMinFps}–{ChillMaxFps} FPS");
+            else if (RadeonMode == RadeonModes.Limit)
+                parts.Add($"не больше {LimitFps} FPS");
             if (Sharpening)
                 parts.Add("резкость");
             return parts.Count == 0 ? "ничего не делает" : string.Join(", ", parts);
@@ -401,6 +406,7 @@ public sealed class GameSessionManager
     private static bool SameRadeon(GameProfile a, GameProfile b) =>
         a.RadeonMode == b.RadeonMode && a.Sharpening == b.Sharpening
         && (a.RadeonMode != RadeonModes.Chill || (a.ChillMinFps == b.ChillMinFps && a.ChillMaxFps == b.ChillMaxFps))
+        && (a.RadeonMode != RadeonModes.Limit || a.LimitFps == b.LimitFps)
         && (!a.Sharpening || a.Sharpness == b.Sharpness);
 
     /// <summary>

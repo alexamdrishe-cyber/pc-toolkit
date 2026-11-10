@@ -73,3 +73,24 @@ public sealed class WindowsRepairTests
     [Fact]
     public void NoPercentInPlainLines() => Assert.Null(PcToolkit.Core.Repair.WindowsRepair.Percent("Deployment Image Servicing and Management tool"));
 }
+
+public sealed class FpsLimitTests
+{
+    [Fact]
+    public void LimitIsChillWithEqualBoundsWithinDriverRange()
+    {
+        var state = new PcToolkit.Core.Games.RadeonState(new PcToolkit.Core.Games.RadeonValues(), true, true, false,
+            new PcToolkit.Core.Overclock.TuningRange(30, 300, 1), null);
+        var profile = new PcToolkit.Core.Games.GameProfile { RadeonMode = PcToolkit.Core.Games.RadeonModes.Limit, LimitFps = 141 };
+
+        PcToolkit.Core.Games.RadeonValues wanted = PcToolkit.Core.Games.RadeonPlan.Wanted(profile, state);
+
+        Assert.True(wanted.Chill);
+        Assert.Equal(141, wanted.ChillMinFps);
+        Assert.Equal(141, wanted.ChillMaxFps);
+        Assert.False(wanted.AntiLag);
+
+        profile.LimitFps = 500;
+        Assert.Equal(300, PcToolkit.Core.Games.RadeonPlan.Wanted(profile, state).ChillMaxFps);
+    }
+}

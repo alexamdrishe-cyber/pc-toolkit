@@ -86,6 +86,9 @@ public static class RadeonModes
     public const string None = "";
     public const string AntiLag = "antilag";
     public const string Chill = "chill";
+
+    /// <summary>Ограничение FPS: Radeon Chill с одинаковыми минимумом и максимумом — драйвер держит ровно столько кадров.</summary>
+    public const string Limit = "limit";
 }
 
 /// <summary>Что профиль хочет поменять, что вернуть после игры и как это описать словами.</summary>
@@ -106,6 +109,13 @@ public static class RadeonPlan
             antiLag = true;
             if (state.ChillSupported)
                 chill = false;
+        }
+        else if (profile.RadeonMode == RadeonModes.Limit && state.ChillSupported)
+        {
+            chill = true;
+            min = max = state.ChillRange is { } range ? range.Snap(profile.LimitFps) : profile.LimitFps;
+            if (state.AntiLagSupported)
+                antiLag = false;
         }
         else if (profile.RadeonMode == RadeonModes.Chill && state.ChillSupported)
         {

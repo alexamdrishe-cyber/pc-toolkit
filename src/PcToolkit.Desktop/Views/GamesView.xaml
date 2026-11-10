@@ -256,6 +256,9 @@
                                             <RadioButton Content="Chill" GroupName="radeon-mode" Style="{StaticResource SegmentRadio}"
                                                          IsChecked="{Binding RadeonChill, Mode=TwoWay}"
                                                          IsEnabled="{Binding DataContext.RadeonChillSupported, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            <RadioButton Content="Лимит FPS" GroupName="radeon-mode" Style="{StaticResource SegmentRadio}"
+                                                         IsChecked="{Binding RadeonLimit, Mode=TwoWay}"
+                                                         IsEnabled="{Binding DataContext.RadeonChillSupported, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                         </StackPanel>
                                     </Border>
                                     <TextBlock Text="{Binding RadeonModeText}" Style="{StaticResource OptionText}" Margin="0,6,0,0" />
@@ -282,6 +285,23 @@
                                                 TickFrequency="5" IsSnapToTickEnabled="True"
                                                 Value="{Binding ChillMaxFps, Mode=TwoWay, Delay=300}" />
                                         <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ChillText}" FontWeight="SemiBold" Margin="0,4,0,0" />
+                                    </Grid>
+
+                                    <Grid Margin="0,8,0,0" Visibility="{Binding RadeonLimit, Converter={StaticResource BoolToVis}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Предел, FPS" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                        <Slider Grid.Column="1" Minimum="{Binding DataContext.ChillFpsMin, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                Maximum="{Binding DataContext.ChillFpsMax, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="10"
+                                                Value="{Binding LimitFps, Mode=TwoWay, Delay=300}" />
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding LimitText}" FontWeight="SemiBold" Margin="0,4,0,0" />
                                     </Grid>
 
                                     <CheckBox IsChecked="{Binding Sharpening, Mode=TwoWay}" Margin="0,10,0,4"
@@ -359,6 +379,21 @@
 
                             <TextBlock Text="ЧТО ПОКАЗЫВАТЬ" Style="{StaticResource SectionLabel}" Margin="0,12,0,6" />
                             <CheckBox IsChecked="{Binding OverlayShowGraph, Mode=TwoWay}" Content="График времени кадра (пики — рывки)" Margin="0,3" />
+                            <CheckBox IsChecked="{Binding OverlayShowDetails, Mode=TwoWay}" Content="1% low и время кадра под FPS" Margin="0,3" />
+                            <CheckBox IsChecked="{Binding OverlayShowProcess, Mode=TwoWay}" Content="Имя процесса игры" Margin="0,3" />
+                            <TextBlock Text="Размер" Style="{StaticResource Caption}" Margin="0,10,0,4" />
+                            <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton Content="Маленький" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlaySmall, Mode=TwoWay}" />
+                                    <RadioButton Content="Обычный" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlayNormal, Mode=TwoWay}" />
+                                    <RadioButton Content="Крупный" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlayLarge, Mode=TwoWay}" />
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,4">
+                                <Run Text="Фон: " /><Run Text="{Binding OverlayOpacityPercent, Mode=OneWay, StringFormat={}{0:0} %}" />
+                            </TextBlock>
+                            <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Width="240" HorizontalAlignment="Left"
+                                    Value="{Binding OverlayOpacityPercent, Mode=TwoWay, Delay=150}" />
                             <CheckBox IsChecked="{Binding OverlayShowSensors, Mode=TwoWay}" Content="Загрузка, температура и мощность CPU и GPU" Margin="0,3" />
 
                             <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,14,0,0"

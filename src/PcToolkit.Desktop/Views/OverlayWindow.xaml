@@ -17,7 +17,10 @@
         UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display">
 
-    <Border Background="#C80E1116" CornerRadius="8" Padding="12,8,12,10" BorderBrush="#33FFFFFF" BorderThickness="1" MinWidth="170">
+    <Border Background="{Binding Background}" CornerRadius="8" Padding="12,8,12,10" BorderBrush="#33FFFFFF" BorderThickness="1" MinWidth="170">
+        <Border.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding Scale}" ScaleY="{Binding Scale}" />
+        </Border.LayoutTransform>
         <StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="{Binding FpsText}" FontSize="30" FontWeight="Bold" VerticalAlignment="Bottom">
@@ -44,7 +47,8 @@
                     <TextBlock Text="{Binding RecordingText}" FontSize="11" FontWeight="SemiBold" Foreground="White" />
                 </Border>
             </StackPanel>
-            <TextBlock Text="{Binding DetailText}" FontSize="12.5" Foreground="#C9CFDA" />
+            <TextBlock Text="{Binding DetailText}" FontSize="12.5" Foreground="#C9CFDA"
+                       Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVis}}" />
 
             <controls:FrameTimeGraph Values="{Binding FrameTimes}" Height="30" Margin="0,6,0,0" Stroke="#34D399"
                                      Visibility="{Binding ShowGraph, Converter={StaticResource BoolToVis}}" />
@@ -54,7 +58,8 @@
                 <TextBlock Text="{Binding GpuText}" FontSize="12.5" Foreground="#E8EBF1" />
             </StackPanel>
 
-            <TextBlock Text="{Binding ProcessText}" FontSize="10.5" Foreground="#6A7284" Margin="0,4,0,0" />
+            <TextBlock Text="{Binding ProcessText}" FontSize="10.5" Foreground="#8A93A4" Margin="0,4,0,0"
+                       Visibility="{Binding ShowProcess, Converter={StaticResource BoolToVis}}" />
         </StackPanel>
     </Border>
 </Window>

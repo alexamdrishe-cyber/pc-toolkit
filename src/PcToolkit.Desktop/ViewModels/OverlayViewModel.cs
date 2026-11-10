@@ -49,6 +49,51 @@ public sealed class OverlayViewModel : ObservableObject
         set => SetProperty(ref _showGraph, value);
     }
 
+    private bool _showDetails = true;
+    private bool _showProcess = true;
+    private double _scale = 1;
+    private double _opacity = 0.78;
+
+    public bool ShowDetails
+    {
+        get => _showDetails;
+        set => SetProperty(ref _showDetails, value);
+    }
+
+    public bool ShowProcess
+    {
+        get => _showProcess;
+        set => SetProperty(ref _showProcess, value);
+    }
+
+    /// <summary>Размер оверлея (масштаб всего блока).</summary>
+    public double Scale
+    {
+        get => _scale;
+        set => SetProperty(ref _scale, Math.Clamp(value, 0.6, 1.6));
+    }
+
+    /// <summary>Плотность фона: 0 — прозрачный, 1 — непрозрачный.</summary>
+    public double BackgroundOpacity
+    {
+        get => _opacity;
+        set
+        {
+            if (SetProperty(ref _opacity, Math.Clamp(value, 0, 1)))
+                OnPropertyChanged(nameof(Background));
+        }
+    }
+
+    public System.Windows.Media.Brush Background
+    {
+        get
+        {
+            var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)(_opacity * 255), 0x0E, 0x11, 0x16));
+            brush.Freeze();
+            return brush;
+        }
+    }
+
     public string FpsText
     {
         get => _fpsText;

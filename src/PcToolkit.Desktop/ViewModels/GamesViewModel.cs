@@ -94,6 +94,10 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             Corner = settings.OverlayCorner,
             ShowSensors = settings.OverlayShowSensors,
             ShowGraph = settings.OverlayShowGraph,
+            ShowDetails = settings.OverlayShowDetails,
+            ShowProcess = settings.OverlayShowProcess,
+            Scale = settings.OverlayScale,
+            BackgroundOpacity = settings.OverlayOpacity,
         };
 
         GamesView = CollectionViewSource.GetDefaultView(Games);
@@ -272,6 +276,56 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             AppSettings.Update(s => s.OverlayShowGraph = value);
             OnPropertyChanged();
         }
+    }
+
+    public bool OverlayShowDetails
+    {
+        get => Overlay.ShowDetails;
+        set
+        {
+            Overlay.ShowDetails = value;
+            AppSettings.Update(s => s.OverlayShowDetails = value);
+            OnPropertyChanged();
+        }
+    }
+
+    public bool OverlayShowProcess
+    {
+        get => Overlay.ShowProcess;
+        set
+        {
+            Overlay.ShowProcess = value;
+            AppSettings.Update(s => s.OverlayShowProcess = value);
+            OnPropertyChanged();
+        }
+    }
+
+    // Размер: маленький / обычный / крупный
+    public bool OverlaySmall { get => Overlay.Scale < 0.9; set { if (value) SetOverlayScale(0.8); } }
+
+    public bool OverlayNormal { get => Overlay.Scale is >= 0.9 and <= 1.1; set { if (value) SetOverlayScale(1); } }
+
+    public bool OverlayLarge { get => Overlay.Scale > 1.1; set { if (value) SetOverlayScale(1.25); } }
+
+    /// <summary>Плотность фона, %.</summary>
+    public double OverlayOpacityPercent
+    {
+        get => Math.Round(Overlay.BackgroundOpacity * 100);
+        set
+        {
+            Overlay.BackgroundOpacity = value / 100;
+            AppSettings.Update(s => s.OverlayOpacity = Overlay.BackgroundOpacity);
+            OnPropertyChanged();
+        }
+    }
+
+    private void SetOverlayScale(double scale)
+    {
+        Overlay.Scale = scale;
+        AppSettings.Update(s => s.OverlayScale = scale);
+        OnPropertyChanged(nameof(OverlaySmall));
+        OnPropertyChanged(nameof(OverlayNormal));
+        OnPropertyChanged(nameof(OverlayLarge));
     }
 
     public string HotkeyWarning
@@ -636,6 +690,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             RadeonMode = p.RadeonMode,
             ChillMinFps = p.ChillMinFps,
             ChillMaxFps = p.ChillMaxFps,
+            LimitFps = p.LimitFps,
             Sharpening = p.Sharpening,
             Sharpness = p.Sharpness,
         }).ToList();
@@ -1203,8 +1258,29 @@ public sealed class GameItemViewModel : ObservableObject
         }
     }
 
+    /// <summary>Ограничение FPS через драйвер AMD (Chill с одинаковыми границами) — без внедрения в игру.</summary>
+    public bool RadeonLimit
+    {
+        get => Profile?.RadeonMode == RadeonModes.Limit;
+        set
+        {
+            if (value)
+                _owner.UpdateProfile(this, p => p.RadeonMode = RadeonModes.Limit);
+        }
+    }
+
+    public double LimitFps
+    {
+        get => Profile?.LimitFps ?? 141;
+        set => _owner.UpdateProfile(this, p => p.LimitFps = (int)Math.Round(value));
+    }
+
+    public string LimitText => $"не больше {LimitFps:0} FPS";
+
     public string RadeonModeText => Profile?.RadeonMode switch
     {
+        RadeonModes.Limit => "Драйвер держит частоту кадров не выше заданной — ровнее время кадра, видеокарта тише и холоднее. Работает через драйвер, " +
+                             "в игру ничего не внедряется (безопасно для античитов). Удобно ставить на 3 кадра ниже частоты монитора: 141 для 144 Гц.",
         RadeonModes.AntiLag => "Radeon Anti-Lag уменьшает задержку между нажатием и реакцией на экране — заметно в шутерах, когда видеокарта загружена полностью. " +
                                "Radeon Chill на это время выключится: вместе они не работают.",
         RadeonModes.Chill => "Radeon Chill снижает частоту кадров, когда в игре ничего не происходит, и поднимает её в движении: видеокарта тише, холоднее " +
@@ -1286,6 +1362,9 @@ public sealed class GameItemViewModel : ObservableObject
         OnPropertyChanged(nameof(RadeonNone));
         OnPropertyChanged(nameof(RadeonAntiLag));
         OnPropertyChanged(nameof(RadeonChill));
+        OnPropertyChanged(nameof(RadeonLimit));
+        OnPropertyChanged(nameof(LimitFps));
+        OnPropertyChanged(nameof(LimitText));
         OnPropertyChanged(nameof(RadeonModeText));
         OnPropertyChanged(nameof(ChillMinFps));
         OnPropertyChanged(nameof(ChillMaxFps));

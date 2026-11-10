@@ -25,6 +25,18 @@ public sealed class AppSettings
 
     public bool OverlayShowGraph { get; set; } = true;
 
+    /// <summary>Строка «1% low · время кадра» под FPS.</summary>
+    public bool OverlayShowDetails { get; set; } = true;
+
+    /// <summary>Строка с именем процесса игры внизу оверлея.</summary>
+    public bool OverlayShowProcess { get; set; } = true;
+
+    /// <summary>Размер оверлея: 0.8, 1 или 1.25.</summary>
+    public double OverlayScale { get; set; } = 1;
+
+    /// <summary>Плотность фона оверлея, 0–1.</summary>
+    public double OverlayOpacity { get; set; } = 0.78;
+
     /// <summary>Длительность записи FPS вручную, секунды; 0 — до остановки.</summary>
     public int RecordingSeconds { get; set; } = 60;
 
