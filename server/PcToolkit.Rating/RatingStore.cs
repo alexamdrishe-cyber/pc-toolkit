@@ -34,6 +34,18 @@ public sealed class RatingStore
             """);
     }
 
+    /// <summary>В базе ещё нет ни одного результата.</summary>
+    public bool IsEmpty
+    {
+        get
+        {
+            using SqliteConnection db = Open();
+            using SqliteCommand command = db.CreateCommand();
+            command.CommandText = "SELECT EXISTS(SELECT 1 FROM results)";
+            return command.ExecuteScalar() is long exists && exists == 0;
+        }
+    }
+
     /// <summary>Записать результат. false — такой уже есть (повторная отправка).</summary>
     public bool Add(RatingSubmission submission)
     {

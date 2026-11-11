@@ -201,22 +201,23 @@ public sealed class RatingClient
     /// </summary>
     public async Task<RatingTableResult?> TableAsync(string kind, int version, bool refresh, CancellationToken cancel)
     {
-        string file = $"top-{kind}-v{version}.json";
+        string? server = await ServerAsync(cancel).ConfigureAwait(false);
+        if (server is null)
+            return null;
+
+        // Сохранённая таблица — своя у каждого сервера: список с проверочного сервера не выдаётся за общий.
+        string file = $"top-{kind}-v{version}-{ServerKey(server)}.json";
         RatingTable? cached = ReadJson<RatingTable>(file);
         if (!refresh && cached is not null && DateTimeOffset.UtcNow - cached.Updated < TimeSpan.FromMinutes(10))
             return new RatingTableResult(cached, true);
 
         try
         {
-            string? server = await ServerAsync(cancel).ConfigureAwait(false);
-            if (server is not null)
+            RatingTable? table = await Http.GetFromJsonAsync<RatingTable>($"{server}/api/v1/top/{kind}?version={version}", Json, cancel).ConfigureAwait(false);
+            if (table is not null)
             {
-                RatingTable? table = await Http.GetFromJsonAsync<RatingTable>($"{server}/api/v1/top/{kind}?version={version}", Json, cancel).ConfigureAwait(false);
-                if (table is not null)
-                {
-                    WriteText(file, JsonSerializer.Serialize(table, Json));
-                    return new RatingTableResult(table, true);
-                }
+                WriteText(file, JsonSerializer.Serialize(table, Json));
+                return new RatingTableResult(table, true);
             }
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException || (ex is TaskCanceledException && !cancel.IsCancellationRequested))
@@ -254,6 +255,9 @@ public sealed class RatingClient
 
         return Hash(id);
     }
+
+    private static string ServerKey(string server) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(server.ToLowerInvariant())))[..8].ToLowerInvariant();
 
     /// <summary>SHA-256 с солью проекта: по хешу нельзя узнать номер Windows, а один ПК всегда даёт один и тот же хеш.</summary>
     public static string Hash(string machineGuid) =>

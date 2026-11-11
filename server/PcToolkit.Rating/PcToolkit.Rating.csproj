@@ -13,6 +13,10 @@
     <Compile Include="..\..\src\PcToolkit.Core\Rating\RatingShared.cs" Link="RatingShared.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Выдуманные результаты для проверки экрана у себя (run-local.cmd, ключ demo); на настоящем сервере не используются -->
+    <Content Update="demo.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
     <!-- Свежая сборка SQLite: в 2.1.11 (по умолчанию) — известная уязвимость -->
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />

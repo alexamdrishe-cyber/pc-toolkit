@@ -14,6 +14,17 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 string data = Environment.GetEnvironmentVariable("RATING_DATA") is { Length: > 0 } folder ? folder : Path.Combine(AppContext.BaseDirectory, "data");
 Directory.CreateDirectory(data);
 var store = new RatingStore(Path.Combine(data, "rating.db"));
+
+// --demo (только для проверки у себя, run-local.cmd): пустая база заполняется выдуманными результатами популярных устройств.
+if (args.Contains("--demo") && store.IsEmpty)
+{
+    var demo = System.Text.Json.JsonSerializer.Deserialize<List<RatingSubmission>>(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "demo.json")),
+        new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)) ?? new();
+    foreach (RatingSubmission item in demo)
+        store.Add(item);
+    Console.WriteLine($"Демо: добавлено {demo.Count} выдуманных результатов.");
+}
 var limits = new ConcurrentDictionary<string, (DateOnly Day, int Count)>();
 
 var app = builder.Build();
