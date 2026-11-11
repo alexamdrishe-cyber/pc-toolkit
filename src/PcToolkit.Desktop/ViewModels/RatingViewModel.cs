@@ -250,10 +250,10 @@ public sealed class RatingViewModel : ObservableObject
                 Status = $"Проверенных моделей: {result.Table.Models.Count(m => m.Verified)}. Проверенная — не меньше {RatingStats.MinResults} замеров " +
                          $"с {RatingStats.MinMachines} разных компьютеров; каждый компьютер считается один раз, случайные и поддельные результаты отсеиваются.";
         }
-        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        catch (Exception ex)
         {
-            AppLog.Warn("Рейтинг не загрузился.", ex);
-            Status = "Сервер рейтинга сейчас недоступен. Попробуйте позже.";
+            AppLog.Error("Рейтинг не загрузился.", ex);
+            Status = "Не удалось загрузить рейтинг. Попробуйте позже.";
         }
         finally
         {
@@ -394,6 +394,18 @@ public sealed class RatingViewModel : ObservableObject
 
     private async Task OnRecordAddedAsync(object record)
     {
+        try
+        {
+            await SubmitNewAsync(record);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Рейтинг: новый замер не отправлен.", ex);
+        }
+    }
+
+    private async Task SubmitNewAsync(object record)
+    {
         if (RatingSubmissions.From(record) is not { } submission)
             return;
         if (_share && IsAvailable)
@@ -413,6 +425,19 @@ public sealed class RatingViewModel : ObservableObject
 
     /// <summary>Сразу после согласия — последние свежие замеры каждого вида.</summary>
     private async Task SubmitExistingAsync()
+    {
+        try
+        {
+            await SubmitLatestAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Рейтинг: замеры не отправлены.", ex);
+            ShareStatus = "Не удалось отправить замеры — попробую при следующем запуске.";
+        }
+    }
+
+    private async Task SubmitLatestAsync()
     {
         if (!IsAvailable)
             return;

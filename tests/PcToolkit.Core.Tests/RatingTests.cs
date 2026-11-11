@@ -165,6 +165,14 @@ public sealed class RatingClientTests
     }
 
     [Fact]
+    public void SharedClientHasItsFolder()
+    {
+        // Shared создаётся при первом обращении к классу: папка уже должна быть известна (была ошибка порядка инициализации).
+        Assert.False(string.IsNullOrEmpty(RatingClient.DefaultFolder));
+        Assert.True(RatingClient.Shared.QueuedCount >= 0);
+    }
+
+    [Fact]
     public void MachineHashIsStableAndHidesTheNumber()
     {
         string guid = "6f1f2c3a-1234-4bcd-9abc-0123456789ab";

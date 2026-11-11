@@ -34,10 +34,11 @@ public sealed class RatingClient
 
     public RatingClient(string? folder = null) => _folder = folder ?? DefaultFolder;
 
-    public static RatingClient Shared { get; } = new();
-
-    public static string DefaultFolder { get; } = Path.Combine(
+    /// <summary>Папка рейтинга: очередь, сохранённые таблицы, адрес сервера. Свойство, а не поле: Shared создаётся раньше полей ниже.</summary>
+    public static string DefaultFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcToolkit", "rating");
+
+    public static RatingClient Shared { get; } = new();
 
     /// <summary>Анонимный номер компьютера: хеш номера Windows (MachineGuid) с солью; сам номер никуда не уходит.</summary>
     public static string MachineId => Machine.Value;
