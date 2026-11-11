@@ -1,5 +1,4 @@
 using System.Net.Http;
-using System.Reflection;
 using System.Windows.Input;
 using PcToolkit.Core.Logging;
 using PcToolkit.Core.Settings;
@@ -30,16 +29,13 @@ public sealed class UpdatesViewModel : ObservableObject
 
     public ICommand InstallCommand { get; }
 
-    /// <summary>Адрес обновлений: из настроек или заданный при сборке.</summary>
+    /// <summary>Адрес обновлений: из настроек или заданный при сборке (выпуски репозитория GitHub).</summary>
     public static string Url
     {
         get
         {
             string? own = AppSettings.Load().UpdateUrl;
-            if (!string.IsNullOrWhiteSpace(own))
-                return own.Trim();
-            return typeof(UpdatesViewModel).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-                .FirstOrDefault(a => a.Key == "UpdateUrl")?.Value?.Trim() ?? "";
+            return !string.IsNullOrWhiteSpace(own) ? own.Trim() : ProjectLinks.BuiltInUpdateUrl;
         }
     }
 

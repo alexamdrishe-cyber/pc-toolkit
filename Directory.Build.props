@@ -18,12 +18,18 @@
     -->
     <CETCompat>false</CETCompat>
     <!--
-      Откуда программа узнаёт о новых версиях: файл update.json (version, url, sha256, notes) или
-      https://api.github.com/repos/ВЛАДЕЛЕЦ/РЕПОЗИТОРИЙ/releases/latest. Пусто — автообновление выключено.
+      Репозиторий проекта на GitHub: «владелец/имя». Из него программа берёт новые версии (выпуски) и файл
+      pctoolkit.json с адресом сервера общего рейтинга. Пусто — автообновление и рейтинг выключены.
+    -->
+    <GitHubRepo></GitHubRepo>
+    <!--
+      Свой адрес обновлений вместо выпусков GitHub: файл update.json (version, url, sha256, notes)
+      или https://api.github.com/repos/ВЛАДЕЛЕЦ/РЕПОЗИТОРИЙ/releases/latest. Обычно пусто.
     -->
     <UpdateUrl></UpdateUrl>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyMetadata Include="GitHubRepo" Value="$(GitHubRepo)" />
     <AssemblyMetadata Include="UpdateUrl" Value="$(UpdateUrl)" />
   </ItemGroup>
 </Project>

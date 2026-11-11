@@ -48,6 +48,9 @@ public sealed class SettingsViewModel : ObservableObject
     /// <summary>Проверка и установка обновлений.</summary>
     public UpdatesViewModel Updates { get; } = new();
 
+    /// <summary>Общий рейтинг (тот же, что на вкладке «Тесты»): согласие делиться результатами.</summary>
+    public RatingViewModel? Rating { get; set; }
+
     public ICommand OpenLogsCommand { get; }
 
     public string ReportContentsText =>

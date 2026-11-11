@@ -19,6 +19,9 @@ public sealed record MemoryBenchmarkResult(double Read, double Write, double Cop
 /// </summary>
 public static unsafe class MemoryBenchmark
 {
+    /// <summary>Версия замера для общего рейтинга: меняется, если результаты перестают быть сравнимыми со старыми.</summary>
+    public const int Version = 1;
+
     private const long BytesPerThread = 128L << 20;
     private static readonly TimeSpan StepDuration = TimeSpan.FromSeconds(2.5);
 

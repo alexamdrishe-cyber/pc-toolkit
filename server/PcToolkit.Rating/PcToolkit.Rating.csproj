@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Сервер общего рейтинга: работает в Docker на Linux, поэтому обычный net10.0, а не -windows. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>PcToolkit.Rating</AssemblyName>
+    <RootNamespace>PcToolkit.Rating</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Общие с программой договорённости и статистика -->
+    <Compile Include="..\..\src\PcToolkit.Core\Rating\RatingShared.cs" Link="RatingShared.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <!-- Свежая сборка SQLite: в 2.1.11 (по умолчанию) — известная уязвимость -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
+  </ItemGroup>
+</Project>

@@ -101,6 +101,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         steps.Done("приложения");
         BenchmarkHistory benchmarkHistory = BenchmarkHistory.Load();
         Benchmarks = new BenchmarksViewModel(_gate, benchmarkHistory);
+        Settings.Rating = Benchmarks.Rating;
 
         // SMART: напрямую с правами администратора, иначе через службу.
         var diskHealth = new DiskHealthViewModel(

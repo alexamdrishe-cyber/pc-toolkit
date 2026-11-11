@@ -58,6 +58,21 @@ public sealed class AppSettings
     /// <summary>Свой адрес обновлений (иначе — заданный при сборке).</summary>
     public string? UpdateUrl { get; set; }
 
+    /// <summary>Версия, о которой пользователь попросил больше не напоминать («Пропустить эту версию»).</summary>
+    public string? SkippedVersion { get; set; }
+
+    /// <summary>Добавлять свои результаты тестов в общий рейтинг (анонимно). Только с согласия, по умолчанию выключено.</summary>
+    public bool RatingShare { get; set; }
+
+    /// <summary>Предложение поделиться результатами уже показывалось (ответили «да» или «нет»).</summary>
+    public bool RatingAsked { get; set; }
+
+    /// <summary>Свой сервер рейтинга (иначе — из pctoolkit.json в репозитории проекта).</summary>
+    public string? RatingUrl { get; set; }
+
+    /// <summary>Случайный номер компьютера для рейтинга, если номер Windows (MachineGuid) прочитать не удалось.</summary>
+    public string? RatingMachineId { get; set; }
+
     /// <summary>Тема оформления: dark, light или system (как в Windows).</summary>
     public string Theme { get; set; } = "dark";
 

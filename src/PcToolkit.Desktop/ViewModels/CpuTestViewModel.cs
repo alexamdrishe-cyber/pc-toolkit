@@ -904,6 +904,7 @@ public sealed class BenchmarksViewModel : ObservableObject
         Cpu = new CpuTestViewModel(gate, history);
         Gpu = new GpuTestViewModel(gate, history);
         Memory = new MemoryTestViewModel(gate, history);
+        Rating = new RatingViewModel(history);
     }
 
     public CpuTestViewModel Cpu { get; }
@@ -912,11 +913,16 @@ public sealed class BenchmarksViewModel : ObservableObject
 
     public MemoryTestViewModel Memory { get; }
 
+    /// <summary>Общий рейтинг: проверенные модели и своё устройство на фоне таких же.</summary>
+    public RatingViewModel Rating { get; }
+
     public bool IsCpuTab { get => _tab == "cpu"; set => SetTab("cpu", value); }
 
     public bool IsGpuTab { get => _tab == "gpu"; set => SetTab("gpu", value); }
 
     public bool IsMemoryTab { get => _tab == "memory"; set => SetTab("memory", value); }
+
+    public bool IsRatingTab { get => _tab == "rating"; set => SetTab("rating", value); }
 
     public bool IsPlaceholderTab => false;
 
@@ -946,9 +952,12 @@ public sealed class BenchmarksViewModel : ObservableObject
         _tab = tab;
         if (tab == "memory")
             Memory.Refresh();
+        if (tab == "rating")
+            Rating.OnShown();
         OnPropertyChanged(nameof(IsCpuTab));
         OnPropertyChanged(nameof(IsGpuTab));
         OnPropertyChanged(nameof(IsMemoryTab));
+        OnPropertyChanged(nameof(IsRatingTab));
         OnPropertyChanged(nameof(IsPlaceholderTab));
         OnPropertyChanged(nameof(PlaceholderText));
     }

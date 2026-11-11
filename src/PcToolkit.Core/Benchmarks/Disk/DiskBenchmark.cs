@@ -24,6 +24,9 @@ public sealed record DiskBenchmarkProgress(string Step, int Index, int Count);
 /// </summary>
 public static class DiskBenchmark
 {
+    /// <summary>Версия замера для общего рейтинга: меняется, если результаты перестают быть сравнимыми со старыми.</summary>
+    public const int Version = 1;
+
     public static readonly IReadOnlyList<DiskTestSpec> Specs = new DiskTestSpec[]
     {
         new("SEQ1M Q8T1", 1 << 20, 8, false, "Последовательно, блоки 1 МБ, очередь 8: копирование больших файлов, установка игр"),

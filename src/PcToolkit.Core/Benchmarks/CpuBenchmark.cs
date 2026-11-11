@@ -199,12 +199,19 @@ public sealed class BenchmarkHistory
         return new BenchmarkHistory(path, new(), new(), new(), new(), new());
     }
 
+    /// <summary>
+    /// Новый замер на этом ПК (процессор, видеокарта, память или диск). По нему результат уходит в общий рейтинг,
+    /// если пользователь согласился; результаты из файлов (с других ПК) сюда не попадают.
+    /// </summary>
+    public static event Action<object>? RecordAdded;
+
     public void AddCpu(CpuBenchmarkRecord record)
     {
         _cpu.Insert(0, record);
         if (_cpu.Count > MaxRecords)
             _cpu.RemoveRange(MaxRecords, _cpu.Count - MaxRecords);
         Save();
+        Raise(record);
     }
 
     public void AddDisk(DiskBenchmarkRecord record)
@@ -213,6 +220,7 @@ public sealed class BenchmarkHistory
         if (_disk.Count > MaxRecords)
             _disk.RemoveRange(MaxRecords, _disk.Count - MaxRecords);
         Save();
+        Raise(record);
     }
 
     public void AddMemory(MemoryBenchmarkRecord record)
@@ -221,6 +229,7 @@ public sealed class BenchmarkHistory
         if (_memory.Count > MaxRecords)
             _memory.RemoveRange(MaxRecords, _memory.Count - MaxRecords);
         Save();
+        Raise(record);
     }
 
     public void AddGpu(GpuBenchmarkRecord record)
@@ -229,6 +238,7 @@ public sealed class BenchmarkHistory
         if (_gpu.Count > MaxRecords)
             _gpu.RemoveRange(MaxRecords, _gpu.Count - MaxRecords);
         Save();
+        Raise(record);
     }
 
     /// <summary>Добавляет результат из файла. false — этот результат уже есть.</summary>
@@ -248,6 +258,18 @@ public sealed class BenchmarkHistory
     {
         if (_imported.RemoveAll(r => r.Id == id) > 0)
             Save();
+    }
+
+    private static void Raise(object record)
+    {
+        try
+        {
+            RecordAdded?.Invoke(record);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Обработчик нового замера завершился с ошибкой.", ex);
+        }
     }
 
     private void Save()

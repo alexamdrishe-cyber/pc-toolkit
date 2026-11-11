@@ -60,6 +60,27 @@
                 </StackPanel>
             </Border>
 
+            <!-- Общий рейтинг -->
+            <Border Style="{StaticResource Card}" Margin="0,16,0,0" DataContext="{Binding Rating}"
+                    Visibility="{Binding IsAvailable, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Margin="0,0,16,0">
+                            <TextBlock Text="Общий рейтинг" FontSize="15" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0"
+                                       Text="Добавлять результаты тестов (процессор, видеокарта, память, диски) в общий рейтинг: по нему видно, сколько выдают такие же устройства у других. Уходят только модель устройства, баллы и версия теста, а чтобы один компьютер не перевешивал остальные — обезличенный номер (хеш). Имени компьютера, пользователя и серийных номеров нет." />
+                        </StackPanel>
+                        <CheckBox Grid.Column="1" Style="{StaticResource Switch}" IsChecked="{Binding Share, Mode=TwoWay}" VerticalAlignment="Center" />
+                    </Grid>
+                    <TextBlock Text="{Binding ShareStatus}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,8,0,0"
+                               Visibility="{Binding ShareStatus, Converter={StaticResource NullToCollapsed}}" />
+                </StackPanel>
+            </Border>
+
             <!-- Служба -->
             <Border Style="{StaticResource Card}" Margin="0,20,0,0">
                 <StackPanel>

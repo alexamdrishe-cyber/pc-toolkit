@@ -1,0 +1,53 @@
+# PC Toolkit — сервер общего рейтинга и бесплатный туннель tuna.am (белый IP и проброс портов не нужны).
+#
+# Переменные — в файле .env рядом с этим файлом (или в поле переменных вашей панели Docker):
+#   GITHUB_REPO=владелец/репозиторий   откуда собрать сервер (публичный репозиторий проекта)
+#   TUNA_API_KEY=…                     ключ tuna.am: личный кабинет → API-ключи → «Для туннелей» (вводите сами, никому не показывайте)
+#   TUNA_SUBDOMAIN=…                   постоянный бесплатный поддомен: личный кабинет → «Домены»
+#
+# Наружу смотрит только сервер рейтинга (через туннель). Остальной компьютер туннелю не виден:
+# у контейнеров нет доступа ни к чему, кроме своего тома rating-data.
+services:
+  rating:
+    image: pctoolkit-rating:latest
+    # Собирать при каждом «Up»: слои из кэша, заново — только когда в репозитории появился новый коммит.
+    pull_policy: build
+    build:
+      context: .
+      args:
+        GITHUB_REPO: ${GITHUB_REPO:?укажите GITHUB_REPO}
+      dockerfile_inline: |
+        FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+        ARG GITHUB_REPO
+        ADD https://api.github.com/repos/$${GITHUB_REPO}/commits/HEAD /tmp/head.json
+        RUN git clone --depth 1 https://github.com/$${GITHUB_REPO}.git /src
+        RUN dotnet publish /src/server/PcToolkit.Rating/PcToolkit.Rating.csproj -c Release -o /app -p:UseAppHost=false
+
+        FROM mcr.microsoft.com/dotnet/aspnet:10.0
+        WORKDIR /app
+        COPY --from=build /app .
+        RUN mkdir -p /data && chown app:app /data
+        USER app
+        ENV RATING_DATA=/data
+        EXPOSE 8080
+        ENTRYPOINT ["dotnet", "PcToolkit.Rating.dll"]
+    restart: unless-stopped
+    volumes:
+      - rating-data:/data
+    mem_limit: 256m
+    # Проверка из домашней сети: раскомментируйте и откройте http://адрес-сервера:8090/health
+    # ports:
+    #   - "8090:8080"
+
+  tuna:
+    image: yuccastream/tuna:latest
+    restart: unless-stopped
+    command: http rating:8080 --subdomain=${TUNA_SUBDOMAIN:?укажите TUNA_SUBDOMAIN} --inspect=false
+    environment:
+      TUNA_API_KEY: ${TUNA_API_KEY:?укажите TUNA_API_KEY}
+    depends_on:
+      - rating
+    mem_limit: 128m
+
+volumes:
+  rating-data:
