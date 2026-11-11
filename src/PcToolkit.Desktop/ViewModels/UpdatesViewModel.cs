@@ -15,12 +15,19 @@ public sealed class UpdatesViewModel : ObservableObject
     private string _status = "";
     private double _progress;
     private bool _autoCheck;
+    private bool _bannerClosed;
 
     public UpdatesViewModel()
     {
         _autoCheck = AppSettings.Load().AutoCheckUpdates;
         CheckCommand = new RelayCommand(() => _ = CheckAsync(silent: false), () => !_busy && IsConfigured);
         InstallCommand = new RelayCommand(() => _ = InstallAsync(), () => !_busy && _available is not null);
+        SkipCommand = new RelayCommand(Skip, () => !_busy && _available is not null);
+        LaterCommand = new RelayCommand(() =>
+        {
+            _bannerClosed = true;
+            OnPropertyChanged(nameof(ShowBanner));
+        });
         if (!IsConfigured)
             _status = "Адрес обновлений ещё не задан: новые версии пока ставятся вручную.";
     }
@@ -28,6 +35,15 @@ public sealed class UpdatesViewModel : ObservableObject
     public ICommand CheckCommand { get; }
 
     public ICommand InstallCommand { get; }
+
+    /// <summary>«Пропустить эту версию»: больше не напоминать о ней (о следующей — напомнить).</summary>
+    public ICommand SkipCommand { get; }
+
+    /// <summary>Закрыть напоминание до следующего запуска.</summary>
+    public ICommand LaterCommand { get; }
+
+    /// <summary>Нашлась новая версия при проверке в фоне (и её не просили пропустить) — для уведомления в трее.</summary>
+    public event Action<UpdateInfo>? UpdateFound;
 
     /// <summary>Адрес обновлений: из настроек или заданный при сборке (выпуски репозитория GitHub).</summary>
     public static string Url
@@ -48,6 +64,27 @@ public sealed class UpdatesViewModel : ObservableObject
     public string UpdateTitle => _available is null ? "" : $"Доступна версия {_available.Version.ToString(3)}";
 
     public string Notes => _available?.Notes ?? "";
+
+    /// <summary>Напоминание на главной: есть новая версия, её не пропустили и не закрыли.</summary>
+    public bool ShowBanner => _available is not null && !_bannerClosed && !IsSkipped(_available);
+
+    public string BannerTitle => _available is null ? "" : $"Вышла версия {_available.Version.ToString(3)}";
+
+    /// <summary>Коротко, что нового: первые строки описания выпуска.</summary>
+    public string BannerText
+    {
+        get
+        {
+            if (_available is null)
+                return "";
+            string notes = string.Join(" ", _available.Notes.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(line => !line.StartsWith('#'))
+                .Select(line => line.TrimStart('-', '*', ' ')));
+            if (notes.Length > 240)
+                notes = notes[..240].TrimEnd() + "…";
+            return notes.Length > 0 ? notes : "Обновление ставится само: программа закроется и через минуту откроется уже новой.";
+        }
+    }
 
     public bool IsBusy => _busy;
 
@@ -73,13 +110,34 @@ public sealed class UpdatesViewModel : ObservableObject
         }
     }
 
-    /// <summary>Тихая проверка вскоре после запуска (если включена и адрес задан).</summary>
+    /// <summary>
+    /// Тихая проверка вскоре после запуска и потом раз в 12 часов (программа часто живёт в трее неделями),
+    /// если проверка включена и адрес задан.
+    /// </summary>
     public async Task CheckOnStartupAsync()
     {
-        if (!_autoCheck || !IsConfigured)
+        if (!IsConfigured)
             return;
         await Task.Delay(TimeSpan.FromSeconds(20));
-        await CheckAsync(silent: true);
+        while (true)
+        {
+            if (_autoCheck && _available is null && !_busy)
+                await CheckAsync(silent: true);
+            await Task.Delay(TimeSpan.FromHours(12));
+        }
+    }
+
+    private static bool IsSkipped(UpdateInfo info) =>
+        string.Equals(AppSettings.Load().SkippedVersion, info.Version.ToString(3), StringComparison.Ordinal);
+
+    private void Skip()
+    {
+        if (_available is null)
+            return;
+        string version = _available.Version.ToString(3);
+        AppSettings.Update(s => s.SkippedVersion = version);
+        AppLog.Info($"Обновления: версию {version} попросили пропустить.");
+        OnPropertyChanged(nameof(ShowBanner));
     }
 
     private async Task CheckAsync(bool silent)
@@ -91,6 +149,8 @@ public sealed class UpdatesViewModel : ObservableObject
                 Status = "Проверяю…";
             _available = await UpdateChecker.CheckAsync(Url, CancellationToken.None);
             Status = _available is null ? "У вас последняя версия." : "";
+            if (silent && _available is not null && !IsSkipped(_available))
+                UpdateFound?.Invoke(_available);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
@@ -104,6 +164,9 @@ public sealed class UpdatesViewModel : ObservableObject
             OnPropertyChanged(nameof(HasUpdate));
             OnPropertyChanged(nameof(UpdateTitle));
             OnPropertyChanged(nameof(Notes));
+            OnPropertyChanged(nameof(ShowBanner));
+            OnPropertyChanged(nameof(BannerTitle));
+            OnPropertyChanged(nameof(BannerText));
         }
     }
 

@@ -71,6 +71,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         OpenLogsCommand = new RelayCommand(() => ShellService.OpenFolder(AppLog.LogDirectory));
 
         Settings = new SettingsViewModel(serviceInfo, _envStatus.IsElevated, _envStatus.ServiceConnected);
+        Settings.Updates.UpdateFound += info => HealthNotification?.Invoke(new HealthNotification(
+            $"Вышла версия PC Toolkit {info.Version.ToString(3)}", "Щёлкните, чтобы посмотреть, что нового, и обновиться.", "update"));
         _ = Settings.Updates.CheckOnStartupAsync();
         Monitoring = new MonitoringViewModel { HasFullSensors = _envStatus.HasFullSensors };
         _source.Interval = Settings.SensorInterval;
@@ -135,6 +137,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
             MonitoringPage = Monitoring,
             RevertGpuTuningCommand = new RelayCommand(RevertGpuTuning),
             OpenArea = OpenArea,
+            Updates = Settings.Updates,
         };
         steps.Done("главная");
         _health = new HealthMonitor(Home, Disks.Health, Drivers, _gate);
@@ -322,6 +325,13 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 break;
             case "monitoring":
                 Navigate(Monitoring);
+                break;
+            case "update":
+                Navigate(Home);
+                break;
+            case "rating":
+                Benchmarks.IsRatingTab = true;
+                Navigate(Benchmarks);
                 break;
         }
     }

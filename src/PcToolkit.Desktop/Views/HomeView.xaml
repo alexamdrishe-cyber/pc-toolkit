@@ -132,6 +132,37 @@
                 </Button>
             </Grid>
 
+            <!-- ===== Вышла новая версия ===== -->
+            <Border Margin="0,16,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
+                    Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"
+                    DataContext="{Binding Updates}"
+                    Visibility="{Binding ShowBanner, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="30" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:IconView Icon="{x:Static services:Icons.Download}" Width="18" Height="18" Foreground="{DynamicResource AccentBrush}"
+                                       VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0" />
+                    <StackPanel Grid.Column="1" Margin="0,0,16,0">
+                        <TextBlock Text="{Binding BannerTitle}" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding BannerText}" Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="1" Style="{StaticResource ThinProgress}" Margin="0,8,0,0"
+                                     Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" />
+                        <TextBlock Text="{Binding Status}" Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Visibility="{Binding Status, Converter={StaticResource NullToCollapsed}}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="Пропустить эту версию" Command="{Binding SkipCommand}" Style="{StaticResource GhostButton}" />
+                        <Button Content="Обновить" Command="{Binding InstallCommand}" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
+                        <Button Command="{Binding LaterCommand}" Style="{StaticResource IconButton}" Margin="6,0,0,0" ToolTip="Напомнить при следующем запуске">
+                            <controls:IconView Icon="{x:Static services:Icons.Close}" Width="14" Height="14" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
             <!-- ===== Нет прав администратора ===== -->
             <Border Margin="0,16,0,0" Padding="16,12" CornerRadius="10" BorderThickness="1"
                     Background="{DynamicResource InfoSoftBrush}" BorderBrush="{DynamicResource InfoLineBrush}"

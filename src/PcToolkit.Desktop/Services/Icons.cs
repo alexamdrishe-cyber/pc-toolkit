@@ -33,6 +33,7 @@ public static class Icons
     public static Geometry Network { get; } = Parse("M2.5 9a14 14 0 0 1 19 0 M5.5 12.5a9.5 9.5 0 0 1 13 0 M8.5 16a5 5 0 0 1 7 0 M12 19.5v.01");
     public static Geometry Startup { get; } = Parse("M12 3v8 M7.1 6.6a7 7 0 1 0 9.8 0");
 
+    public static Geometry Download { get; } = Parse("M12 4v11 M7.5 10.5 12 15l4.5-4.5 M5 19.5h14");
     public static Geometry Driver { get; } = Parse("M9 3v5 M15 3v5 M6 8h12v3.5a6 6 0 0 1-12 0z M12 17.5V21");
 
     private static Geometry Parse(string data)

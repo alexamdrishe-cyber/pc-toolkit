@@ -152,6 +152,9 @@ public sealed class HomeViewModel : ObservableObject
     /// <summary>Открывает предпросмотр возврата заводских настроек видеокарты.</summary>
     public ICommand? RevertGpuTuningCommand { get; init; }
 
+    /// <summary>Обновления: напоминание о новой версии на главной.</summary>
+    public UpdatesViewModel? Updates { get; init; }
+
     public void SetGpuTuningNotice(bool show) => ShowGpuTuningNotice = show;
 
     public bool ShowPawnIoBanner => !_environment.PawnIoInstalled || _environment.PawnIoOutdated;
