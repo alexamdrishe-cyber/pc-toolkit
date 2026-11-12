@@ -47,7 +47,9 @@ $body = @{
     tag_name         = $tag
     target_commitish = $Branch
     name             = "PC Toolkit $Version"
-    body             = (Get-Content -LiteralPath $NotesFile -Raw -Encoding UTF8)
+    # ReadAllText, not Get-Content: in Windows PowerShell 5.1 Get-Content adds PSPath and other properties,
+    # and ConvertTo-Json then sends an object instead of the text.
+    body             = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $NotesFile).ProviderPath, [Text.Encoding]::UTF8)
     draft            = $false
     prerelease       = $false
 } | ConvertTo-Json
