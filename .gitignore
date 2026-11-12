@@ -24,3 +24,4 @@ history/
 
 # Проверочный сервер рейтинга (server\run-local.cmd)
 server/local-data/
+github-push.log

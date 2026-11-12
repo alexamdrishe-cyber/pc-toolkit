@@ -21,7 +21,7 @@
       Репозиторий проекта на GitHub: «владелец/имя». Из него программа берёт новые версии (выпуски) и файл
       pctoolkit.json с адресом сервера общего рейтинга. Пусто — автообновление и рейтинг выключены.
     -->
-    <GitHubRepo></GitHubRepo>
+    <GitHubRepo>alexamdrishe-cyber/pc-toolkit</GitHubRepo>
     <!--
       Свой адрес обновлений вместо выпусков GitHub: файл update.json (version, url, sha256, notes)
       или https://api.github.com/repos/ВЛАДЕЛЕЦ/РЕПОЗИТОРИЙ/releases/latest. Обычно пусто.
