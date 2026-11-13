@@ -355,12 +355,37 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,0,4,0">
                 <StackPanel>
                     <Border Style="{StaticResource Card}">
-                        <CheckBox IsChecked="{Binding OverlayEnabled, Mode=TwoWay}">
-                            <StackPanel>
-                                <TextBlock Text="Показывать оверлей во всех играх" FontWeight="SemiBold" />
-                                <TextBlock Style="{StaticResource OptionText}" Text="В играх из списка и в любой программе на весь экран; в браузере и обычных окнах оверлея нет. Можно включать и только для отдельных игр — галочкой в их профиле." />
-                            </StackPanel>
-                        </CheckBox>
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding OverlayEnabled, Mode=TwoWay}">
+                                <StackPanel>
+                                    <TextBlock Text="Показывать оверлей во всех играх" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource OptionText}" Text="В играх из списка и в любой программе на весь экран; в браузере и обычных окнах оверлея нет. Можно включать и только для отдельных игр — галочкой в их профиле." />
+                                </StackPanel>
+                            </CheckBox>
+
+                            <!-- Частота обновления — одна для всех игр -->
+                            <Grid DataContext="{Binding OverlayEditor}" Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Обновлять" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <Border Grid.Column="1" Style="{StaticResource SegmentBox}" HorizontalAlignment="Left">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="10 раз/с" GroupName="overlay-refresh" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsRefresh100, Mode=TwoWay}" />
+                                        <RadioButton Content="4 раза/с" GroupName="overlay-refresh" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsRefresh250, Mode=TwoWay}" />
+                                        <RadioButton Content="2 раза/с" GroupName="overlay-refresh" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsRefresh500, Mode=TwoWay}" />
+                                        <RadioButton Content="1 раз/с" GroupName="overlay-refresh" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsRefresh1000, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Style="{StaticResource OptionText}" Margin="0,6,0,0"
+                                           Text="Как часто меняются цифры и графики оверлея — для всех игр. Пока оверлей на экране, датчики и счётчик кадров опрашиваются так же часто. 10 раз в секунду немного больше нагружает процессор; FPS — всё равно среднее за последнюю секунду, чтобы цифра не прыгала." />
+                            </Grid>
+                        </StackPanel>
                     </Border>
 
                     <StackPanel DataContext="{Binding OverlayEditor}">

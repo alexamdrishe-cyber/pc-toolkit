@@ -16,6 +16,15 @@ public sealed class OverlaySettings
     public static string DefaultPath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PcToolkit", "overlay.json");
 
+    /// <summary>Частота обновления оверлея, мс: 10, 4, 2 или 1 раз в секунду.</summary>
+    public static IReadOnlyList<int> RefreshRates { get; } = new[] { 100, 250, 500, 1000 };
+
+    /// <summary>
+    /// Как часто обновлять оверлей (для всех игр), мс. Пока оверлей на экране, с этой же частотой опрашиваются датчики
+    /// и счётчик кадров.
+    /// </summary>
+    public int RefreshMs { get; set; } = 250;
+
     /// <summary>Оверлей для всех игр, у которых нет своего.</summary>
     public OverlayLayout Default { get; set; } = OverlayLayout.CreateDefault();
 
@@ -85,8 +94,12 @@ public sealed class OverlaySettings
         return For(gameId);
     }
 
+    /// <summary>Ближайшая допустимая частота обновления.</summary>
+    public static int ValidRefresh(int milliseconds) => RefreshRates.MinBy(rate => Math.Abs(rate - milliseconds));
+
     public OverlaySettings Normalize()
     {
+        RefreshMs = ValidRefresh(RefreshMs);
         Default = (Default ?? OverlayLayout.CreateDefault()).Normalize();
         Games = Games ?? new Dictionary<string, GameOverlay>();
         foreach (string id in Games.Keys.ToList())

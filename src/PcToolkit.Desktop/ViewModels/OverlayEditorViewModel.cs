@@ -100,7 +100,7 @@ public sealed class OverlayEditorViewModel : ObservableObject
 
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _saveTimer.Tick += (_, _) => Flush();
-        _tickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        _tickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(settings.RefreshMs) };
         _tickTimer.Tick += (_, _) =>
         {
             Preview.Tick();
@@ -257,6 +257,30 @@ public sealed class OverlayEditorViewModel : ObservableObject
             IsAddOpen = false;
             Flush();
         }
+    }
+
+    // ----- Частота обновления (для всех игр) -----
+
+    public bool IsRefresh100 { get => _settings.RefreshMs == 100; set { if (value) SetRefresh(100); } }
+
+    public bool IsRefresh250 { get => _settings.RefreshMs == 250; set { if (value) SetRefresh(250); } }
+
+    public bool IsRefresh500 { get => _settings.RefreshMs == 500; set { if (value) SetRefresh(500); } }
+
+    public bool IsRefresh1000 { get => _settings.RefreshMs == 1000; set { if (value) SetRefresh(1000); } }
+
+    private void SetRefresh(int milliseconds)
+    {
+        if (_settings.RefreshMs == milliseconds)
+            return;
+
+        _host.SetOverlayRefresh(milliseconds);
+        _tickTimer.Interval = TimeSpan.FromMilliseconds(_settings.RefreshMs);
+        OnPropertyChanged(nameof(IsRefresh100));
+        OnPropertyChanged(nameof(IsRefresh250));
+        OnPropertyChanged(nameof(IsRefresh500));
+        OnPropertyChanged(nameof(IsRefresh1000));
+        ScheduleSave();
     }
 
     // ----- Показатели -----

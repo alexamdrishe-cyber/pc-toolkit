@@ -39,10 +39,11 @@ public sealed record OverlayCell(
 /// </summary>
 public sealed class OverlayContent
 {
-    private const int HistoryLength = 90;
+    /// <summary>Сколько секунд показывают графики показателей.</summary>
+    private const int GraphSeconds = 30;
 
     private readonly OverlaySources _sources;
-    private readonly OverlayHistory _history = new(HistoryLength);
+    private OverlayHistory _history = new(GraphSeconds * 4);
     private OverlayLayout _layout;
     private double[] _frameTimes = Array.Empty<double>();
 
@@ -119,6 +120,19 @@ public sealed class OverlayContent
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    /// <summary>
+    /// Частота обновления, мс: графики показателей всегда показывают последние 30 секунд,
+    /// поэтому при частом обновлении в них больше точек.
+    /// </summary>
+    public void SetRefresh(int milliseconds)
+    {
+        int capacity = Math.Clamp(GraphSeconds * 1000 / Math.Max(milliseconds, 1), GraphSeconds, GraphSeconds * 10);
+        if (capacity == _history.Capacity)
+            return;
+        _history = new OverlayHistory(capacity);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
     public void SetRecording(bool recording, string text)
     {
         if (IsRecording == recording && RecordingText == text)
@@ -186,7 +200,7 @@ public sealed class OverlayContent
             (double? min, double? max) = kind == OverlayGraphKind.Series ? OverlayMetrics.GraphRange(metric, _sources) : (null, null);
 
             cells.Add(new OverlayCell(shown, reading.Text, reading.Unit, levelColor, graphColor, item.Big, metric.Muted, sameLine,
-                kind, values, kind == OverlayGraphKind.Series ? HistoryLength : values.Length, min, max));
+                kind, values, kind == OverlayGraphKind.Series ? _history.Capacity : values.Length, min, max));
         }
 
         return cells;

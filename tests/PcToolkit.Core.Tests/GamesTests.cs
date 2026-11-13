@@ -490,6 +490,33 @@ public sealed class FrameMonitorTests
     }
 
     [Fact]
+    public void PollIntervalIsClampedAndAppliesWhileRunning()
+    {
+        using var monitor = new FrameMonitor(new FakeFrameSource(), () => 600);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), monitor.PollInterval);
+
+        monitor.PollInterval = TimeSpan.FromMilliseconds(100);
+        Assert.Equal(TimeSpan.FromMilliseconds(100), monitor.PollInterval);
+        monitor.PollInterval = TimeSpan.Zero;
+        Assert.Equal(TimeSpan.FromMilliseconds(50), monitor.PollInterval);
+        monitor.PollInterval = TimeSpan.FromMinutes(1);
+        Assert.Equal(TimeSpan.FromSeconds(2), monitor.PollInterval);
+
+        // Частоту можно менять на ходу: опрос продолжается.
+        int updates = 0;
+        monitor.Updated += (_, _) => Interlocked.Increment(ref updates);
+        monitor.PollInterval = TimeSpan.FromMilliseconds(50);
+        monitor.Acquire();
+        SpinWait.SpinUntil(() => Volatile.Read(ref updates) >= 3, TimeSpan.FromSeconds(5));
+        monitor.PollInterval = TimeSpan.FromMilliseconds(60);
+        int before = Volatile.Read(ref updates);
+        SpinWait.SpinUntil(() => Volatile.Read(ref updates) >= before + 3, TimeSpan.FromSeconds(5));
+        monitor.Release();
+
+        Assert.True(Volatile.Read(ref updates) >= before + 3);
+    }
+
+    [Fact]
     public void CountsBackgroundGameForOverlaySettingsButNotForRecording()
     {
         var source = new FakeFrameSource();

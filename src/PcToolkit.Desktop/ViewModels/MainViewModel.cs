@@ -37,6 +37,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
     // 30 минут при опросе 4 раза в секунду (при более редком — дольше).
     private readonly SensorHistory _history = new(capacity: 7300);
     private DateTime _lastSlowUpdate = DateTime.MinValue;
+    private DateTime _nextHistoryUpdate = DateTime.MinValue;
     private bool _isSidebarCollapsed;
     private bool _isSearchOpen;
     private string _searchQuery = "";
@@ -79,7 +80,7 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         Monitoring.SetInterval(Settings.SensorInterval);
         Settings.SensorIntervalChanged += interval =>
         {
-            _source.Interval = interval;
+            ApplySensorInterval();
             Monitoring.SetInterval(interval);
         };
         SystemInfo = new SystemInfoViewModel();
@@ -129,6 +130,8 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
                 ? new ServiceFrameSource(_service)
                 : new UnavailableFrameSource("нужна служба PC Toolkit или запуск от имени администратора");
         Games = new GamesViewModel(frames, dispatcher, Settings.InstallCommand, frames is not UnavailableFrameSource);
+        Games.OverlaySensorIntervalChanged += (_, _) => ApplySensorInterval();
+        ApplySensorInterval();
         steps.Done("игры");
 
         Home = new HomeViewModel(_envStatus, RestartAsAdminCommand, InstallDriverCommand, Settings.InstallCommand,
@@ -842,12 +845,36 @@ public sealed class MainViewModel : ObservableObject, IChangePresenter, IOverlay
         MeasureApply(started);
     }
 
+    /// <summary>
+    /// Частота опроса датчиков: из настроек, а пока оверлей на экране — его частота обновления, если она выше.
+    /// </summary>
+    private void ApplySensorInterval()
+    {
+        TimeSpan interval = Settings.SensorInterval;
+        if (Games?.OverlaySensorInterval is TimeSpan overlay && overlay < interval)
+            interval = overlay;
+        _source.Interval = interval;
+    }
+
     private void ApplySnapshot(HardwareSnapshot snapshot)
     {
         if (_history.Count == 0)
             AppLog.Info($"Первые данные датчиков на экране через {App.SinceStartMs} мс после запуска.");
 
-        // Каждый снимок (до 4 раз в секунду): графики и цифры мониторинга и главной.
+        // Оверлей — с каждым снимком: пока он на экране, датчики опрашиваются с его частотой (до 10 раз в секунду).
+        Games.UpdateOverlaySensors(snapshot);
+
+        // История, мониторинг и главная — с частотой из настроек: лишние снимки для оверлея сюда не попадают,
+        // поэтому 30 минут истории остаются 30 минутами. Сетка времени, а не «прошло N мс»: при опросе 10 раз
+        // в секунду и настройке «4 раза» берутся снимки через 300 и 200 мс — в среднем ровно 4 в секунду.
+        TimeSpan interval = Settings.SensorInterval;
+        if (snapshot.Timestamp + TimeSpan.FromMilliseconds(45) < _nextHistoryUpdate)
+            return;
+        _nextHistoryUpdate = snapshot.Timestamp - _nextHistoryUpdate > interval
+            ? snapshot.Timestamp + interval
+            : _nextHistoryUpdate + interval;
+
+        // Каждый снимок с частотой из настроек (до 4 раз в секунду): графики и цифры мониторинга и главной.
         _history.Add(snapshot);
         Home.Update(snapshot, _history);
         Monitoring.Update(snapshot, _history);

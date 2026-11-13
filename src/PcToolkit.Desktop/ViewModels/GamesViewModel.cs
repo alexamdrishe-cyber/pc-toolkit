@@ -53,6 +53,8 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
     private int? _overlayShownFor;
     private bool _configuringOverlay;
     private HardwareSnapshot? _lastSnapshot;
+    private DateTime _lastOverlaySensors;
+    private TimeSpan? _overlaySensorInterval;
     private FpsRecorder? _recorder;
     private string? _recordingGameId;
     private int _recordingLimitSeconds;
@@ -98,6 +100,8 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         _overlaySettings = OverlaySettings.Load();
         Overlay = new OverlayViewModel(new OverlayContent(_overlaySettings.Default, sample: false));
         OverlayEditor = new OverlayEditorViewModel(_overlaySettings, this);
+        Overlay.Content.SetRefresh(_overlaySettings.RefreshMs);
+        OverlayEditor.Preview.SetRefresh(_overlaySettings.RefreshMs);
         Overlay.PositionDropped += (_, position) => OverlayEditor.OnPositionDropped(position);
         Overlay.MoveFinished += (_, _) => OverlayEditor.IsMoving = false;
 
@@ -345,22 +349,72 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             _ = LoadAsync();
     }
 
-    /// <summary>Данные датчиков раз в секунду: для оверлея, его предпросмотра и записи.</summary>
+    /// <summary>Данные датчиков раз в секунду: для записи FPS (она усредняет по секундам).</summary>
     public void Update(HardwareSnapshot snapshot)
     {
-        _lastSnapshot = snapshot;
         UpdateOverlayEditing();
-        bool overlay = OverlayActive || Overlay.IsMoving;
-        if (!overlay && _recorder is null && !_configuringOverlay)
+        if (_recorder is null)
             return;
 
+        KeyMetrics metrics = KeyMetrics.From(snapshot);
+        _recorder.OnSensors(metrics.CpuLoad?.Value, metrics.GpuLoad?.Value, metrics.CpuTemperature?.Value,
+            metrics.GpuTemperature?.Value, metrics.GpuPower?.Value);
+    }
+
+    /// <summary>
+    /// Каждый снимок датчиков: оверлей и предпросмотр берут их с частотой обновления оверлея
+    /// (снимки могут идти и чаще — их просит мониторинг).
+    /// </summary>
+    public void UpdateOverlaySensors(HardwareSnapshot snapshot)
+    {
+        _lastSnapshot = snapshot;
+        bool overlay = OverlayActive || Overlay.IsMoving;
+        if (!overlay && !_configuringOverlay)
+            return;
+        if (snapshot.Timestamp - _lastOverlaySensors < TimeSpan.FromMilliseconds(_overlaySettings.RefreshMs - 40))
+            return;
+
+        _lastOverlaySensors = snapshot.Timestamp;
         KeyMetrics metrics = KeyMetrics.From(snapshot);
         if (overlay)
             Overlay.Content.UpdateSensors(snapshot, metrics);
         if (_configuringOverlay)
             OverlayEditor.Preview.UpdateSensors(snapshot, metrics);
-        _recorder?.OnSensors(metrics.CpuLoad?.Value, metrics.GpuLoad?.Value, metrics.CpuTemperature?.Value,
-            metrics.GpuTemperature?.Value, metrics.GpuPower?.Value);
+    }
+
+    /// <summary>
+    /// Как часто оверлею нужны датчики: пока он на экране (или открыты его настройки) — с его частотой обновления,
+    /// иначе null (хватает частоты из настроек мониторинга).
+    /// </summary>
+    public TimeSpan? OverlaySensorInterval => _overlaySensorInterval;
+
+    /// <summary><see cref="OverlaySensorInterval"/> изменился: пора поменять частоту опроса датчиков.</summary>
+    public event EventHandler? OverlaySensorIntervalChanged;
+
+    /// <summary>Новая частота обновления оверлея (для всех игр).</summary>
+    internal void SetOverlayRefresh(int milliseconds)
+    {
+        _overlaySettings.RefreshMs = OverlaySettings.ValidRefresh(milliseconds);
+        Overlay.Content.SetRefresh(_overlaySettings.RefreshMs);
+        OverlayEditor.Preview.SetRefresh(_overlaySettings.RefreshMs);
+        UpdateOverlayRates(force: true);
+    }
+
+    /// <summary>
+    /// Пока оверлей на экране, кадры и датчики опрашиваются с его частотой обновления (до 10 раз в секунду);
+    /// когда его нет — как обычно.
+    /// </summary>
+    private void UpdateOverlayRates(bool force = false)
+    {
+        bool shown = Overlay.IsVisible || Overlay.ShowOverBackgroundGame || Overlay.IsMoving || _configuringOverlay;
+        TimeSpan refresh = TimeSpan.FromMilliseconds(_overlaySettings.RefreshMs);
+        _monitor.PollInterval = shown ? refresh : TimeSpan.FromMilliseconds(250);
+
+        TimeSpan? wanted = shown ? refresh : null;
+        if (!force && wanted == _overlaySensorInterval)
+            return;
+        _overlaySensorInterval = wanted;
+        OverlaySensorIntervalChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>Последний снимок датчиков: для списка «Добавить показатель».</summary>
@@ -384,6 +438,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         OverlayEditor.SetActive(configuring);
         if (configuring)
             OverlayEditor.RefreshTargets(GameList());
+        UpdateOverlayRates();
     }
 
     /// <summary>Главное окно показали, свернули или спрятали в трей.</summary>
@@ -420,6 +475,8 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             Overlay.IsMoving = false;
             UseOverlayLayout(_overlayGameId, force: true);
         }
+
+        UpdateOverlayRates();
     }
 
     /// <summary>Открыть настройки оверлея игры (кнопка в её профиле).</summary>
@@ -910,6 +967,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         Overlay.TargetProcessId = state.ProcessId;
         Overlay.IsVisible = visible;
         Overlay.ShowOverBackgroundGame = background;
+        UpdateOverlayRates();
 
         // Запись по профилю начинается, как только процесс игры начал выводить кадры.
         if (_recorder is null && _pendingProfileRecordings.Count > 0)
@@ -981,6 +1039,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         }
 
         UpdateOverlayEditing();
+        UpdateOverlayRates();
         OnPropertyChanged(nameof(OverlayActive));
         StateChanged?.Invoke(this, EventArgs.Empty);
     }

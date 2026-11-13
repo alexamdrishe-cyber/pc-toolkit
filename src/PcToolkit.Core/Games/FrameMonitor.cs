@@ -50,6 +50,7 @@ public sealed class FrameMonitor : IDisposable
     private long _lastFrame;
     private int _busy;
     private bool _disposed;
+    private long _pollTicks = TimeSpan.FromMilliseconds(250).Ticks;
 
     public FrameMonitor(IFrameSource source, Func<int?>? foregroundProcess = null)
     {
@@ -74,6 +75,27 @@ public sealed class FrameMonitor : IDisposable
 
     public FrameMonitorState? Last { get; private set; }
 
+    /// <summary>
+    /// Как часто спрашивать о новых кадрах (обычно 4 раза в секунду; оверлей с частым обновлением — до 10).
+    /// На запись замера не влияет: она получает все кадры при любой частоте.
+    /// </summary>
+    public TimeSpan PollInterval
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref _pollTicks));
+        set
+        {
+            long ticks = Math.Clamp(value.Ticks, TimeSpan.FromMilliseconds(50).Ticks, TimeSpan.FromSeconds(2).Ticks);
+            if (Interlocked.Exchange(ref _pollTicks, ticks) == ticks)
+                return;
+
+            lock (_lock)
+            {
+                if (!_disposed && _users > 0)
+                    _timer.Change(TimeSpan.FromTicks(ticks), TimeSpan.FromTicks(ticks));
+            }
+        }
+    }
+
     /// <summary>Начать опрос (оверлей, запись, открытый экран). Каждому Acquire — свой Release.</summary>
     public void Acquire()
     {
@@ -82,7 +104,7 @@ public sealed class FrameMonitor : IDisposable
             if (_disposed)
                 return;
             if (_users++ == 0)
-                _timer.Change(0, 250);
+                _timer.Change(TimeSpan.Zero, PollInterval);
         }
     }
 

@@ -428,6 +428,32 @@ public sealed class OverlaySettingsTests : IDisposable
         Assert.Equal("Игра", settings.Games["g1"].Name);
     }
 
+    [Theory]
+    [InlineData(250, 250)]
+    [InlineData(100, 100)]
+    [InlineData(0, 100)]
+    [InlineData(300, 250)]
+    [InlineData(700, 500)]
+    [InlineData(60000, 1000)]
+    public void RefreshRateSnapsToAllowed(int saved, int expected)
+    {
+        Directory.CreateDirectory(_folder);
+        File.WriteAllText(FilePath, $$"""{ "RefreshMs": {{saved}} }""");
+
+        Assert.Equal(expected, OverlaySettings.Load(FilePath).RefreshMs);
+    }
+
+    [Fact]
+    public void RefreshRateIsSaved()
+    {
+        OverlaySettings settings = OverlaySettings.Load(FilePath, () => new AppSettings());
+        Assert.Equal(250, settings.RefreshMs);
+        settings.RefreshMs = 100;
+        settings.Save();
+
+        Assert.Equal(100, OverlaySettings.Load(FilePath).RefreshMs);
+    }
+
     [Fact]
     public void BrokenFileFallsBackToDefaults()
     {
