@@ -235,6 +235,8 @@
                                         <TextBlock Style="{StaticResource OptionText}" Text="Поверх игры. Ctrl+Shift+F10 — скрыть или показать." />
                                     </StackPanel>
                                 </CheckBox>
+                                <Button Content="Настроить оверлей для этой игры…" Command="{Binding ConfigureOverlayCommand}"
+                                        Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Padding="10,3" Margin="26,0,0,6" />
                                 <CheckBox IsChecked="{Binding RecordFps, Mode=TwoWay}" Margin="0,4">
                                     <StackPanel>
                                         <TextBlock Text="Записывать замер FPS" />
@@ -342,62 +344,444 @@
         </Grid>
 
         <!-- ===================== Оверлей ===================== -->
-        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Focusable="False"
-                      Visibility="{Binding IsOverlayTab, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="16" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
+        <Grid Grid.Row="3" controls:PageScroll.FillHeight="20" Visibility="{Binding IsOverlayTab, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="11*" MinWidth="440" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="9*" MinWidth="340" />
+            </Grid.ColumnDefinitions>
 
+            <!-- Левая колонка: что показывать и как -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,0,4,0">
                 <StackPanel>
                     <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <CheckBox IsChecked="{Binding OverlayEnabled, Mode=TwoWay}">
-                                <StackPanel>
-                                    <TextBlock Text="Показывать оверлей во всех играх" FontWeight="SemiBold" />
-                                    <TextBlock Style="{StaticResource OptionText}" Text="В играх из списка и в любой программе на весь экран; в браузере и обычных окнах оверлея нет. Можно включать и только для отдельных игр — галочкой в их профиле." />
-                                </StackPanel>
-                            </CheckBox>
+                        <CheckBox IsChecked="{Binding OverlayEnabled, Mode=TwoWay}">
+                            <StackPanel>
+                                <TextBlock Text="Показывать оверлей во всех играх" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource OptionText}" Text="В играх из списка и в любой программе на весь экран; в браузере и обычных окнах оверлея нет. Можно включать и только для отдельных игр — галочкой в их профиле." />
+                            </StackPanel>
+                        </CheckBox>
+                    </Border>
 
-                            <TextBlock Text="ГОРЯЧИЕ КЛАВИШИ" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
+                    <StackPanel DataContext="{Binding OverlayEditor}">
+                        <!-- Для чего настраиваем -->
+                        <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                            <StackPanel>
+                                <TextBlock Text="ОВЕРЛЕЙ ДЛЯ" Style="{StaticResource SectionLabel}" Margin="0,0,0,6" />
+                                <ComboBox ItemsSource="{Binding Targets}" SelectedItem="{Binding SelectedTarget, Mode=TwoWay}"
+                                          HorizontalAlignment="Left" MinWidth="300" MaxWidth="460"
+                                          VirtualizingPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="True">
+                                    <ComboBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel />
+                                        </ItemsPanelTemplate>
+                                    </ComboBox.ItemsPanel>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                                                <TextBlock Text="{Binding Note}" Foreground="{DynamicResource TextMutedBrush}" Margin="8,0,0,0" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left" Margin="0,10,0,0"
+                                        Visibility="{Binding IsGameTarget, Converter={StaticResource BoolToVis}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="Как во всех играх" GroupName="overlay-own" Style="{StaticResource SegmentRadio}" IsChecked="{Binding UseCommonLayout, Mode=TwoWay}" />
+                                        <RadioButton Content="Свой для этой игры" GroupName="overlay-own" Style="{StaticResource SegmentRadio}" IsChecked="{Binding UseOwnLayout, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="{Binding TargetHint}" Style="{StaticResource OptionText}" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Показатели -->
+                        <Border Style="{StaticResource Card}" Margin="0,16,0,0" IsEnabled="{Binding CanEdit}">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="ПОКАЗАТЕЛИ" Style="{StaticResource SectionLabel}" VerticalAlignment="Center" />
+                                    <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Right">
+                                        <StackPanel Orientation="Horizontal">
+                                            <RadioButton Content="Столбиком" GroupName="overlay-orientation" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsVertical, Mode=TwoWay}" />
+                                            <RadioButton Content="В строку" GroupName="overlay-orientation" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsHorizontal, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <TextBlock Style="{StaticResource OptionText}" Margin="0,6,0,8"
+                                           Text="Порядок — стрелками, галочка — показывать. «График» рисует значение за последние секунды, «Крупно» — как FPS. Подпись, пороги цвета и «в одной строке» — по кнопке с шестерёнкой." />
+
+                                <ItemsControl ItemsSource="{Binding Items}" Focusable="False">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,6">
+                                                <StackPanel>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <Button Style="{StaticResource IconButton}" Width="24" Height="17" Command="{Binding MoveUpCommand}" ToolTip="Выше">
+                                                                <TextBlock Text="&#xE70E;" Style="{StaticResource Icon}" FontSize="10" />
+                                                            </Button>
+                                                            <Button Style="{StaticResource IconButton}" Width="24" Height="17" Command="{Binding MoveDownCommand}" ToolTip="Ниже">
+                                                                <TextBlock Text="&#xE70D;" Style="{StaticResource Icon}" FontSize="10" />
+                                                            </Button>
+                                                        </StackPanel>
+                                                        <CheckBox Grid.Column="1" IsChecked="{Binding Visible, Mode=TwoWay}" VerticalAlignment="Center" Margin="6,0,6,0"
+                                                                  ToolTip="Показывать в оверлее" />
+                                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}" />
+                                                            <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedCaption}" TextTrimming="CharacterEllipsis" />
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <ToggleButton Content="График" Style="{StaticResource ChipToggle}" IsChecked="{Binding Graph, Mode=TwoWay}" Margin="0,0,6,0"
+                                                                          Visibility="{Binding CanGraph, Converter={StaticResource BoolToVis}}" />
+                                                            <ToggleButton Content="Крупно" Style="{StaticResource ChipToggle}" IsChecked="{Binding Big, Mode=TwoWay}" />
+                                                        </StackPanel>
+                                                        <controls:ColorPickerButton Grid.Column="4" Margin="8,0,0,0" VerticalAlignment="Center" AllowDefault="True"
+                                                                                    Color="{Binding Color, Mode=TwoWay}" DefaultColor="{Binding DefaultColor}" />
+                                                        <StackPanel Grid.Column="5" Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,0">
+                                                            <Button Style="{StaticResource IconButton}" Command="{Binding ToggleExpandCommand}" ToolTip="Подпись, пороги цвета, строка">
+                                                                <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" FontSize="13" />
+                                                            </Button>
+                                                            <Button Style="{StaticResource IconButton}" Command="{Binding RemoveCommand}" ToolTip="Убрать из оверлея">
+                                                                <TextBlock Text="&#xE711;" Style="{StaticResource Icon}" FontSize="11" />
+                                                            </Button>
+                                                        </StackPanel>
+                                                    </Grid>
+
+                                                    <!-- Подробно: подпись, строка, пороги -->
+                                                    <Border Margin="62,8,4,4" Padding="12,10" CornerRadius="6" Background="{DynamicResource ControlBrush}"
+                                                            Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="110" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                                <RowDefinition Height="Auto" />
+                                                            </Grid.RowDefinitions>
+
+                                                            <TextBlock Text="Подпись" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                                <TextBox Style="{StaticResource SearchBox}" Height="28" Width="160" FontSize="12.5"
+                                                                         Text="{Binding Label, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=250}" Tag="без подписи" />
+                                                                <TextBlock Text="{Binding DefaultLabel}" Style="{StaticResource MutedCaption}" VerticalAlignment="Center" Margin="10,0,0,0" />
+                                                            </StackPanel>
+
+                                                            <CheckBox Grid.Row="1" Grid.ColumnSpan="2" Margin="0,10,0,0" IsChecked="{Binding SameLine, Mode=TwoWay}"
+                                                                      Content="{Binding SameLineText}" Visibility="{Binding CanSameLine, Converter={StaticResource BoolToVis}}" />
+
+                                                            <TextBlock Grid.Row="2" Text="Пороги цвета" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,10,0,0"
+                                                                       Visibility="{Binding HasThresholds, Converter={StaticResource BoolToVis}}" />
+                                                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,10,0,0"
+                                                                        Visibility="{Binding HasThresholds, Converter={StaticResource BoolToVis}}">
+                                                                <Border Width="10" Height="10" CornerRadius="5" Background="{DynamicResource WarningBrush}" VerticalAlignment="Center" />
+                                                                <TextBox Style="{StaticResource SearchBox}" Height="28" Width="70" FontSize="12.5" Margin="6,0,0,0"
+                                                                         Text="{Binding WarnText, Mode=TwoWay}" Tag="нет" KeyDown="OnApplyOnEnter" ToolTip="Порог «внимание» (жёлтый). Пусто — нет порога. Enter — применить." />
+                                                                <Border Width="10" Height="10" CornerRadius="5" Background="{DynamicResource CriticalBrush}" VerticalAlignment="Center" Margin="14,0,0,0" />
+                                                                <TextBox Style="{StaticResource SearchBox}" Height="28" Width="70" FontSize="12.5" Margin="6,0,0,0"
+                                                                         Text="{Binding CriticalText, Mode=TwoWay}" Tag="нет" KeyDown="OnApplyOnEnter" ToolTip="Порог «опасно» (красный). Пусто — нет порога. Enter — применить." />
+                                                            </StackPanel>
+                                                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ThresholdHint}" Style="{StaticResource OptionText}" Margin="0,6,0,0"
+                                                                       Visibility="{Binding HasThresholds, Converter={StaticResource BoolToVis}}" />
+                                                        </Grid>
+                                                    </Border>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="В оверлее пока нет показателей — добавьте хотя бы один." Style="{StaticResource Caption}" Margin="0,6"
+                                           Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVis}}" />
+
+                                <Grid Margin="0,10,0,0">
+                                    <Button x:Name="AddMetricButton" Content="+ Добавить показатель" Style="{StaticResource GhostButton}" Padding="12,4"
+                                            HorizontalAlignment="Left" Command="{Binding OpenAddCommand}" />
+                                    <Popup IsOpen="{Binding IsAddOpen, Mode=TwoWay}" PlacementTarget="{Binding ElementName=AddMetricButton}" Placement="Bottom"
+                                           StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" Opened="OnAddMetricOpened">
+                                        <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                                                CornerRadius="8" Padding="8" Width="460" Margin="0,4,0,0">
+                                            <StackPanel>
+                                                <TextBox x:Name="AddMetricSearch" Style="{StaticResource SearchBox}" Tag="Поиск: температура, частота, вентилятор…"
+                                                         Text="{Binding AddSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+                                                <ListBox ItemsSource="{Binding AddChoices}" MaxHeight="400" Margin="0,6,0,0" Background="Transparent" BorderThickness="0"
+                                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True"
+                                                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel" Focusable="False">
+                                                    <ListBox.ItemContainerStyle>
+                                                        <Style TargetType="ListBoxItem">
+                                                            <Setter Property="Focusable" Value="False" />
+                                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                                            <Setter Property="Template">
+                                                                <Setter.Value>
+                                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                                        <ContentPresenter />
+                                                                    </ControlTemplate>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </Style>
+                                                    </ListBox.ItemContainerStyle>
+                                                    <ListBox.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid>
+                                                                <TextBlock Text="{Binding Title}" Style="{StaticResource SectionLabel}" Margin="8,10,8,4"
+                                                                           Visibility="{Binding IsHeader, Converter={StaticResource BoolToVis}}" TextTrimming="CharacterEllipsis" />
+                                                                <Button Command="{Binding DataContext.AddMetricCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                                        CommandParameter="{Binding}" Cursor="Hand" FocusVisualStyle="{x:Null}"
+                                                                        Visibility="{Binding IsHeader, Converter={StaticResource InverseBoolToVis}}">
+                                                                    <Button.Template>
+                                                                        <ControlTemplate TargetType="Button">
+                                                                            <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="8,6">
+                                                                                <Grid>
+                                                                                    <Grid.ColumnDefinitions>
+                                                                                        <ColumnDefinition Width="*" />
+                                                                                        <ColumnDefinition Width="Auto" />
+                                                                                    </Grid.ColumnDefinitions>
+                                                                                    <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextBrush}" TextTrimming="CharacterEllipsis" />
+                                                                                    <TextBlock Grid.Column="1" Text="{Binding Note}" Foreground="{DynamicResource TextMutedBrush}" Margin="10,0,0,0" />
+                                                                                </Grid>
+                                                                            </Border>
+                                                                            <ControlTemplate.Triggers>
+                                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                                    <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ListHoverBrush}" />
+                                                                                </Trigger>
+                                                                            </ControlTemplate.Triggers>
+                                                                        </ControlTemplate>
+                                                                    </Button.Template>
+                                                                </Button>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ListBox.ItemTemplate>
+                                                </ListBox>
+                                                <TextBlock Text="Ничего не нашлось." Style="{StaticResource Caption}" Margin="8,10"
+                                                           Visibility="{Binding HasNoChoices, Converter={StaticResource BoolToVis}}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Оформление -->
+                        <Border Style="{StaticResource Card}" Margin="0,16,0,0" IsEnabled="{Binding CanEdit}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.ColumnSpan="2" Text="ОФОРМЛЕНИЕ" Style="{StaticResource SectionLabel}" Margin="0,0,0,8" />
+
+                                <TextBlock Grid.Row="1" Text="Шрифт" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontFamily, Mode=TwoWay}"
+                                          HorizontalAlignment="Left" Width="260"
+                                          VirtualizingPanel.IsVirtualizing="True" ScrollViewer.CanContentScroll="True">
+                                    <ComboBox.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel />
+                                        </ItemsPanelTemplate>
+                                    </ComboBox.ItemsPanel>
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding}" FontFamily="{Binding}" FontSize="14" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Row="2" Text="Размер" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Slider Minimum="8" Maximum="40" SmallChange="0.5" LargeChange="2" TickFrequency="0.5" IsSnapToTickEnabled="True" Width="220"
+                                            Value="{Binding FontSize, Mode=TwoWay}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding FontSize, StringFormat={}{0:0.#}}" Style="{StaticResource Caption}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3" Text="Толщина букв" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <Border Grid.Row="3" Grid.Column="1" Style="{StaticResource SegmentBox}" HorizontalAlignment="Left" Margin="0,12,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <RadioButton Content="Обычные" GroupName="overlay-weight" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsNormalWeight, Mode=TwoWay}" />
+                                        <RadioButton Content="Полужирные" GroupName="overlay-weight" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsSemiBoldWeight, Mode=TwoWay}" />
+                                        <RadioButton Content="Жирные" GroupName="overlay-weight" Style="{StaticResource SegmentRadio}" IsChecked="{Binding IsBoldWeight, Mode=TwoWay}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <TextBlock Grid.Row="4" Text="Цвета" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <WrapPanel Grid.Row="4" Grid.Column="1" Margin="0,12,0,0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                        <controls:ColorPickerButton Color="{Binding ValueColor, Mode=TwoWay}" DefaultColor="#E8EBF1" />
+                                        <TextBlock Text="значения" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                        <controls:ColorPickerButton Color="{Binding LabelColor, Mode=TwoWay}" DefaultColor="#9AA3B5" />
+                                        <TextBlock Text="подписи" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                        <controls:ColorPickerButton Color="{Binding GraphColor, Mode=TwoWay}" DefaultColor="#34D399" />
+                                        <TextBlock Text="графики" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </WrapPanel>
+
+                                <TextBlock Grid.Row="5" Text="Пороги" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                                <WrapPanel Grid.Row="5" Grid.Column="1" Margin="0,8,0,0">
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                        <controls:ColorPickerButton Color="{Binding WarnColor, Mode=TwoWay}" DefaultColor="#F5B544" />
+                                        <TextBlock Text="внимание" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,16,4">
+                                        <controls:ColorPickerButton Color="{Binding CriticalColor, Mode=TwoWay}" DefaultColor="#F2645F" />
+                                        <TextBlock Text="опасно" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </WrapPanel>
+
+                                <TextBlock Grid.Row="6" Text="Обводка букв" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Slider Minimum="0" Maximum="4" SmallChange="0.5" LargeChange="1" TickFrequency="0.5" IsSnapToTickEnabled="True" Width="160"
+                                            Value="{Binding Outline, Mode=TwoWay}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding OutlineText}" Style="{StaticResource Caption}" Width="52" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <controls:ColorPickerButton Color="{Binding OutlineColor, Mode=TwoWay}" DefaultColor="#000000" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="7" Text="Фон" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <StackPanel Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Slider Minimum="0" Maximum="100" SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True" Width="160"
+                                            Value="{Binding BackgroundPercent, Mode=TwoWay}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding BackgroundPercent, StringFormat={}{0:0} %}" Style="{StaticResource Caption}" Width="52" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                    <controls:ColorPickerButton Color="{Binding BackgroundColor, Mode=TwoWay}" DefaultColor="#0E1116" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="8" Text="Скругление" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,12,0,0" />
+                                <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Slider Minimum="0" Maximum="24" SmallChange="1" LargeChange="4" TickFrequency="1" IsSnapToTickEnabled="True" Width="160"
+                                            Value="{Binding CornerRadius, Mode=TwoWay}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding CornerRadius, StringFormat={}{0:0} пкс}" Style="{StaticResource Caption}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Место на экране -->
+                        <Border Style="{StaticResource Card}" Margin="0,16,0,0" IsEnabled="{Binding CanEdit}">
+                            <StackPanel>
+                                <TextBlock Text="МЕСТО НА ЭКРАНЕ" Style="{StaticResource SectionLabel}" Margin="0,0,0,8" />
+                                <UniformGrid Columns="3" HorizontalAlignment="Left">
+                                    <RadioButton Content="Слева вверху" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsTopLeft, Mode=TwoWay}" Margin="0,0,4,4" />
+                                    <RadioButton Content="Вверху по центру" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsTopCenter, Mode=TwoWay}" Margin="0,0,4,4" />
+                                    <RadioButton Content="Справа вверху" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsTopRight, Mode=TwoWay}" Margin="0,0,4,4" />
+                                    <RadioButton Content="Слева внизу" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsBottomLeft, Mode=TwoWay}" Margin="0,0,4,4" />
+                                    <RadioButton Content="Внизу по центру" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsBottomCenter, Mode=TwoWay}" Margin="0,0,4,4" />
+                                    <RadioButton Content="Справа внизу" GroupName="overlay-anchor" Style="{StaticResource TabRadio}" IsChecked="{Binding IsBottomRight, Mode=TwoWay}" Margin="0,0,4,4" />
+                                </UniformGrid>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Content="Передвинуть мышью" Command="{Binding ToggleMovingCommand}" Style="{StaticResource GhostButton}" Padding="14,5"
+                                            Visibility="{Binding IsMoving, Converter={StaticResource InverseBoolToVis}}" />
+                                    <Button Content="Готово" Command="{Binding ToggleMovingCommand}" Style="{StaticResource PrimaryButton}" Padding="18,5"
+                                            Visibility="{Binding IsMoving, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                                <TextBlock Style="{StaticResource OptionText}" Margin="0,8,0,0"
+                                           Text="Оверлей появится на экране в рамке — перетащите его мышью куда угодно, хоть на другой монитор. Закончить — «Готово» или двойной щелчок по оверлею. Место считается от ближайшего угла или середины края, поэтому сохраняется при любом разрешении." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Правая колонка: предпросмотр и остальное -->
+            <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,0,4,0">
+                <StackPanel>
+                    <Border Style="{StaticResource Card}" DataContext="{Binding OverlayEditor}">
+                        <StackPanel>
+                            <TextBlock Text="Предпросмотр" Style="{StaticResource CardTitle}" />
+                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,10"
+                                       Text="Датчики — настоящие, FPS — из игры, а пока игры нет — пример. Всё, что меняете, сразу видно и здесь, и в игре: применять не нужно." />
+                            <Border CornerRadius="8" MinHeight="250" ClipToBounds="True">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#6E9CC9" Offset="0" />
+                                        <GradientStop Color="#C9D8E4" Offset="0.55" />
+                                        <GradientStop Color="#7C8F5A" Offset="0.56" />
+                                        <GradientStop Color="#3E5230" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Grid>
+                                    <Path Data="M0,60 L60,25 L110,50 L170,10 L240,45 L300,20 L360,55 L420,30 L480,50 L480,80 L0,80 Z" Fill="#55607A"
+                                          Stretch="Fill" VerticalAlignment="Center" Height="70" Margin="0,0,0,20" Opacity="0.55" IsHitTestVisible="False" />
+                                    <!-- Широкий оверлей «в строку» уменьшается, чтобы поместиться целиком; обычный — в настоящем размере. -->
+                                    <Viewbox StretchDirection="DownOnly" Margin="12"
+                                             HorizontalAlignment="{Binding PreviewHorizontal}" VerticalAlignment="{Binding PreviewVertical}">
+                                        <controls:OverlayView Source="{Binding Preview}" />
+                                    </Viewbox>
+                                    <TextBlock Text="Оверлей пуст" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Visibility="{Binding HasItems, Converter={StaticResource InverseBoolToVis}}" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="ГОРЯЧИЕ КЛАВИШИ" Style="{StaticResource SectionLabel}" Margin="0,0,0,6" />
                             <TextBlock Style="{StaticResource Caption}" FontSize="13" LineHeight="20">
                                 <Run Text="Ctrl+Shift+F10" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" /><Run Text=" — показать или скрыть оверлей" /><LineBreak />
                                 <Run Text="Ctrl+Shift+F11" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" /><Run Text=" — начать или остановить запись FPS" />
                             </TextBlock>
                             <TextBlock Text="{Binding HotkeyWarning}" Foreground="{DynamicResource WarningBrush}" TextWrapping="Wrap" Margin="0,6,0,0"
                                        Visibility="{Binding HasHotkeyWarning, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,12,0,0"
+                                       Text="Оверлей — прозрачное окно поверх игры: в игру ничего не внедряется, поэтому античиты на него не реагируют. Виден в оконном режиме и «полноэкранном в окне» (borderless), а также в полноэкранном режиме большинства современных игр. Если в какой-то игре его не видно, переключите её в режим «без рамки»." />
+                        </StackPanel>
+                    </Border>
 
-                            <TextBlock Text="ПОЛОЖЕНИЕ НА ЭКРАНЕ" Style="{StaticResource SectionLabel}" Margin="0,16,0,6" />
-                            <WrapPanel>
-                                <RadioButton Content="Слева вверху" GroupName="overlay-corner" Style="{StaticResource TabRadio}" IsChecked="{Binding IsTopLeft, Mode=TwoWay}" Margin="0,0,4,4" />
-                                <RadioButton Content="Справа вверху" GroupName="overlay-corner" Style="{StaticResource TabRadio}" IsChecked="{Binding IsTopRight, Mode=TwoWay}" Margin="0,0,4,4" />
-                                <RadioButton Content="Слева внизу" GroupName="overlay-corner" Style="{StaticResource TabRadio}" IsChecked="{Binding IsBottomLeft, Mode=TwoWay}" Margin="0,0,4,4" />
-                                <RadioButton Content="Справа внизу" GroupName="overlay-corner" Style="{StaticResource TabRadio}" IsChecked="{Binding IsBottomRight, Mode=TwoWay}" Margin="0,0,4,4" />
-                            </WrapPanel>
-
-                            <TextBlock Text="ЧТО ПОКАЗЫВАТЬ" Style="{StaticResource SectionLabel}" Margin="0,12,0,6" />
-                            <CheckBox IsChecked="{Binding OverlayShowGraph, Mode=TwoWay}" Content="График времени кадра (пики — рывки)" Margin="0,3" />
-                            <CheckBox IsChecked="{Binding OverlayShowDetails, Mode=TwoWay}" Content="1% low и время кадра под FPS" Margin="0,3" />
-                            <CheckBox IsChecked="{Binding OverlayShowProcess, Mode=TwoWay}" Content="Имя процесса игры" Margin="0,3" />
-                            <TextBlock Text="Размер" Style="{StaticResource Caption}" Margin="0,10,0,4" />
-                            <Border Style="{StaticResource SegmentBox}" HorizontalAlignment="Left">
-                                <StackPanel Orientation="Horizontal">
-                                    <RadioButton Content="Маленький" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlaySmall, Mode=TwoWay}" />
-                                    <RadioButton Content="Обычный" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlayNormal, Mode=TwoWay}" />
-                                    <RadioButton Content="Крупный" GroupName="overlay-size" Style="{StaticResource SegmentRadio}" IsChecked="{Binding OverlayLarge, Mode=TwoWay}" />
-                                </StackPanel>
-                            </Border>
-                            <TextBlock Style="{StaticResource Caption}" Margin="0,10,0,4">
-                                <Run Text="Фон: " /><Run Text="{Binding OverlayOpacityPercent, Mode=OneWay, StringFormat={}{0:0} %}" />
-                            </TextBlock>
-                            <Slider Minimum="0" Maximum="100" TickFrequency="5" IsSnapToTickEnabled="True" Width="240" HorizontalAlignment="Left"
-                                    Value="{Binding OverlayOpacityPercent, Mode=TwoWay, Delay=150}" />
-                            <CheckBox IsChecked="{Binding OverlayShowSensors, Mode=TwoWay}" Content="Загрузка, температура и мощность CPU и GPU" Margin="0,3" />
-
-                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,14,0,0"
-                                       Text="Оверлей — прозрачное окно поверх игры: в игру ничего не внедряется, поэтому античиты на него не реагируют. Виден в оконном режиме и «полноэкранном в окне» (borderless). В эксклюзивном полноэкранном режиме некоторых игр может не отображаться — тогда переключите игру в режим «без рамки»." />
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Сейчас выводят кадры" Style="{StaticResource CardTitle}" />
+                            <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,8"
+                                       Text="Программы, которые рисуют через Direct3D, — игры, браузеры, видеоплееры. Если игры нет в списке игр, её можно добавить отсюда." />
+                            <TextBlock Text="Сейчас никто не выводит кадры. Запустите игру — она появится здесь."
+                                       Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6"
+                                       Visibility="{Binding HasPresenters, Converter={StaticResource InverseBoolToVis}}" />
+                            <ItemsControl ItemsSource="{Binding Presenters}" Focusable="False">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="90" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Api}" Style="{StaticResource MutedCaption}" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding FpsText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                                                <Button Grid.Column="2" Content="Добавить в игры" Command="{Binding AddCommand}" Style="{StaticResource GhostButton}"
+                                                        Padding="10,3" Visibility="{Binding CanAdd, Converter={StaticResource BoolToVis}}" />
+                                                <TextBlock Grid.Column="2" Text="в списке игр" Style="{StaticResource MutedCaption}" VerticalAlignment="Center"
+                                                           Visibility="{Binding IsKnownGame, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
 
@@ -420,43 +804,8 @@
                         </StackPanel>
                     </Border>
                 </StackPanel>
-
-                <Border Grid.Column="2" Style="{StaticResource Card}" VerticalAlignment="Top">
-                    <StackPanel>
-                        <TextBlock Text="Сейчас выводят кадры" Style="{StaticResource CardTitle}" />
-                        <TextBlock Style="{StaticResource MutedCaption}" TextWrapping="Wrap" Margin="0,2,0,8"
-                                   Text="Программы, которые рисуют через Direct3D, — игры, браузеры, видеоплееры. Если игры нет в списке игр, её можно добавить отсюда." />
-                        <TextBlock Text="Сейчас никто не выводит кадры. Запустите игру — она появится здесь."
-                                   Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,6"
-                                   Visibility="{Binding HasPresenters, Converter={StaticResource InverseBoolToVis}}" />
-                        <ItemsControl ItemsSource="{Binding Presenters}" Focusable="False">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,1,0,0" Padding="0,8">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="90" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Api}" Style="{StaticResource MutedCaption}" />
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="1" Text="{Binding FpsText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
-                                            <Button Grid.Column="2" Content="Добавить в игры" Command="{Binding AddCommand}" Style="{StaticResource GhostButton}"
-                                                    Padding="10,3" Visibility="{Binding CanAdd, Converter={StaticResource BoolToVis}}" />
-                                            <TextBlock Grid.Column="2" Text="в списке игр" Style="{StaticResource MutedCaption}" VerticalAlignment="Center"
-                                                       Visibility="{Binding IsKnownGame, Converter={StaticResource BoolToVis}}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
 
         <!-- ===================== Замеры FPS ===================== -->
         <Grid Grid.Row="3" Visibility="{Binding IsRecordingsTab, Converter={StaticResource BoolToVis}}">

@@ -27,6 +27,10 @@ public partial class MainWindow : Window
             ShowCurrentPage();
         };
 
+        // Настройки оверлея «живут», только пока окно видно: свернули или спрятали в трей — оверлей больше не двигают.
+        IsVisibleChanged += (_, _) => ViewModel?.Games.OnMainWindowStateChanged();
+        StateChanged += (_, _) => ViewModel?.Games.OnMainWindowStateChanged();
+
         // Когда окно нарисовано и приложение ничего не делает, заранее собираем самый тяжёлый экран — мониторинг.
         ContentRendered += (_, _) => Dispatcher.BeginInvoke(() =>
         {

@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using PcToolkit.Core;
 using PcToolkit.Core.Games;
 using PcToolkit.Core.Logging;
+using PcToolkit.Core.Overlay;
 using PcToolkit.Core.Sensors;
 using PcToolkit.Core.Settings;
 using PcToolkit.Desktop.Mvvm;
@@ -47,6 +48,11 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
     private bool _monitorForPage;
     private bool _overlayEnabled;
     private bool _overlaySuppressed;
+    private readonly OverlaySettings _overlaySettings;
+    private string? _overlayGameId;
+    private int? _overlayShownFor;
+    private bool _configuringOverlay;
+    private HardwareSnapshot? _lastSnapshot;
     private FpsRecorder? _recorder;
     private string? _recordingGameId;
     private int _recordingLimitSeconds;
@@ -89,16 +95,11 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         _recordingSeconds = settings.RecordingSeconds;
         _closeToTray = settings.CloseToTray;
         _autostart = Autostart.IsEnabled;
-        Overlay = new OverlayViewModel
-        {
-            Corner = settings.OverlayCorner,
-            ShowSensors = settings.OverlayShowSensors,
-            ShowGraph = settings.OverlayShowGraph,
-            ShowDetails = settings.OverlayShowDetails,
-            ShowProcess = settings.OverlayShowProcess,
-            Scale = settings.OverlayScale,
-            BackgroundOpacity = settings.OverlayOpacity,
-        };
+        _overlaySettings = OverlaySettings.Load();
+        Overlay = new OverlayViewModel(new OverlayContent(_overlaySettings.Default, sample: false));
+        OverlayEditor = new OverlayEditorViewModel(_overlaySettings, this);
+        Overlay.PositionDropped += (_, position) => OverlayEditor.OnPositionDropped(position);
+        Overlay.MoveFinished += (_, _) => OverlayEditor.IsMoving = false;
 
         GamesView = CollectionViewSource.GetDefaultView(Games);
         GamesView.Filter = item => item is GameItemViewModel game
@@ -132,6 +133,9 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
     public event EventHandler? StateChanged;
 
     public OverlayViewModel Overlay { get; }
+
+    /// <summary>Настройки оверлея с предпросмотром (вкладка «Оверлей»).</summary>
+    public OverlayEditorViewModel OverlayEditor { get; }
 
     public ObservableCollection<GameItemViewModel> Games { get; } = new();
 
@@ -248,86 +252,6 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
     /// <summary>Оверлей сейчас работает (включён настройкой или профилем запущенной игры).</summary>
     public bool OverlayActive => !_overlaySuppressed && (_overlayEnabled || _profileOverlayGames.Count > 0);
 
-    public bool IsTopLeft { get => Overlay.Corner == "TopLeft"; set => SetCorner("TopLeft", value); }
-
-    public bool IsTopRight { get => Overlay.Corner == "TopRight"; set => SetCorner("TopRight", value); }
-
-    public bool IsBottomLeft { get => Overlay.Corner == "BottomLeft"; set => SetCorner("BottomLeft", value); }
-
-    public bool IsBottomRight { get => Overlay.Corner == "BottomRight"; set => SetCorner("BottomRight", value); }
-
-    public bool OverlayShowSensors
-    {
-        get => Overlay.ShowSensors;
-        set
-        {
-            Overlay.ShowSensors = value;
-            AppSettings.Update(s => s.OverlayShowSensors = value);
-            OnPropertyChanged();
-        }
-    }
-
-    public bool OverlayShowGraph
-    {
-        get => Overlay.ShowGraph;
-        set
-        {
-            Overlay.ShowGraph = value;
-            AppSettings.Update(s => s.OverlayShowGraph = value);
-            OnPropertyChanged();
-        }
-    }
-
-    public bool OverlayShowDetails
-    {
-        get => Overlay.ShowDetails;
-        set
-        {
-            Overlay.ShowDetails = value;
-            AppSettings.Update(s => s.OverlayShowDetails = value);
-            OnPropertyChanged();
-        }
-    }
-
-    public bool OverlayShowProcess
-    {
-        get => Overlay.ShowProcess;
-        set
-        {
-            Overlay.ShowProcess = value;
-            AppSettings.Update(s => s.OverlayShowProcess = value);
-            OnPropertyChanged();
-        }
-    }
-
-    // Размер: маленький / обычный / крупный
-    public bool OverlaySmall { get => Overlay.Scale < 0.9; set { if (value) SetOverlayScale(0.8); } }
-
-    public bool OverlayNormal { get => Overlay.Scale is >= 0.9 and <= 1.1; set { if (value) SetOverlayScale(1); } }
-
-    public bool OverlayLarge { get => Overlay.Scale > 1.1; set { if (value) SetOverlayScale(1.25); } }
-
-    /// <summary>Плотность фона, %.</summary>
-    public double OverlayOpacityPercent
-    {
-        get => Math.Round(Overlay.BackgroundOpacity * 100);
-        set
-        {
-            Overlay.BackgroundOpacity = value / 100;
-            AppSettings.Update(s => s.OverlayOpacity = Overlay.BackgroundOpacity);
-            OnPropertyChanged();
-        }
-    }
-
-    private void SetOverlayScale(double scale)
-    {
-        Overlay.Scale = scale;
-        AppSettings.Update(s => s.OverlayScale = scale);
-        OnPropertyChanged(nameof(OverlaySmall));
-        OnPropertyChanged(nameof(OverlayNormal));
-        OnPropertyChanged(nameof(OverlayLarge));
-    }
-
     public string HotkeyWarning
     {
         get => _hotkeyWarning;
@@ -421,16 +345,98 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             _ = LoadAsync();
     }
 
-    /// <summary>Данные датчиков раз в секунду: для оверлея и записи.</summary>
+    /// <summary>Данные датчиков раз в секунду: для оверлея, его предпросмотра и записи.</summary>
     public void Update(HardwareSnapshot snapshot)
     {
-        if (!OverlayActive && _recorder is null)
+        _lastSnapshot = snapshot;
+        UpdateOverlayEditing();
+        bool overlay = OverlayActive || Overlay.IsMoving;
+        if (!overlay && _recorder is null && !_configuringOverlay)
             return;
 
         KeyMetrics metrics = KeyMetrics.From(snapshot);
-        Overlay.UpdateSensors(metrics);
+        if (overlay)
+            Overlay.Content.UpdateSensors(snapshot, metrics);
+        if (_configuringOverlay)
+            OverlayEditor.Preview.UpdateSensors(snapshot, metrics);
         _recorder?.OnSensors(metrics.CpuLoad?.Value, metrics.GpuLoad?.Value, metrics.CpuTemperature?.Value,
             metrics.GpuTemperature?.Value, metrics.GpuPower?.Value);
+    }
+
+    /// <summary>Последний снимок датчиков: для списка «Добавить показатель».</summary>
+    internal HardwareSnapshot? LastSnapshot => _lastSnapshot;
+
+    // ----- Настройки оверлея -----
+
+    /// <summary>
+    /// Открыта ли вкладка «Оверлей» в видимом окне. Пока открыта, предпросмотр получает данные, а оверлей остаётся
+    /// над игрой на другом мониторе, даже если щёлкнуть в PC Toolkit: изменения сразу видны в игре.
+    /// </summary>
+    private void UpdateOverlayEditing()
+    {
+        bool configuring = _pageVisible && _tab == "overlay"
+                           && Application.Current?.MainWindow is { IsVisible: true, WindowState: not WindowState.Minimized };
+        if (configuring == _configuringOverlay)
+            return;
+
+        _configuringOverlay = configuring;
+        _monitor.CountInBackground = configuring;
+        OverlayEditor.SetActive(configuring);
+        if (configuring)
+            OverlayEditor.RefreshTargets(GameList());
+    }
+
+    /// <summary>Главное окно показали, свернули или спрятали в трей.</summary>
+    public void OnMainWindowStateChanged() => UpdateOverlayEditing();
+
+    private IEnumerable<(string Id, string Name)> GameList() =>
+        Games.Select(g => (g.Entry.Id, g.Name)).Concat(_store.Profiles.Select(p => (p.GameId, p.Name)));
+
+    /// <summary>Настройки оверлея изменились: если оверлей в игре показывает именно их — перерисовать сразу.</summary>
+    internal void OnOverlayLayoutEdited(OverlayLayout layout)
+    {
+        if (ReferenceEquals(Overlay.Content.Layout, layout))
+            Overlay.Content.SetLayout(layout);
+    }
+
+    /// <summary>У игры включили или выключили свой оверлей: запущенная игра сразу переходит на нужный.</summary>
+    internal void OnOverlayLayoutsChanged()
+    {
+        if (!Overlay.IsMoving)
+            UseOverlayLayout(_overlayGameId, force: true);
+    }
+
+    /// <summary>Двигать оверлей мышью: он показывает настраиваемый оверлей и виден, даже если игры нет.</summary>
+    internal void SetOverlayMoving(bool moving, OverlayLayout layout)
+    {
+        Overlay.Content.Sample = moving;
+        if (moving)
+        {
+            Overlay.Content.SetLayout(layout);
+            Overlay.IsMoving = true;
+        }
+        else
+        {
+            Overlay.IsMoving = false;
+            UseOverlayLayout(_overlayGameId, force: true);
+        }
+    }
+
+    /// <summary>Открыть настройки оверлея игры (кнопка в её профиле).</summary>
+    internal void ConfigureOverlayFor(GameItemViewModel game)
+    {
+        IsOverlayTab = true;
+        OverlayEditor.RefreshTargets(GameList());
+        OverlayEditor.Select(game.Entry.Id);
+    }
+
+    /// <summary>Какой оверлей показывать в игре: свой оверлей игры или общий.</summary>
+    private void UseOverlayLayout(string? gameId, bool force = false)
+    {
+        _overlayGameId = gameId;
+        OverlayLayout layout = _overlaySettings.For(gameId);
+        if (force || !ReferenceEquals(layout, Overlay.Content.Layout))
+            Overlay.Content.SetLayout(layout);
     }
 
     /// <summary>Ctrl+Shift+F10 и меню трея.</summary>
@@ -491,6 +497,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _cts.Cancel();
+        OverlayEditor.Flush();
         if (_recorder is not null)
             StopRecording();
         _sessions.RevertAll();
@@ -548,6 +555,8 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             SelectedGame = Games.FirstOrDefault(g => g.Entry.Id == selectedId);
             AppLog.Info($"Найдено игр: {Games.Count} (с профилем: {_store.Profiles.Count(p => p.Enabled)}).");
             _ = LoadIconsAsync(Games.ToList());
+            if (_configuringOverlay)
+                OverlayEditor.RefreshTargets(GameList());
         }
         catch (Exception ex)
         {
@@ -876,16 +885,31 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
 
         // Оверлей виден, только когда на переднем плане игра, чьи кадры считаются: игра из списка,
         // записываемый процесс или любое окно на весь экран. В браузере и обычных окнах его нет.
-        Overlay.UpdateFrames(state);
+        UpdateOverlayEditing();
+        if (OverlayActive || Overlay.IsMoving)
+            Overlay.Content.UpdateFrames(state);
+        if (_configuringOverlay)
+            OverlayEditor.Preview.UpdateFrames(state);
+        if (!Overlay.IsMoving && state.ProcessId is int process)
+            UseOverlayLayout(FindGameId(process));
+
         bool visible = false;
+        bool background = false;
         if (OverlayActive && state.ProcessId is int target)
         {
             int? foreground = ProcessInfo.ForegroundProcessId();
-            bool isGame = IsKnownGame(target) || _recorder?.ProcessId == target || ProcessInfo.IsForegroundFullscreen();
-            visible = (foreground is null || foreground == target) && isGame;
+            bool inFront = foreground is null || foreground == target;
+            bool isGame = IsKnownGame(target) || _recorder?.ProcessId == target || (inFront && ProcessInfo.IsForegroundFullscreen());
+            visible = inFront && isGame;
+            if (visible)
+                _overlayShownFor = target;
+            // Настройки оверлея открыты, а игра на другом мониторе — оверлей остаётся над ней.
+            background = !inFront && _configuringOverlay && (isGame || _overlayShownFor == target);
         }
 
+        Overlay.TargetProcessId = state.ProcessId;
         Overlay.IsVisible = visible;
+        Overlay.ShowOverBackgroundGame = background;
 
         // Запись по профилю начинается, как только процесс игры начал выводить кадры.
         if (_recorder is null && _pendingProfileRecordings.Count > 0)
@@ -951,8 +975,12 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         Use(ref _monitorForRecording, wantRecording && CanCountFrames);
         Use(ref _monitorForPage, wantPage && CanCountFrames && _pageVisible);
         if (!OverlayActive)
+        {
             Overlay.IsVisible = false;
+            Overlay.ShowOverBackgroundGame = false;
+        }
 
+        UpdateOverlayEditing();
         OnPropertyChanged(nameof(OverlayActive));
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -999,8 +1027,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         _monitor.PinnedProcessId = processId;
         _monitor.AddListener(_recorder);
         _recordingTimer.Start();
-        Overlay.IsRecording = true;
-        Overlay.RecordingText = "REC 0:00";
+        SetRecordingBadge(true, "REC 0:00");
         RecordingStatus = $"Запись: {_recorder.GameName}…";
         AppLog.Info($"Запись FPS: {_recorder.GameName} ({processName}, PID {processId}){(automatic ? " по профилю" : "")}.");
         OnRecordingChanged();
@@ -1018,7 +1045,7 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         _monitor.RemoveListener(recorder);
         _monitor.PinnedProcessId = null;
         _recordingTimer.Stop();
-        Overlay.IsRecording = false;
+        SetRecordingBadge(false, "");
 
         FpsRecording? result = recorder.Finish();
         if (result is null)
@@ -1058,7 +1085,14 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
             return;
         }
 
-        Overlay.RecordingText = "REC " + Duration(recorder.RecordedSeconds);
+        SetRecordingBadge(true, "REC " + Duration(recorder.RecordedSeconds));
+    }
+
+    /// <summary>Метка «REC 0:42» в оверлее и в предпросмотре.</summary>
+    private void SetRecordingBadge(bool recording, string text)
+    {
+        Overlay.Content.SetRecording(recording, text);
+        OverlayEditor.Preview.SetRecording(recording, text);
     }
 
     private void UpdateRecordingStatus(FrameMonitorState state)
@@ -1116,19 +1150,6 @@ public sealed class GamesViewModel : ObservableObject, IDisposable
         UpdateMonitorUsage();
     }
 
-    private void SetCorner(string corner, bool value)
-    {
-        if (!value || Overlay.Corner == corner)
-            return;
-
-        Overlay.Corner = corner;
-        AppSettings.Update(s => s.OverlayCorner = corner);
-        OnPropertyChanged(nameof(IsTopLeft));
-        OnPropertyChanged(nameof(IsTopRight));
-        OnPropertyChanged(nameof(IsBottomLeft));
-        OnPropertyChanged(nameof(IsBottomRight));
-    }
-
     private void SetDuration(int seconds, bool value)
     {
         if (!value || _recordingSeconds == seconds)
@@ -1162,9 +1183,13 @@ public sealed class GameItemViewModel : ObservableObject
     {
         Entry = entry;
         _owner = owner;
+        ConfigureOverlayCommand = new RelayCommand(() => _owner.ConfigureOverlayFor(this));
     }
 
     public GameEntry Entry { get; }
+
+    /// <summary>Открыть вкладку «Оверлей» с настройками для этой игры.</summary>
+    public ICommand ConfigureOverlayCommand { get; }
 
     public string Name => Entry.Name;
 

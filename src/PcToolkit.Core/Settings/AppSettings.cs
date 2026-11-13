@@ -18,6 +18,9 @@ public sealed class AppSettings
     /// <summary>Оверлей с FPS во всех играх (кроме этого, оверлей включают профили игр).</summary>
     public bool OverlayEnabled { get; set; }
 
+    // Прежние настройки вида оверлея (до версии 0.6). Теперь оверлей настраивается в overlay.json (OverlaySettings),
+    // а эти значения читаются один раз — чтобы перенести их туда при первом запуске новой версии.
+
     /// <summary>Угол экрана: TopLeft, TopRight, BottomLeft, BottomRight.</summary>
     public string OverlayCorner { get; set; } = "TopLeft";
 

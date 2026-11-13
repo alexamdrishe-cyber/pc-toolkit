@@ -1,190 +1,64 @@
-using System.Globalization;
-using PcToolkit.Core.Games;
-using PcToolkit.Core.Sensors;
+using PcToolkit.Core.Overlay;
 using PcToolkit.Desktop.Mvvm;
 
 namespace PcToolkit.Desktop.ViewModels;
 
-/// <summary>Что показывает оверлей поверх игры.</summary>
+/// <summary>Окно оверлея поверх игры: что показывать (<see cref="Content"/>), виден ли он и двигают ли его мышью.</summary>
 public sealed class OverlayViewModel : ObservableObject
 {
-    private static readonly CultureInfo Russian = CultureInfo.GetCultureInfo("ru-RU");
-
     private bool _isVisible;
-    private string _corner = "TopLeft";
-    private bool _showSensors = true;
-    private bool _showGraph = true;
-    private string _fpsText = "—";
-    private string _fpsLevel = "None";
-    private string _detailText = "";
-    private string _processText = "";
-    private string _cpuText = "";
-    private string _gpuText = "";
-    private double[] _frameTimes = Array.Empty<double>();
-    private bool _isRecording;
-    private string _recordingText = "";
+    private bool _isMoving;
+    private int? _targetProcessId;
+    private bool _showOverBackgroundGame;
 
+    public OverlayViewModel(OverlayContent content)
+    {
+        Content = content;
+    }
+
+    public OverlayContent Content { get; }
+
+    /// <summary>Оверлей показан поверх игры.</summary>
     public bool IsVisible
     {
         get => _isVisible;
         set => SetProperty(ref _isVisible, value);
     }
 
-    /// <summary>TopLeft, TopRight, BottomLeft, BottomRight.</summary>
-    public string Corner
+    /// <summary>
+    /// Оверлей двигают мышью: он виден даже без игры, ловит мышь и показывает рамку.
+    /// Куда отпустили — сообщает <see cref="PositionDropped"/>.
+    /// </summary>
+    public bool IsMoving
     {
-        get => _corner;
-        set => SetProperty(ref _corner, value);
+        get => _isMoving;
+        set => SetProperty(ref _isMoving, value);
     }
 
-    public bool ShowSensors
+    /// <summary>
+    /// Настройки оверлея открыты, а игра идёт не на переднем плане: оверлей остаётся над игрой,
+    /// если она на другом мониторе, чем окно PC Toolkit (решает окно оверлея).
+    /// </summary>
+    public bool ShowOverBackgroundGame
     {
-        get => _showSensors;
-        set => SetProperty(ref _showSensors, value);
+        get => _showOverBackgroundGame;
+        set => SetProperty(ref _showOverBackgroundGame, value);
     }
 
-    public bool ShowGraph
+    /// <summary>Процесс игры, над которой оверлей: окно ставится на её монитор, даже когда игра не на переднем плане.</summary>
+    public int? TargetProcessId
     {
-        get => _showGraph;
-        set => SetProperty(ref _showGraph, value);
+        get => _targetProcessId;
+        set => SetProperty(ref _targetProcessId, value);
     }
 
-    private bool _showDetails = true;
-    private bool _showProcess = true;
-    private double _scale = 1;
-    private double _opacity = 0.78;
+    /// <summary>Оверлей перетащили мышью и отпустили: новое место.</summary>
+    public event EventHandler<OverlayPosition>? PositionDropped;
 
-    public bool ShowDetails
-    {
-        get => _showDetails;
-        set => SetProperty(ref _showDetails, value);
-    }
+    /// <summary>Двойной щелчок по оверлею, пока его двигают: «готово».</summary>
+    public event EventHandler? MoveFinished;
 
-    public bool ShowProcess
-    {
-        get => _showProcess;
-        set => SetProperty(ref _showProcess, value);
-    }
+    public void DropPosition(OverlayPosition position) => PositionDropped?.Invoke(this, position);
 
-    /// <summary>Размер оверлея (масштаб всего блока).</summary>
-    public double Scale
-    {
-        get => _scale;
-        set => SetProperty(ref _scale, Math.Clamp(value, 0.6, 1.6));
-    }
-
-    /// <summary>Плотность фона: 0 — прозрачный, 1 — непрозрачный.</summary>
-    public double BackgroundOpacity
-    {
-        get => _opacity;
-        set
-        {
-            if (SetProperty(ref _opacity, Math.Clamp(value, 0, 1)))
-                OnPropertyChanged(nameof(Background));
-        }
-    }
-
-    public System.Windows.Media.Brush Background
-    {
-        get
-        {
-            var brush = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb((byte)(_opacity * 255), 0x0E, 0x11, 0x16));
-            brush.Freeze();
-            return brush;
-        }
-    }
-
-    public string FpsText
-    {
-        get => _fpsText;
-        private set => SetProperty(ref _fpsText, value);
-    }
-
-    /// <summary>Good (60+), Fair (30–60), Poor (меньше 30), None — для цвета числа.</summary>
-    public string FpsLevel
-    {
-        get => _fpsLevel;
-        private set => SetProperty(ref _fpsLevel, value);
-    }
-
-    public string DetailText
-    {
-        get => _detailText;
-        private set => SetProperty(ref _detailText, value);
-    }
-
-    public string ProcessText
-    {
-        get => _processText;
-        private set => SetProperty(ref _processText, value);
-    }
-
-    public string CpuText
-    {
-        get => _cpuText;
-        private set => SetProperty(ref _cpuText, value);
-    }
-
-    public string GpuText
-    {
-        get => _gpuText;
-        private set => SetProperty(ref _gpuText, value);
-    }
-
-    public double[] FrameTimes
-    {
-        get => _frameTimes;
-        private set => SetProperty(ref _frameTimes, value);
-    }
-
-    public bool IsRecording
-    {
-        get => _isRecording;
-        set => SetProperty(ref _isRecording, value);
-    }
-
-    public string RecordingText
-    {
-        get => _recordingText;
-        set => SetProperty(ref _recordingText, value);
-    }
-
-    public void UpdateFrames(FrameMonitorState state)
-    {
-        if (!state.HasTarget || state.Fps <= 0)
-        {
-            FpsText = "—";
-            FpsLevel = "None";
-            DetailText = state.HasTarget ? "нет кадров" : "";
-            FrameTimes = Array.Empty<double>();
-        }
-        else
-        {
-            FpsText = state.Fps.ToString("0", Russian);
-            FpsLevel = state.Fps >= 60 ? "Good" : state.Fps >= 30 ? "Fair" : "Poor";
-            string low = state.Low1Fps > 0 ? $"1% low {state.Low1Fps.ToString("0", Russian)}  ·  " : "";
-            DetailText = $"{low}{state.FrameMs.ToString("0.0", Russian)} мс";
-            FrameTimes = state.RecentFrameTimes;
-        }
-
-        ProcessText = state.ProcessName is { Length: > 0 } name ? $"{name} · {state.Api}" : "";
-    }
-
-    public void UpdateSensors(KeyMetrics metrics)
-    {
-        CpuText = Join("CPU", metrics.CpuLoad?.Value, metrics.CpuTemperature?.Value, null);
-        GpuText = Join("GPU", metrics.GpuLoad?.Value, metrics.GpuTemperature?.Value, metrics.GpuPower?.Value);
-    }
-
-    private static string Join(string name, float? load, float? temperature, float? power)
-    {
-        var parts = new List<string> { name };
-        if (load is float l)
-            parts.Add($"{l.ToString("0", Russian)}%");
-        if (temperature is float t)
-            parts.Add($"{t.ToString("0", Russian)}°C");
-        if (power is float p && p > 0)
-            parts.Add($"{p.ToString("0", Russian)} Вт");
-        return parts.Count > 1 ? string.Join("   ", parts) : "";
-    }
+    public void FinishMoving() => MoveFinished?.Invoke(this, EventArgs.Empty);
 }

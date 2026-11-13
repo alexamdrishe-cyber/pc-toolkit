@@ -66,6 +66,12 @@ public sealed class FrameMonitor : IDisposable
     /// <summary>Процесс, за которым следить, независимо от переднего плана (null — автоматически).</summary>
     public int? PinnedProcessId { get; set; }
 
+    /// <summary>
+    /// Считать FPS игры для показа, даже когда она не на переднем плане: пока открыты настройки оверлея,
+    /// игра может идти на другом мониторе. В запись замера такие кадры всё равно не попадают.
+    /// </summary>
+    public bool CountInBackground { get; set; }
+
     public FrameMonitorState? Last { get; private set; }
 
     /// <summary>Начать опрос (оверлей, запись, открытый экран). Каждому Acquire — свой Release.</summary>
@@ -169,11 +175,12 @@ public sealed class FrameMonitor : IDisposable
             // (свёрнута, Alt+Tab), Windows её притормаживает: такие кадры не считаются ни в оверлее, ни в записи,
             // иначе FPS и 1% low «провалятся» не по вине игры.
             bool inForeground = queried is int q && q == foregroundProcess;
+            bool counted = inForeground || CountInBackground;
             double[] newTimes = Array.Empty<double>();
             if (queried is int pid && pid == _target && result.Frames.Length > 0)
             {
                 _since = result.Frames[^1];
-                if (inForeground)
+                if (counted)
                 {
                     var times = new List<long>(result.Frames.Length + 1);
                     if (_lastFrame > 0)
@@ -185,11 +192,12 @@ public sealed class FrameMonitor : IDisposable
                     }
 
                     _lastFrame = result.Frames[^1];
-                    newTimes = FrameMath.ToFrameTimes(times, frequency);
+                    if (inForeground)
+                        newTimes = FrameMath.ToFrameTimes(times, frequency);
                 }
             }
 
-            if (!inForeground)
+            if (!counted)
             {
                 // После возврата в игру статистика начнётся заново, без долгого «кадра» на время паузы.
                 _recent.Clear();

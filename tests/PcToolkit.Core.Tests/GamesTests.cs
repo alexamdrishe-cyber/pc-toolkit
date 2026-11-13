@@ -489,6 +489,31 @@ public sealed class FrameMonitorTests
         Assert.Equal(0, state.Fps);
     }
 
+    [Fact]
+    public void CountsBackgroundGameForOverlaySettingsButNotForRecording()
+    {
+        var source = new FakeFrameSource();
+        long f = Stopwatch.Frequency;
+        source.Presenters.Add(new FramePresenter(500, 100, "DXGI"));
+        for (int i = 1; i <= 200; i++)
+            source.Frames.Add(source.Now - (200 - i) * f / 100);
+
+        // Открыты настройки оверлея: игра на другом мониторе, на переднем плане PC Toolkit.
+        using var monitor = new FrameMonitor(source, () => 600) { PinnedProcessId = 500, CountInBackground = true };
+        var listener = new CollectingListener();
+        monitor.AddListener(listener);
+
+        FrameMonitorState? state = null;
+        monitor.Updated += (_, s) => state = s;
+        monitor.Acquire();
+        SpinWait.SpinUntil(() => state is { Fps: > 0 }, TimeSpan.FromSeconds(5));
+        monitor.Release();
+
+        Assert.InRange(state!.Fps, 95, 105);
+        Assert.False(state.InForeground);
+        Assert.Empty(listener.Times);
+    }
+
     private sealed class CollectingListener : IFrameListener
     {
         public List<double> Times { get; } = new();
